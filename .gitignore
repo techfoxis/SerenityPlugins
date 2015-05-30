@@ -4,3 +4,5 @@ bin
 *.yml
 .settings
 *.prefs
+settings
+Secrets.java
