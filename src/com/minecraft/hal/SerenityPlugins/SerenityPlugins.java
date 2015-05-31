@@ -31,7 +31,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
-import org.bukkit.TreeType;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -48,7 +47,6 @@ import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
 import org.bukkit.entity.Creature;
-import org.bukkit.entity.CreatureType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ExperienceOrb;
@@ -115,7 +113,6 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
-import com.minecraft.hal.SerenityPlugins.Secrets;
 
 public final class SerenityPlugins extends JavaPlugin implements Listener,
 		CommandExecutor {
@@ -1444,6 +1441,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						event.setMessage("§k" + event.getMessage());
 						Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
 								"server startbattle");
+						sendATextToHal("SerenityPlugins", event.getPlayer().getName() + " has started the final battle!");
 					}
 				}
 			}
