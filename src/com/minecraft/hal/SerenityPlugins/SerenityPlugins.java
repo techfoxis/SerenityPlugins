@@ -115,12 +115,12 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
-
-import com.minecraft.hal.SerenityPlugins.ParticleEffect.ParticleColor;
+import com.minecraft.hal.SerenityPlugins.Secrets;
 
 public final class SerenityPlugins extends JavaPlugin implements Listener,
 		CommandExecutor {
 
+	
 	public ConfigAccessor playtimeCfg;
 	public ConfigAccessor mailboxCfg;
 	public ConfigAccessor statusCfg;
@@ -251,24 +251,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public int finalDungeonKillCount;
 
-	public final List<String> SOMEONEGREETINGPREFIX = new ArrayList<String>() {
-		{
-			add(Secrets.Secret.someoneGreeting1);
-			add(Secrets.Secret.someoneGreeting2);
-			add(Secrets.Secret.someoneGreeting3);
-			add(Secrets.Secret.someoneGreeting4);
-			add(Secrets.Secret.someoneGreeting5);
-		}
-	};
+	public List<String> SOMEONEGREETINGPREFIX;
 
-	public final List<String> SOMEONETEXT1 = new ArrayList<String>() {
-		{
-			add(Secrets.Secret.someoneFirstText1);
-			add(Secrets.Secret.someoneFirstText2);
-			add(Secrets.Secret.someoneFirstText3);
-		}
-
-	};
+	public List<String> SOMEONETEXT1;
 
 	public HashMap<String, Long> racers;
 	public HashMap<String, String> englishStrings;
@@ -287,6 +272,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public short partyMode = -1;
 	public short partyOffset = 0;
 
+	public Secrets Secret;
 	// public String[] betters;
 	// public String[] horses;
 
@@ -304,17 +290,38 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				new Date().getMonth() == AprilFoolsday.getMonth()){
 			isAprilFoolsDay = true;
 		}
+		
+		Secret = new Secrets();
+		
+		SOMEONEGREETINGPREFIX = new ArrayList<String>() {
+			{
+				add(Secret.someoneGreeting1);
+				add(Secret.someoneGreeting2);
+				add(Secret.someoneGreeting3);
+				add(Secret.someoneGreeting4);
+				add(Secret.someoneGreeting5);
+			}
+		};
+		
+		SOMEONETEXT1 = new ArrayList<String>() {
+			{
+				add(Secret.someoneFirstText1);
+				add(Secret.someoneFirstText2);
+				add(Secret.someoneFirstText3);
+			}
+
+		};
 		// betters = new String[3];
 		// horses = new String[3];
-		TELEPORTDESTINATIONFORSOMETHING = Secrets.Secret.TELEPORTDESTINATIONFORSOMETHING;
-		GREENBLOCKSINFINALDUNGEON = Secrets.Secret.GREENBLOCKSINFINALDUNGEON;
-		BLUEBLOCKSINFINALDUNGEON = Secrets.Secret.BLUEBLOCKSINFINALDUNGEON;
-		REDBLOCKSINFINALDUNGEON = Secrets.Secret.REDBLOCKSINFINALDUNGEON;
-		CLEARBLOCKSINFINALDUNGEON = Secrets.Secret.CLEARBLOCKSINFINALDUNGEON;
-		CENTERBLOCKSINFINALDUNGEON = Secrets.Secret.CENTERBLOCKSINFINALDUNGEON;
-		WATERROOMMINESHAFT = Secrets.Secret.WATERROOMMINESHAFT;
-		WATERROOMACTIVATE = Secrets.Secret.WATERROOMACTIVATE;
-		DOORWAYTOFINALDUNGEON = Secrets.Secret.DOORWAYTOFINALDUNGEON;
+		TELEPORTDESTINATIONFORSOMETHING = Secret.TELEPORTDESTINATIONFORSOMETHING;
+		GREENBLOCKSINFINALDUNGEON = Secret.GREENBLOCKSINFINALDUNGEON;
+		BLUEBLOCKSINFINALDUNGEON = Secret.BLUEBLOCKSINFINALDUNGEON;
+		REDBLOCKSINFINALDUNGEON = Secret.REDBLOCKSINFINALDUNGEON;
+		CLEARBLOCKSINFINALDUNGEON = Secret.CLEARBLOCKSINFINALDUNGEON;
+		CENTERBLOCKSINFINALDUNGEON = Secret.CENTERBLOCKSINFINALDUNGEON;
+		WATERROOMMINESHAFT = Secret.WATERROOMMINESHAFT;
+		WATERROOMACTIVATE = Secret.WATERROOMACTIVATE;
+		DOORWAYTOFINALDUNGEON = Secret.DOORWAYTOFINALDUNGEON;
 		celebrators = new ArrayList<String>();
 
 		racers = new HashMap<String, Long>();
@@ -362,28 +369,28 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		teamList = new HashMap<String, String>();
 		textCooldown = new HashMap<String, Long>();
 
-		ItemStack stick = Secrets.Secret.SECRETITEMSTACK1;
+		ItemStack stick = Secret.SECRETITEMSTACK1;
 		ItemMeta item = stick.getItemMeta();
-		item.setDisplayName(Secrets.Secret.SECRETITEM1NAME);
+		item.setDisplayName(Secret.SECRETITEM1NAME);
 		item.addEnchant(Enchantment.LURE, -500, true);
 		stick.setItemMeta(item);
 
 		ShapedRecipe secretitem2 = new ShapedRecipe(new ItemStack(stick));
 		secretitem2.shape("ABA", "BAB", "ABA");
-		secretitem2.setIngredient('A', Secrets.Secret.SECRETITEM1MAT1);
-		secretitem2.setIngredient('B', Secrets.Secret.SECRETITEM1MAT2);
+		secretitem2.setIngredient('A', Secret.SECRETITEM1MAT1);
+		secretitem2.setIngredient('B', Secret.SECRETITEM1MAT2);
 		this.getServer().addRecipe(secretitem2);
 
 		ItemStack secretItemSpookyOne = new ItemStack(
-				Secrets.Secret.SECRETITEM2RESULT, 1, (short) 1);
+				Secret.SECRETITEM2RESULT, 1, (short) 1);
 		ItemMeta im = secretItemSpookyOne.getItemMeta();
-		im.setDisplayName(Secrets.Secret.SECRETITEM2NAME);
+		im.setDisplayName(Secret.SECRETITEM2NAME);
 		secretItemSpookyOne.setItemMeta(im);
 
 		ShapedRecipe spookyFruitRecipe = new ShapedRecipe(new ItemStack(
 				secretItemSpookyOne));
 		spookyFruitRecipe.shape("AAA", "ABA", "AAA");
-		spookyFruitRecipe.setIngredient('A', Secrets.Secret.SECRETITEM2MAT);
+		spookyFruitRecipe.setIngredient('A', Secret.SECRETITEM2MAT);
 		spookyFruitRecipe.setIngredient('B', secretItemSpookyOne.getType());
 		this.getServer().addRecipe(spookyFruitRecipe);
 
@@ -604,16 +611,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack item = event.getItem();
 		if (item.getItemMeta().hasDisplayName()) {
 			if (item.getItemMeta().getDisplayName()
-					.equals(Secrets.Secret.SECRETITEM2NAME)) {
+					.equals(Secret.SECRETITEM2NAME)) {
 				event.setCancelled(true);
-				event.getPlayer().kickPlayer(Secrets.Secret.SECRETMESSAGE);
+				event.getPlayer().kickPlayer(Secret.SECRETMESSAGE);
 			}
 		}
-		Location l = Secrets.Secret.SECRETSTANDINGLOCATION;
+		Location l = Secret.SECRETSTANDINGLOCATION;
 		if (event.getPlayer().getLocation().getWorld().getName()
 				.equals("world")) {
 			if (event.getPlayer().getLocation().distance(l) < 3) {
-				Location dest = Secrets.Secret.SECRETDESTINATION;
+				Location dest = Secret.SECRETDESTINATION;
 				event.setCancelled(true);
 				event.getPlayer().teleport(dest);
 				Bukkit.getLogger().info(
@@ -938,7 +945,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					for (Entity e : p.getNearbyEntities(50, 70, 50)) {
 						if (e.getCustomName() != null) {
 							if (e.getCustomName().equals(
-									Secrets.Secret.BADGUYSNAME)) {
+									Secret.BADGUYSNAME)) {
 								int r = rand.nextInt(5);
 								switch (r) {
 								case 0:
@@ -1423,7 +1430,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			unAfk(event.getPlayer());
 		}
 
-		if (event.getMessage().toUpperCase().equals(Secrets.Secret.MAGICPHRASE)) {
+		if (event.getMessage().toUpperCase().equals(Secret.MAGICPHRASE)) {
 			if (event.getPlayer().getWorld().getName().equals("world")) {
 				if (event.getPlayer().getLocation()
 						.distance(CENTERBLOCKSINFINALDUNGEON) < 25) {
@@ -1651,8 +1658,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secrets.Secret.JOURNAL1TITLE);
-		meta.setAuthor(Secrets.Secret.JOURNALAUTHOR);
+		meta.setTitle(Secret.JOURNAL1TITLE);
+		meta.setAuthor(Secret.JOURNALAUTHOR);
 
 		String bookText = podrickCfg.getConfig().getString("Journal1");
 		String hint = "";
@@ -1661,28 +1668,28 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		switch (type) {
 		case 0:
-			hint = Secrets.Secret.JOURNAL1HINT0;
+			hint = Secret.JOURNAL1HINT0;
 			break;
 		case 1:
-			hint = Secrets.Secret.JOURNAL1HINT1;
+			hint = Secret.JOURNAL1HINT1;
 			break;
 		case 2:
-			hint = Secrets.Secret.JOURNAL1HINT2;
+			hint = Secret.JOURNAL1HINT2;
 			break;
 		case 3:
-			hint = Secrets.Secret.JOURNAL1HINT3;
+			hint = Secret.JOURNAL1HINT3;
 			break;
 		case 4:
-			hint = Secrets.Secret.JOURNAL1HINT4;
+			hint = Secret.JOURNAL1HINT4;
 			break;
 		case 5:
-			hint = Secrets.Secret.JOURNAL1HINT5;
+			hint = Secret.JOURNAL1HINT5;
 			break;
 		case 6:
-			hint = Secrets.Secret.JOURNAL1HINT6;
+			hint = Secret.JOURNAL1HINT6;
 			break;
 		case 7:
-			hint = Secrets.Secret.JOURNAL1HINT7;
+			hint = Secret.JOURNAL1HINT7;
 			break;
 		}
 
@@ -2076,10 +2083,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			if (event.getClickedBlock().getType() == Material.GOLD_BLOCK) {
 
-				Block nethBlock1 = Secrets.Secret.NETHBLOCK1.getBlock();
-				Block nethBlock2 = Secrets.Secret.NETHBLOCK2.getBlock();
-				Location someonesHouse = Secrets.Secret.OVWORLDLOC;
-				Block doneBlock = Secrets.Secret.DONEBLOCK.getBlock();
+				Block nethBlock1 = Secret.NETHBLOCK1.getBlock();
+				Block nethBlock2 = Secret.NETHBLOCK2.getBlock();
+				Location someonesHouse = Secret.OVWORLDLOC;
+				Block doneBlock = Secret.DONEBLOCK.getBlock();
 				if (nethBlock2.equals(event.getClickedBlock())
 						|| nethBlock1.equals(event.getClickedBlock())) {
 					event.getPlayer().teleport(someonesHouse);
@@ -2092,7 +2099,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							false)) {
 
 						sendSimulatedPrivateMessage(event.getPlayer(),
-								"§r§d[Server]", Secrets.Secret.CONGRATS);
+								"§r§d[Server]", Secret.CONGRATS);
 						event.getPlayer()
 								.teleport(
 										event.getPlayer().getWorld()
@@ -2134,7 +2141,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						ItemStack is = new ItemStack(Material.PRISMARINE_SHARD,
 								1);
 						ItemMeta im = is.getItemMeta();
-						im.setDisplayName(Secrets.Secret.SECRETWCDNAME);
+						im.setDisplayName(Secret.SECRETWCDNAME);
 
 						List<String> lores = new ArrayList<String>();
 						int seed = podrickCfg.getConfig()
@@ -2150,8 +2157,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 						BookMeta meta = (BookMeta) book.getItemMeta();
 
-						meta.setTitle(Secrets.Secret.MYSTERYBOOK2TITLE);
-						meta.setAuthor(Secrets.Secret.MYSTERYBOOKAUTHOR);
+						meta.setTitle(Secret.MYSTERYBOOK2TITLE);
+						meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
 						String bookText = podrickCfg.getConfig().getString(
 								"BookText2");
 						List<String> pages = new ArrayList<String>();
@@ -2730,7 +2737,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				&& p.getItemInHand().getItemMeta().getDisplayName() != null
 				&& event.getAction() == Action.RIGHT_CLICK_AIR
 				&& p.getItemInHand().getItemMeta().getDisplayName()
-						.equals(Secrets.Secret.SECRETITEM1NAME)) {
+						.equals(Secret.SECRETITEM1NAME)) {
 			event.setCancelled(true);
 			World world = event.getPlayer().getWorld();
 			Block target = event.getPlayer().getTargetBlock(
@@ -3237,7 +3244,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (textCooldown.containsKey(sender.getName())) {
 				Long now = System.currentTimeMillis();
 				Long then = textCooldown.get(sender.getName());
-				if (now - then < 600000) {
+				if (now - then < 10000) {
 					sender.sendMessage("§cYou must wait to text Hal again");
 					return true;
 				}
@@ -3279,7 +3286,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean msg(CommandSender sender, String[] arg3) {
 		if (arg3.length > 0) {
-			if (arg3[0].equalsIgnoreCase(Secrets.Secret.SOMEONESNAME)) {
+			if (arg3[0].equalsIgnoreCase(Secret.SOMEONESNAME)) {
 
 				String s = "§r";
 
@@ -3293,7 +3300,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				sender.sendMessage("§oTo §6§o§l"
-						+ Secrets.Secret.SOMEONESNAMEPROPER + ": " + s);
+						+ Secret.SOMEONESNAMEPROPER + ": " + s);
 				if (sender instanceof Player) {
 					Player p = (Player) sender;
 					if (arg3.length > 1) {
@@ -3303,7 +3310,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							podrickCfg.saveConfig();
 							podrickCfg.reloadConfig();
 							p.sendMessage("§cYou reset the quest!  /msg "
-									+ Secrets.Secret.SOMEONESNAMEPROPER
+									+ Secret.SOMEONESNAMEPROPER
 									+ " again to start over");
 							return true;
 						}
@@ -3338,7 +3345,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		for (Entity e : p.getNearbyEntities(15, 10, 15)) {
 			if (e.getCustomName() != null) {
 				if (e.getCustomName().equals(
-						Secrets.Secret.SOMEONESNAMEWITHCOLOR)) {
+						Secret.SOMEONESNAMEWITHCOLOR)) {
 
 					boolean started = podrickCfg.getConfig().getBoolean(
 							p.getDisplayName() + ".Started", false);
@@ -3397,7 +3404,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
+												Secret.SOMEONESNAMEPROPER,
 												podGreeting
 														+ player.getDisplayName()
 														+ "!  " + podQuery);
@@ -3419,8 +3426,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
-												Secrets.Secret.IFONLY);
+												Secret.SOMEONESNAMEPROPER,
+												Secret.IFONLY);
 									}
 
 								}, 50L);
@@ -3464,8 +3471,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
-												Secrets.Secret.DOINGRESEARCH);
+												Secret.SOMEONESNAMEPROPER,
+												Secret.DOINGRESEARCH);
 									}
 
 								}, 50L);
@@ -3481,8 +3488,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
-												Secrets.Secret.FOUNDWCD);
+												Secret.SOMEONESNAMEPROPER,
+												Secret.FOUNDWCD);
 										giveJournal3(player);
 									}
 								}, 50L);
@@ -3497,8 +3504,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
-												Secrets.Secret.NOTHINGTOREPORT);
+												Secret.SOMEONESNAMEPROPER,
+												Secret.NOTHINGTOREPORT);
 									}
 								}, 50L);
 						return;
@@ -3518,14 +3525,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					if (!finishedArgo) {
 						final Player player = p;
-						final Location l = Secrets.Secret.TOSHLOC;
+						final Location l = Secret.TOSHLOC;
 						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
 								new Runnable() {
 									@Override
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
+												Secret.SOMEONESNAMEPROPER,
 												"Woah!");
 										player.teleport(l);
 									}
@@ -3541,8 +3548,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
-												Secrets.Secret.LATESTUPDS);
+												Secret.SOMEONESNAMEPROPER,
+												Secret.LATESTUPDS);
 										giveJournal4(player);
 									}
 								}, 50L);
@@ -3557,7 +3564,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
+												Secret.SOMEONESNAMEPROPER,
 												"No news yet...");
 									}
 								}, 50L);
@@ -3572,8 +3579,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
-												Secrets.Secret.WHATHAVEDONE);
+												Secret.SOMEONESNAMEPROPER,
+												Secret.WHATHAVEDONE);
 										giveJournal5(player);
 									}
 								}, 50L);
@@ -3588,7 +3595,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										sendSimulatedPrivateMessage(
 												player,
-												Secrets.Secret.SOMEONESNAMEPROPER,
+												Secret.SOMEONESNAMEPROPER,
 												"I just want to tell you good luck.  We're all counting on you");
 										giveJournal4(player);
 									}
@@ -3604,7 +3611,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public void run() {
 				sendSimulatedPrivateMessage(player,
-						Secrets.Secret.SOMEONESNAMEPROPER, "Get closer to me!");
+						Secret.SOMEONESNAMEPROPER, "Get closer to me!");
 			}
 		}, 50L);
 
@@ -3614,8 +3621,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secrets.Secret.JOURNAL4TITLE);
-		meta.setAuthor(Secrets.Secret.SOMEONESNAMEWITHCOLOR);
+		meta.setTitle(Secret.JOURNAL4TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
 
 		String bookText = podrickCfg.getConfig().getString("Journal4");
 		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".ZValue");
@@ -3679,8 +3686,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secrets.Secret.JOURNAL5TITLE);
-		meta.setAuthor(Secrets.Secret.SOMEONESNAMEWITHCOLOR);
+		meta.setTitle(Secret.JOURNAL5TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
 
 		String bookText = podrickCfg.getConfig().getString("Journal5");
 		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".ZValue");
@@ -3746,15 +3753,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (is.getItemMeta().hasLore()) {
 						if (is.getItemMeta().hasDisplayName()
 								&& is.getItemMeta().getDisplayName()
-										.equals(Secrets.Secret.TPA)) {
+										.equals(Secret.TPA)) {
 							int playerSeed = podrickCfg.getConfig().getInt(
 									p.getDisplayName() + ".Seed", -1);
 							int thisItemSeed = Integer.parseInt(is
 									.getItemMeta().getLore().get(0));
 							if (playerSeed == thisItemSeed) {
 								sendSimulatedPrivateMessage(p,
-										Secrets.Secret.SOMEONESNAME,
-										Secrets.Secret.ATPAM);
+										Secret.SOMEONESNAME,
+										Secret.ATPAM);
 								p.getInventory().remove(is);
 								podrickCfg.getConfig()
 										.set(p.getDisplayName()
@@ -3769,16 +3776,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
-		sendSimulatedPrivateMessage(p, Secrets.Secret.SOMEONESNAME,
-				Secrets.Secret.HAVEDISC);
+		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME,
+				Secret.HAVEDISC);
 	}
 
 	protected void giveJournal3(Player p) {
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secrets.Secret.JOURNAL3TITLE);
-		meta.setAuthor(Secrets.Secret.SOMEONESNAMEWITHCOLOR);
+		meta.setTitle(Secret.JOURNAL3TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
 
 		String bookText = podrickCfg.getConfig().getString("Journal3");
 		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".YValue");
@@ -3864,8 +3871,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secrets.Secret.JOURNAL2TITLE);
-		meta.setAuthor(Secrets.Secret.SOMEONESNAMEWITHCOLOR);
+		meta.setTitle(Secret.JOURNAL2TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
 
 		String bookText = podrickCfg.getConfig().getString("Journal2");
 		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".XValue");
@@ -3918,8 +3925,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		meta.setLore(lores);
 		book.setItemMeta(meta);
 
-		sendSimulatedPrivateMessage(p, Secrets.Secret.SOMEONESNAME,
-				Secrets.Secret.HERESACOPY);
+		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME,
+				Secret.HERESACOPY);
 
 		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
 		podrickCfg.getConfig().set(p.getDisplayName() + ".GotJournal2", true);
@@ -3935,15 +3942,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (is.getItemMeta().hasLore()) {
 						if (is.getItemMeta().hasDisplayName()) {
 							if (is.getItemMeta().getDisplayName()
-									.equals(Secrets.Secret.DECCRYST)) {
+									.equals(Secret.DECCRYST)) {
 								int playerSeed = podrickCfg.getConfig().getInt(
 										p.getDisplayName() + ".Seed", -1);
 								int thisItemSeed = Integer.parseInt(is
 										.getItemMeta().getLore().get(0));
 								if (playerSeed == thisItemSeed) {
 									sendSimulatedPrivateMessage(p,
-											Secrets.Secret.SOMEONESNAME,
-											Secrets.Secret.YESTHATSIT);
+											Secret.SOMEONESNAME,
+											Secret.YESTHATSIT);
 									p.getInventory().remove(is);
 									giveMysteryBook(p, podrickCfg.getConfig()
 											.getString("BookText1"));
@@ -3958,7 +3965,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
-		sendSimulatedPrivateMessage(p, Secrets.Secret.SOMEONESNAME,
+		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME,
 				"You found something??  Where?");
 	}
 
@@ -3966,8 +3973,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secrets.Secret.MYSTERYBOOK1TITLE);
-		meta.setAuthor(Secrets.Secret.MYSTERYBOOKAUTHOR);
+		meta.setTitle(Secret.MYSTERYBOOK1TITLE);
+		meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
 		String bookText = string;
 
 		List<String> pages = new ArrayList<String>();
@@ -7606,31 +7613,31 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (finalDungeonKillCount == 20) {
 					for (int i = 0; i < 6; i++) {
 						spawn1EntityInEachCorner(
-								Secrets.Secret.ENTITYTYPEROUND1,
+								Secret.ENTITYTYPEROUND1,
 								new PotionEffect(PotionEffectType.SPEED,
 										999999, 1), new PotionEffect(
 										PotionEffectType.HEAL, 10, 1), "§c"
-										+ Secrets.Secret.ENTITYROUND1NAME);
+										+ Secret.ENTITYROUND1NAME);
 					}
 				}
 
 				if (finalDungeonKillCount == 44) {
 					for (int i = 0; i < 6; i++) {
 						spawn1EntityInEachCorner(
-								Secrets.Secret.ENTITYTYPEROUND2,
+								Secret.ENTITYTYPEROUND2,
 								new PotionEffect(PotionEffectType.SPEED,
 										999999, 0), "§c"
-										+ Secrets.Secret.ENTITYROUND2NAME);
+										+ Secret.ENTITYROUND2NAME);
 					}
 				}
 
 				if (finalDungeonKillCount == 68) {
 					for (int i = 0; i < 4; i++) {
 						spawn1EntityInEachCorner(
-								Secrets.Secret.ENTITYTYPEROUND3,
+								Secret.ENTITYTYPEROUND3,
 								new PotionEffect(PotionEffectType.SPEED,
 										999999, 4), "§c"
-										+ Secrets.Secret.ENTITYROUND3NAME);
+										+ Secret.ENTITYROUND3NAME);
 					}
 
 				}
@@ -7638,40 +7645,40 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (finalDungeonKillCount == 84) {
 					for (int i = 0; i < 2; i++) {
 						spawn1EntityInEachCorner(
-								Secrets.Secret.ENTITYTYPEROUND4,
+								Secret.ENTITYTYPEROUND4,
 								new PotionEffect(
 										PotionEffectType.INCREASE_DAMAGE,
 										999999, 2), "§c"
-										+ Secrets.Secret.ENTITYROUND4NAME);
+										+ Secret.ENTITYROUND4NAME);
 					}
 				}
 
 				if (finalDungeonKillCount == 92) {
 					for (int i = 0; i < 2; i++) {
 						spawn1EntityInEachCornerWithDiaArmor(
-								Secrets.Secret.ENTITYTYPEROUND5,
+								Secret.ENTITYTYPEROUND5,
 								new PotionEffect(PotionEffectType.SPEED,
 										999999, 0), "§c"
-										+ Secrets.Secret.ENTITYROUND5NAME);
+										+ Secret.ENTITYROUND5NAME);
 					}
 				}
 
 				if (finalDungeonKillCount == 100) {
 					for (int i = 0; i < 3; i++) {
 						spawn1EntityInEachCornerWithDiaArmor(
-								Secrets.Secret.ENTITYTYPEROUND6,
+								Secret.ENTITYTYPEROUND6,
 								new PotionEffect(PotionEffectType.SPEED,
 										999999, 0), "§c"
-										+ Secrets.Secret.ENTITYTYPEROUND6);
+										+ Secret.ENTITYTYPEROUND6);
 					}
 				}
 
 				if (finalDungeonKillCount == 112) {
 					for (int i = 0; i < 1; i++) {
-						spawn1EntityInCenter(Secrets.Secret.ENTITYTYPEROUND7,
+						spawn1EntityInCenter(Secret.ENTITYTYPEROUND7,
 								new PotionEffect(PotionEffectType.SPEED,
 										999999, 0), "§c"
-										+ Secrets.Secret.ENTITYROUND7NAME);
+										+ Secret.ENTITYROUND7NAME);
 					}
 				}
 
@@ -8270,7 +8277,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void EInteractEvent(PlayerInteractEntityEvent event) {
 		if (event.getRightClicked().getCustomName() != null) {
 			if (event.getRightClicked().getCustomName()
-					.equals(Secrets.Secret.NAMEOFANNPC)) {
+					.equals(Secret.NAMEOFANNPC)) {
 
 				if (podrickCfg.getConfig().getBoolean(
 						event.getPlayer().getDisplayName() + ".Started", false) == true) {
@@ -8286,7 +8293,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							switch (type) {
 							case 0:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F1)
+										.equals(Secret.F1)
 										&& event.getPlayer().getItemInHand()
 												.getDurability() == 2) {
 									successfulFeedE(event.getPlayer());
@@ -8296,7 +8303,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								break;
 							case 1:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F1)
+										.equals(Secret.F1)
 										&& event.getPlayer().getItemInHand()
 												.getDurability() == 1) {
 									successfulFeedE(event.getPlayer());
@@ -8305,7 +8312,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								break;
 							case 2:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F1)
+										.equals(Secret.F1)
 										&& event.getPlayer().getItemInHand()
 												.getDurability() == 3) {
 									successfulFeedE(event.getPlayer());
@@ -8314,28 +8321,28 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								break;
 							case 3:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F2)) {
+										.equals(Secret.F2)) {
 									successfulFeedE(event.getPlayer());
 									return;
 								}
 								break;
 							case 4:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F3)) {
+										.equals(Secret.F3)) {
 									successfulFeedE(event.getPlayer());
 									return;
 								}
 								break;
 							case 5:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F4)) {
+										.equals(Secret.F4)) {
 									successfulFeedE(event.getPlayer());
 									return;
 								}
 								break;
 							case 6:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F5)) {
+										.equals(Secret.F5)) {
 									successfulFeedE(event.getPlayer());
 									return;
 								}
@@ -8343,20 +8350,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 							case 7:
 								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secrets.Secret.F6)) {
+										.equals(Secret.F6)) {
 									successfulFeedE(event.getPlayer());
 									return;
 								}
 								break;
 							}
 							sendSimulatedPrivateMessage(event.getPlayer(),
-									Secrets.Secret.NAMEOFANNPCWOCOLOR,
-									Secrets.Secret.HGY);
+									Secret.NAMEOFANNPCWOCOLOR,
+									Secret.HGY);
 							return;
 						} else {
 							sendSimulatedPrivateMessage(event.getPlayer(),
-									Secrets.Secret.NAMEOFANNPCWOCOLOR,
-									Secrets.Secret.BGY);
+									Secret.NAMEOFANNPCWOCOLOR,
+									Secret.BGY);
 						}
 
 					}
@@ -8371,7 +8378,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void AInteractEvent(PlayerInteractEntityEvent event) {
 		if (event.getRightClicked().getCustomName() != null) {
 			if (event.getRightClicked().getCustomName()
-					.equals(Secrets.Secret.NAMENPC2COLOR)) {
+					.equals(Secret.NAMENPC2COLOR)) {
 				if (podrickCfg.getConfig().getBoolean(
 						event.getPlayer().getDisplayName() + ".GotJournal3",
 						false)) {
@@ -8387,7 +8394,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 											.getItemInHand()
 											.getItemMeta()
 											.getDisplayName()
-											.equals(Secrets.Secret.SECRETWCDNAME)) {
+											.equals(Secret.SECRETWCDNAME)) {
 										if (event.getPlayer().getItemInHand()
 												.getItemMeta().hasLore()) {
 											int thisItemSeed = Integer
@@ -8412,8 +8419,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 					sendSimulatedPrivateMessage(event.getPlayer(),
-							Secrets.Secret.NAMENPC2NOCOLOR,
-							Secrets.Secret.WONTGET);
+							Secret.NAMENPC2NOCOLOR,
+							Secret.WONTGET);
 					return;
 				}
 			}
@@ -8427,16 +8434,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				-1105.003, 116.00, -2867.7);
 
 		final World w = p.getWorld();
-		final String name = Secrets.Secret.NAMENPC2COLOR;
-		final String scared = Secrets.Secret.OHASNST;
-		final String thndrsn = Secrets.Secret.OHATSNST;
-		final String done = Secrets.Secret.MKSTOP;
+		final String name = Secret.NAMENPC2COLOR;
+		final String scared = Secret.OHASNST;
+		final String thndrsn = Secret.OHATSNST;
+		final String done = Secret.MKSTOP;
 
 		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 			@Override
 			public void run() {
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-						Secrets.Secret.WTHR);
+						Secret.WTHR);
 				player.getWorld().playSound(player.getLocation(),
 						Sound.AMBIENCE_CAVE, 100, 1);
 			}
@@ -8473,7 +8480,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (e instanceof LivingEntity) {
 						if (e.getCustomName() != null) {
 							if (e.getCustomName().equals(
-									Secrets.Secret.NAMENPC2COLOR)) {
+									Secret.NAMENPC2COLOR)) {
 								w.strikeLightningEffect(e.getLocation());
 								return;
 							}
@@ -8486,8 +8493,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secrets.Secret.MYSTERYBOOK3TITLE);
-		meta.setAuthor(Secrets.Secret.MYSTERYBOOKAUTHOR);
+		meta.setTitle(Secret.MYSTERYBOOK3TITLE);
+		meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
 		String bookText = podrickCfg.getConfig().getString("BookText3");
 
 		List<String> pages = new ArrayList<String>();
@@ -8524,8 +8531,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		book.setItemMeta(meta);
 
 		final ItemStack bookF = book;
-		final Location bookLoc = Secrets.Secret.B3LOCLOC;
-		final Location loc = Secrets.Secret.B3LOC;
+		final Location bookLoc = Secret.B3LOCLOC;
+		final Location loc = Secret.B3LOC;
 		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 			@Override
 			public void run() {
@@ -8538,7 +8545,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		ItemStack is = new ItemStack(Material.GHAST_TEAR);
 		ItemMeta im = is.getItemMeta();
-		im.setDisplayName(Secrets.Secret.TPA);
+		im.setDisplayName(Secret.TPA);
 
 		List<String> lores = new ArrayList<String>();
 
@@ -8577,7 +8584,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					if (is.getItemMeta().hasDisplayName()
 							&& is.getItemMeta().getDisplayName()
-									.equals(Secrets.Secret.ss)) {
+									.equals(Secret.ss)) {
 						int playerSeed = podrickCfg.getConfig().getInt(
 								event.getPlayer().getDisplayName() + ".Seed",
 								-1);
@@ -8593,7 +8600,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							if (event.getBlock().getX() == x
 									&& event.getBlock().getZ() == z) {
 								sendSimulatedPrivateMessage(event.getPlayer(),
-										Secrets.Secret.MYSTERYBOOKAUTHOR,
+										Secret.MYSTERYBOOKAUTHOR,
 										" §rTh§ka§ra§kll§rnk y§kl§rou§kljk");
 								event.getBlock()
 										.getLocation()
@@ -8626,7 +8633,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 				BookMeta meta = (BookMeta) book.getItemMeta();
 
-				meta.setTitle(Secrets.Secret.TFP);
+				meta.setTitle(Secret.TFP);
 				meta.setAuthor("§d[Server]");
 
 				String bookText = podrickCfg.getConfig().getString(
@@ -8669,7 +8676,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				receivingChest.getInventory().addItem(book);
 				ItemStack is = new ItemStack(Material.SOUL_SAND);
 				ItemMeta im = is.getItemMeta();
-				im.setDisplayName(Secrets.Secret.DSS);
+				im.setDisplayName(Secret.DSS);
 				is.setItemMeta(im);
 				receivingChest.getInventory().addItem(is);
 
@@ -8687,7 +8694,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				ItemStack is = event.getPlayer().getItemInHand();
 				if (is.getItemMeta().hasDisplayName()
 						&& is.getItemMeta().getDisplayName()
-								.equals(Secrets.Secret.DSS)) {
+								.equals(Secret.DSS)) {
 					event.setCancelled(true);
 					event.getPlayer().setItemInHand(null);
 					List<String> names = new ArrayList<String>() {
@@ -9062,7 +9069,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getRightClicked().getCustomName() != null) {
 
 			if (event.getRightClicked().getCustomName()
-					.equals(Secrets.Secret.NPCNETHCOL)) {
+					.equals(Secret.NPCNETHCOL)) {
 				if (podrickCfg.getConfig()
 						.getBoolean(
 								event.getPlayer().getDisplayName()
@@ -9126,35 +9133,35 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						String hint = "";
 						switch (type) {
 						case 0:
-							hint = Secrets.Secret.H1;
+							hint = Secret.H1;
 							break;
 						case 1:
-							hint = Secrets.Secret.H2;
+							hint = Secret.H2;
 							break;
 						case 2:
-							hint = Secrets.Secret.H3;
+							hint = Secret.H3;
 							break;
 						case 3:
-							hint = Secrets.Secret.H4;
+							hint = Secret.H4;
 							break;
 						case 4:
-							hint = Secrets.Secret.H5;
+							hint = Secret.H5;
 							break;
 						case 5:
-							hint = Secrets.Secret.H6;
+							hint = Secret.H6;
 							break;
 						case 6:
-							hint = Secrets.Secret.H7;
+							hint = Secret.H7;
 							break;
 						}
 
 						sendSimulatedPrivateMessage(event.getPlayer(),
-								Secrets.Secret.NPCNETHNOCOL, Secrets.Secret.IDW
+								Secret.NPCNETHNOCOL, Secret.IDW
 										+ hint);
 
 					} else {
 						sendSimulatedPrivateMessage(event.getPlayer(),
-								Secrets.Secret.NPCNETHNOCOL, Secrets.Secret.BSE);
+								Secret.NPCNETHNOCOL, Secret.BSE);
 					}
 				}
 				event.setCancelled(true);
@@ -9210,7 +9217,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public void run() {
 				sendSimulatedPrivateMessage(player,
-						Secrets.Secret.NAMEOFANNPCWOCOLOR, Secrets.Secret.SSE);
+						Secret.NAMEOFANNPCWOCOLOR, Secret.SSE);
 				if (player.getItemInHand().getAmount() != 1) {
 					player.getItemInHand().setAmount(
 							player.getItemInHand().getAmount() - 1);
@@ -9220,7 +9227,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				ItemStack is = new ItemStack(Material.PRISMARINE_CRYSTALS);
 				ItemMeta im = is.getItemMeta();
-				im.setDisplayName(Secrets.Secret.DECCRYST);
+				im.setDisplayName(Secret.DECCRYST);
 
 				im.setLore(lore);
 				is.setItemMeta(im);
@@ -9251,7 +9258,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public void run() {
 				sendSimulatedPrivateMessage(player,
-						Secrets.Secret.NPCNETHNOCOL, Secrets.Secret.SSA);
+						Secret.NPCNETHNOCOL, Secret.SSA);
 				if (player.getItemInHand().getAmount() != 1) {
 					player.getItemInHand().setAmount(
 							player.getItemInHand().getAmount() - 1);
@@ -9261,7 +9268,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				ItemStack is = new ItemStack(Material.SOUL_SAND);
 				ItemMeta im = is.getItemMeta();
-				im.setDisplayName(Secrets.Secret.ss);
+				im.setDisplayName(Secret.ss);
 
 				im.setLore(lore);
 				is.setItemMeta(im);
