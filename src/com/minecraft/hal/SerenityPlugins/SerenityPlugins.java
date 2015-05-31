@@ -3254,34 +3254,40 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				s += arg3[i] + " ";
 			}
 
-			final String str = s;
-			final String sendName = sender.getName();
-			final String smtp = emailCfg.getConfig().getString("SMTP");
-			final String emailFrom = emailCfg.getConfig().getString("From");
-			final String emailTo = emailCfg.getConfig().getString("To");
-			final String password = emailCfg.getConfig().getString("Password");
 
-			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-				@Override
-				public void run() {
-					SMTP.Email email = SMTP.createEmptyEmail();
-					email.add("Content-Type", "text/html");
-					email.from(sendName, emailFrom);
-					email.to("Hal", emailTo);
-					email.subject(sendName);
-					email.body(str);
-
-					SMTP.sendEmail(smtp, emailFrom, password, email, false);
-				}
-			});
+			sendATextToHal(sender.getName(), s);
 
 			sender.sendMessage("§6You texted Hal's cell phone! He should receive your message soon!");
-			textCooldown.put(sendName, System.currentTimeMillis());
+			textCooldown.put(sender.getName(), System.currentTimeMillis());
 			return true;
 		} else {
 			sender.sendMessage("§cYou can only text Hal after you've played for 12 hours");
 			return true;
 		}
+	}
+	
+	private void sendATextToHal(String from, String message){
+		
+		final String str = message;
+		final String sendName = from;
+		final String smtp = emailCfg.getConfig().getString("SMTP");
+		final String emailFrom = emailCfg.getConfig().getString("From");
+		final String emailTo = emailCfg.getConfig().getString("To");
+		final String password = emailCfg.getConfig().getString("Password");
+
+		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				SMTP.Email email = SMTP.createEmptyEmail();
+				email.add("Content-Type", "text/html");
+				email.from(sendName, emailFrom);
+				email.to("Hal", emailTo);
+				email.subject(sendName);
+				email.body(str);
+
+				SMTP.sendEmail(smtp, emailFrom, password, email, false);
+			}
+		});
 	}
 
 	private boolean msg(CommandSender sender, String[] arg3) {
@@ -4067,6 +4073,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 		return false;
+	}
+	
+	private boolean MsgViaText(String rec, String msg){
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (p.getName().toUpperCase().contains(rec.toUpperCase())) {
+				p.sendMessage("§oText from Hal: §r" + msg);
+				sendATextToHal("YOU SENT", msg);
+				return true;
+			}
+		}
+		
+		return true;
 	}
 
 	/*
@@ -5585,6 +5603,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				getLogger().info(s);
 				return true;
+			}
+			
+			if (arg3[0].equalsIgnoreCase("txt")) {
+				String rec = arg3[1];
+				String msg = "";
+				for (int i = 2; i < arg3.length; i++) {
+					msg += arg3[i] + " ";
+				}
+				return MsgViaText(rec, msg);
 			}
 
 			if (arg3.length == 1) {
