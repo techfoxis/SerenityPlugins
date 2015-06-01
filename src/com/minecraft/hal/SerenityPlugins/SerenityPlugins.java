@@ -272,7 +272,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public short partyOffset = 0;
 
 	public Secrets Secret;
-	
+
 	public Inventory AFKInv;
 
 	// public String[] betters;
@@ -282,9 +282,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onEnable() {
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
-		
-		AFKInv=Bukkit.createInventory(null, 9, "AFK INVENTORY");
-		
+
+		AFKInv = Bukkit.createInventory(null, 81, "AFK INVENTORY");
+
 		AFKInv.setMaxStackSize(0);
 
 		try {
@@ -2715,11 +2715,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}
-		
-		getLogger().info("Current: " + ((double) sleepingIgnored / (double)onlineCount) + "");
+
+		getLogger().info(
+				"Current: " + ((double) sleepingIgnored / (double) onlineCount)
+						+ "");
 
 		if (!sleepers.isEmpty()) {
-			if ((double) sleepingIgnored / (double)onlineCount > 0.5) {
+			if ((double) sleepingIgnored / (double) onlineCount > 0.5) {
 				Bukkit.getLogger().info(
 						"Vote passed: setting all to sleep ignored");
 				for (Player p : Bukkit.getServer().getOnlinePlayers()) {
@@ -4256,8 +4258,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean chunk(CommandSender sender, String[] arg3) {
 		if (arg3.length > 0) {
 			if (arg3[0].equalsIgnoreCase("claim")) {
-
+				
 				Player p = Bukkit.getPlayer(sender.getName());
+				
+				if(getPlayerMinutes(p.getDisplayName()) < 60){
+					p.sendMessage("§cYou cannot claim an area yet!  Stick around");
+					return true;
+				}
 
 				boolean alreadyPrepped = false;
 				for (PlayerProtect pp : preppedToProtectArea) {
@@ -5027,8 +5034,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							return;
 						}
 
-						if (newProtArea.xDiff() < 11
-								|| newProtArea.zDiff() < 11) {
+						if (newProtArea.xDiff() < 10
+								|| newProtArea.zDiff() < 10) {
 
 							String msg = getTranslationLanguage(
 									event.getPlayer(),
@@ -5763,6 +5770,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						sender.sendMessage(p.getDisplayName() + ": "
 								+ cp.getHandle().ping + "ms");
 					}
+				}
+
+				if (arg3[0].equals("online")) {
+					String s = "";
+					if (Bukkit.getOnlinePlayers().size() > 0) {
+
+						for (Player p : Bukkit.getOnlinePlayers()) {
+							s += p.getName() + " ";
+						}
+					}else{ s = "Nobody is online";
+					}
+					
+					sendATextToHal("SerenityPlugins", s);
+					
+			
 				}
 
 				if (arg3[0].equals("reloadcfg")) {
@@ -6511,7 +6533,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (votingForDay) {
 					if (sender instanceof Player) {
 						int total = 0;
-						
+
 						((Player) sender).getPlayer().setSleepingIgnored(true);
 						int count = 0;
 						for (Player p : Bukkit.getOnlinePlayers()) {
@@ -6522,9 +6544,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								}
 							}
 						}
-						
-						double percentage = (double) count
-								/ total;
+
+						double percentage = (double) count / total;
 						percentage *= 100.0;
 
 						String result = new DecimalFormat("##.##")
@@ -9324,13 +9345,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			String message) {
 		player.sendMessage("§oFrom §6§o§l" + displayName + ": §r" + message);
 	}
-	
+
 	@EventHandler
 	private void AFKInvEvent(InventoryClickEvent event) {
-		if(event.getInventory().getName().contains("AFK INVENTORY")){
+		if (event.getInventory().getName().contains("AFK INVENTORY")) {
 			event.setCancelled(true);
 		}
-		
+
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
