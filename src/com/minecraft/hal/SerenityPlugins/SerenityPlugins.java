@@ -280,6 +280,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public Inventory AFKInv;
 
+	public boolean opParticles = false;
+
 	// public String[] betters;
 	// public String[] horses;
 
@@ -734,11 +736,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					celebrate(p);
 				}
 
-				for (Player p : Bukkit.getOnlinePlayers()) {
-					if (p.isOp()) {
-						doHalSpook(p);
+				if (opParticles) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (p.isOp()) {
+							doHalSpook(p);
+						}
 					}
 				}
+				
 				Long now = System.currentTimeMillis();
 				if (lags.size() > 9) {
 					lags.remove(0);
@@ -963,9 +968,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					List<Player> players = new ArrayList<Player>();
 					for (Player p : Bukkit.getOnlinePlayers()) {
-						 if (!p.isOp()) {
-						players.add(p);
-						 }
+						if (!p.isOp()) {
+							players.add(p);
+						}
 					}
 
 					if (!players.isEmpty()) {
@@ -1008,8 +1013,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									.125F, 25, 25, loc, players);
 							break;
 						case 9:
-							ParticleEffect.EXPLOSION_NORMAL.display(.125F, .50F,
-									.125F, 0, 25, loc, players);
+							ParticleEffect.EXPLOSION_NORMAL.display(.125F,
+									.50F, .125F, 0, 25, loc, players);
 							break;
 						case 10:
 							ParticleEffect.LAVA.display(.125F, .25F, .125F, 0,
@@ -2246,7 +2251,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ent.remove();
 		return out;
 	}
-	
 
 	/*
 	 * @EventHandler public void onBetItemEvent(InventoryClickEvent event) { if
@@ -3423,7 +3427,49 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return links(sender, arg3);
 		}
 
+		else if (commandLabel.equalsIgnoreCase("mytime")) {
+			return mytime(sender, arg3);
+		}
+
+		else if (commandLabel.equalsIgnoreCase("map")) {
+			return map(sender, arg3);
+		}
+
 		return false;
+	}
+
+	private boolean map(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player) {
+			Player p = (Player) sender;
+			if (p.getLocation().getWorld().getName().contains("world_nether")) {
+				int x = (int) p.getLocation().getX() * 8;
+				int z = (int) p.getLocation().getZ() * 8;
+				
+				String html = "http://serenity-mc.org/map/#/" + x + "/64/" + z
+						+ "/max/0/0";
+				p.sendMessage("§3If you build a portal, you should exit near this area:  \n§6"
+						+ html);
+				return true;
+			}
+
+			if (p.getLocation().getWorld().getName().equals("world")) {
+				int x = (int) p.getLocation().getX();
+				int z = (int) p.getLocation().getZ();
+				int y =(int) p.getLocation().getY();
+				String html = "http://serenity-mc.org/map/#/" + x + "/" + y + "/" + z
+						+ "/max/0/0";
+				p.sendMessage("§3You are here:  \n§6" + html);
+				return true;
+			}
+
+			return true;
+		}
+		return false;
+	}
+
+	private boolean mytime(CommandSender sender, String[] arg3) {
+		sender.sendMessage(getHoursAndMinutes(sender.getName()));
+		return true;
 	}
 
 	private boolean links(CommandSender sender, String[] arg3) {
@@ -4417,33 +4463,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return true;
 				}
 
-				if (arg3[0].equals("map")) {
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						if (p.getLocation().getWorld().getName()
-								.contains("world_nether")) {
-							int x = (int) p.getLocation().getX() * 8;
-							int z = (int) p.getLocation().getZ() * 8;
-							String html = "http://serenity-mc.org/map/#/" + x
-									+ "/64/" + z + "/max/0/0";
-							p.sendMessage("§3If you build a portal, you should exit near this area:  \n§6"
-									+ html);
-							return true;
-						}
-
-						if (p.getLocation().getWorld().getName()
-								.equals("world")) {
-							int x = (int) p.getLocation().getX();
-							int z = (int) p.getLocation().getZ();
-							String html = "http://serenity-mc.org/map/#/" + x
-									+ "/64/" + z + "/max/0/0";
-							p.sendMessage("§3You are here:  \n§6" + html);
-							return true;
-						}
-
-						return true;
-					}
-				}
 			}
 
 			if (arg3.length == 1) {
@@ -5976,6 +5995,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
+				if (arg3[0].equals("eff")) {
+					opParticles = !opParticles;
+					sender.sendMessage("Particles on = " + opParticles);
+					return true;
+				}
+
 				if (arg3[0].equals("remove")) {
 					if (sender instanceof Player) {
 						Player p = (Player) sender;
@@ -5985,6 +6010,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
+				/*
 				if (arg3[0].equals("golf")) {
 					if (sender instanceof Player) {
 						Player p = (Player) sender;
@@ -5996,7 +6022,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						p.getInventory().addItem(is);
 						p.setWalkSpeed(.2F);
 					}
-				}
+				}*/
 
 				if (arg3[0].equals("ping")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
@@ -6847,10 +6873,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean getTime(CommandSender sender, String[] arg3) {
 		if (sender.hasPermission("SerenityPlugins.gettime")) {
-			if (arg3.length > 0) {
-				sender.sendMessage(getHoursAndMinutes(sender.getName()));
-				return true;
-			}
+
 			Long time = Bukkit.getWorld("world").getTime();
 
 			String msg = getTranslationLanguage(sender,
