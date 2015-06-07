@@ -281,6 +281,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public Inventory AFKInv;
 
 	public boolean opParticles = false;
+	public boolean opParticlesDeb = false;
 
 	// public String[] betters;
 	// public String[] horses;
@@ -728,7 +729,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			Boolean b = false;
 			int watchDog = 0;
 			int minute = 0;
-			boolean thisHalf = false;
 
 			@Override
 			public void run() {
@@ -743,7 +743,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 				}
-				
+
 				Long now = System.currentTimeMillis();
 				if (lags.size() > 9) {
 					lags.remove(0);
@@ -784,7 +784,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							}
 						}
 						leaderboardCfg.saveConfig();
-						leaderboardCfg.reloadConfig();
 
 						try {
 							checkAndClearAllChunks();
@@ -904,7 +903,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
 					event.setCancelled(true);
 					specEff++;
-					if (specEff > 10) {
+					if (specEff > 11) {
 						specEff = 0;
 					}
 				}
@@ -914,7 +913,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					event.setCancelled(true);
 					specEff--;
 					if (specEff < 0) {
-						specEff = 10;
+						specEff = 11;
 					}
 				}
 
@@ -952,6 +951,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				case 10:
 					event.getPlayer().sendMessage("§cLava");
 					break;
+				case 11:
+					event.getPlayer().sendMessage("§8Smoke monster from LOST");
+					break;
 				}
 			}
 		}
@@ -968,7 +970,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					List<Player> players = new ArrayList<Player>();
 					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (!p.isOp()) {
+						if (!p.isOp() || opParticlesDeb) {
 							players.add(p);
 						}
 					}
@@ -1019,6 +1021,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						case 10:
 							ParticleEffect.LAVA.display(.125F, .25F, .125F, 0,
 									25, loc, players);
+							break;
+						case 11:
+							ParticleEffect.SMOKE_LARGE.display(.125F, .50F,
+									.125F, 0, 0, loc, players);
 							break;
 						}
 					}
@@ -1449,9 +1455,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (Bukkit.getOnlinePlayers().size() > 0) {
 			playtimeCfg.saveConfig();
-			playtimeCfg.reloadConfig();
 			whoIsOnline.saveConfig();
-			whoIsOnline.reloadConfig();
 		}
 	}
 
@@ -1564,6 +1568,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 			specEff = 0;
+			opParticlesDeb = false;
+			opParticles = false;
 			event.getPlayer().setGameMode(GameMode.CREATIVE);
 			event.getPlayer().setDisplayName("[Server]");
 			event.setJoinMessage(null);
@@ -1962,6 +1968,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (!event.getPlayer().isOp()) {
 			event.setJoinMessage(getChatColor(event.getPlayer())
 					+ event.getJoinMessage().substring(2));
+		}
+
+		if (!event.getPlayer().isOp()) {
+			String date = sdtf.format(new Date());
+			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
+					date);
+			whoIsOnline.saveConfig();
 		}
 	}
 
@@ -3444,7 +3457,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (p.getLocation().getWorld().getName().contains("world_nether")) {
 				int x = (int) p.getLocation().getX() * 8;
 				int z = (int) p.getLocation().getZ() * 8;
-				
+
 				String html = "http://serenity-mc.org/map/#/" + x + "/64/" + z
 						+ "/max/0/0";
 				p.sendMessage("§3If you build a portal, you should exit near this area:  \n§6"
@@ -3455,9 +3468,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (p.getLocation().getWorld().getName().equals("world")) {
 				int x = (int) p.getLocation().getX();
 				int z = (int) p.getLocation().getZ();
-				int y =(int) p.getLocation().getY();
-				String html = "http://serenity-mc.org/map/#/" + x + "/" + y + "/" + z
-						+ "/max/0/0";
+				int y = (int) p.getLocation().getY();
+				String html = "http://serenity-mc.org/map/#/" + x + "/" + y
+						+ "/" + z + "/max/0/0";
 				p.sendMessage("§3You are here:  \n§6" + html);
 				return true;
 			}
@@ -5994,10 +6007,42 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage(s);
 
 				}
+				
+
+				if (arg3[0].equals("cleanonline")) {
+					for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+						if (!op.isWhitelisted()) {
+							if (!op.isOp()) {
+								if (leaderboardCfg.getConfig().get(
+										op.getName(), null) != null) {
+									leaderboardCfg.getConfig().set(
+											op.getName(), null);
+									getLogger().info("Cleaning " + op.getName() + " from leaderboard");
+								}
+								
+								if (whoIsOnline.getConfig().get(
+										op.getName(), null) != null) {
+									whoIsOnline.getConfig().set(
+											op.getName(), null);
+									getLogger().info("Cleaning " + op.getName() + " from who is online");
+								}
+							}
+						}
+					}
+					whoIsOnline.saveConfig();
+					leaderboardCfg.saveConfig();
+					return true;
+				}
 
 				if (arg3[0].equals("eff")) {
 					opParticles = !opParticles;
 					sender.sendMessage("Particles on = " + opParticles);
+					return true;
+				}
+
+				if (arg3[0].equals("deb")) {
+					opParticlesDeb = !opParticlesDeb;
+					sender.sendMessage("You will see = " + opParticlesDeb);
 					return true;
 				}
 
@@ -6011,18 +6056,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				/*
-				if (arg3[0].equals("golf")) {
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						ItemStack is = new ItemStack(Material.SNOW_BALL);
-						ItemMeta im = is.getItemMeta();
-						im.setDisplayName("§6" + p.getDisplayName()
-								+ "'s Golf Ball");
-						is.setItemMeta(im);
-						p.getInventory().addItem(is);
-						p.setWalkSpeed(.2F);
-					}
-				}*/
+				 * if (arg3[0].equals("golf")) { if (sender instanceof Player) {
+				 * Player p = (Player) sender; ItemStack is = new
+				 * ItemStack(Material.SNOW_BALL); ItemMeta im =
+				 * is.getItemMeta(); im.setDisplayName("§6" + p.getDisplayName()
+				 * + "'s Golf Ball"); is.setItemMeta(im);
+				 * p.getInventory().addItem(is); p.setWalkSpeed(.2F); } }
+				 */
 
 				if (arg3[0].equals("ping")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
@@ -6076,10 +6116,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return true;
 				}
 
-				if (arg3[0].equals("clean")) {
-					cleanConfig();
-					return true;
-				}
 				if (arg3[0].equals("clear")) {
 					for (int i = 0; i < 50; i++)
 						sender.sendMessage("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
@@ -6292,17 +6328,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
-				if (arg3[0].equals("cleanleader")) {
-					for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
-						if (!op.isWhitelisted()) {
-							if (!op.isOp()) {
-								leaderboardCfg.getConfig().set(op.getName(),
-										null);
-								whoIsOnline.getConfig().set(op.getName(), null);
-							}
-						}
-					}
-				}
 
 				if (arg3[0].equals("secretsheep")) {
 					if (sender instanceof Player) {
@@ -6311,16 +6336,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.spawnEntity(p.getLocation(), EntityType.SHEEP)
 								.setCustomName("§6" + arg3[1]);
 					}
-				}
-
-				if (arg3[0].equals("clean")) {
-					cleanConfig(arg3[1]);
-					return true;
-				}
-
-				if (arg3[0].equals("funban")) {
-					funBan(arg3[1]);
-					return true;
 				}
 
 				if (arg3[0].equals("time")) {
@@ -6420,17 +6435,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						.setExperience(exp);
 			}
 		}, (long) time);
-	}
-
-	private void funBan(String string) {
-		OfflinePlayer op = Bukkit.getOfflinePlayer(string);
-		op.setBanned(true);
-		op.setWhitelisted(false);
-		if (op.isOnline()) {
-			Player p = Bukkit.getPlayer(string);
-			p.kickPlayer("You've been banned");
-		}
-		cleanConfig(string);
 	}
 
 	private boolean gcToggle(CommandSender sender, String[] arg3) {
@@ -8420,85 +8424,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		} else {
 			// Bukkit.getLogger().info("All clear! (" + elapsed + "ms.)");
 		}
-	}
-
-	public void cleanConfig() {
-		for (OfflinePlayer op : Bukkit.getServer().getOfflinePlayers()) {
-			if (!op.isWhitelisted()) {
-				if (!op.isOp()) {
-
-					if (getPlayerMinutes(op.getName()) != 0) {
-						Bukkit.getLogger().info(
-								"You should clean " + op.getName()
-										+ " because they are not whitelisted");
-						// cleanConfig(op.getName());
-					}
-				}
-			}
-
-			if (op.isWhitelisted()) {
-				if (getPlayerMinutes(op.getName()) < 60) {
-					if (getLastSeen(op.getName()) > 10080) {
-						Bukkit.getLogger().info(
-								"Unwhitelisting " + op.getName());
-						Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-								"whitelist remove " + op.getName());
-						// cleanConfig(op.getName());
-					}
-				}
-
-				if (getPlayerMinutes(op.getName()) < 180) {
-					if (getLastSeen(op.getName()) > 20160) {
-						Bukkit.getLogger().info(
-								"Unwhitelisting " + op.getName());
-						Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-								"whitelist remove " + op.getName());
-						// cleanConfig(op.getName());
-					}
-				}
-
-				if (getPlayerMinutes(op.getName()) < 720) {
-					if (getLastSeen(op.getName()) > 43200) {
-						Bukkit.getLogger().info(
-								"Unwhitelisting " + op.getName());
-						Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-								"whitelist remove " + op.getName());
-						// cleanConfig(op.getName());
-					}
-				}
-
-				if (getPlayerMinutes(op.getName()) >= 720) {
-					if (getLastSeen(op.getName()) > 86400) {
-						Bukkit.getLogger().info(
-								"Unwhitelisting " + op.getName());
-						Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-								"whitelist remove " + op.getName());
-						// cleanConfig(op.getName());
-					}
-				}
-			}
-
-		}
-
-		saveConfig();
-		reloadConfig();
-	}
-
-	public void cleanConfig(String name) {
-		setNull(playtimeCfg, "Playtime", name);
-		setNull(statusCfg, "Status", name);
-		setNull(mailboxCfg, "Mailboxes", name);
-		setNull(chatcolorCfg, "ChatColor", name);
-		setNull(fireworksCfg, "Fireworks", name);
-		setNull(protectedAreasCfg, "ProtectedAreas", name);
-	}
-
-	public void setNull(ConfigAccessor config, String category, String name) {
-		config.getConfig().set(category + "." + name, null);
-		Bukkit.broadcastMessage(category + "." + name);
-		config.saveConfig();
-		config.reloadConfig();
-		// this.getConfig().set(category + "." + name, null);
 	}
 
 	public int getPlayerMinutes(String name) {
