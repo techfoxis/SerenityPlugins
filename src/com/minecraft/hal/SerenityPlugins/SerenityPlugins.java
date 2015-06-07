@@ -141,9 +141,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
-	public SimpleDateFormat sdtf = new SimpleDateFormat("EEE, MMM d, yyyy hh:mm:ss a z");
-	
-	
+	public SimpleDateFormat sdtf = new SimpleDateFormat(
+			"EEE, MMM d, yyyy hh:mm:ss a z");
+
 	public Date AprilFoolsday = new Date();
 	public boolean isAprilFoolsDay = false;
 
@@ -156,8 +156,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public List<Player> localChatters;
 	public Set<PlayerStatus> playerStatuses;
 	public List<FireWorkShow> fireworkShowLocations;
-	public boolean flameOn;
-	public boolean purpOn = false;
+
+	public short specEff = 0;
+
 	public final List<String> PUBLIC_MAILBOXES = new ArrayList<String>() {
 		{
 			// todo: make mailboxes automatically public if they begin with #...
@@ -226,9 +227,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	};
 
-	public List<Player> invisiblePlayers;
-	public List<Player> flamingPlayers;
-	public boolean readyToLogInAsServer;
 	public List<Player> deafPlayers;
 	public boolean serverChatting;
 	public List<Ignoring> ignorers;
@@ -340,8 +338,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		racers = new HashMap<String, Long>();
 
-		flameOn = false;
-
 		mailboxCfg = new ConfigAccessor(this, "mailboxes.yml");
 		playtimeCfg = new ConfigAccessor(this, "playtime.yml");
 		statusCfg = new ConfigAccessor(this, "status.yml");
@@ -369,9 +365,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		localChatters = new ArrayList<Player>();
 		playerStatuses = new TreeSet<PlayerStatus>();
 		fireworkShowLocations = new ArrayList<FireWorkShow>();
-		invisiblePlayers = new ArrayList<Player>();
-		flamingPlayers = new ArrayList<Player>();
-		readyToLogInAsServer = true;
 		deafPlayers = new ArrayList<Player>();
 		serverChatting = false;
 		ignorers = new ArrayList<Ignoring>();
@@ -737,40 +730,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			@Override
 			public void run() {
-
 				for (String p : celebrators.keySet()) {
 					celebrate(p);
 				}
 
-				if (flameOn) {
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (p.isOp()) {
-							heartAnimation(p.getName());
-						}
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					if (p.isOp()) {
+						doHalSpook(p);
 					}
 				}
-				if (purpOn) {
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (p.isOp()) {
-							purpAnimation(p.getName());
-						}
-					}
-				}
-				// Bukkit.getWorld("world").setTime(1000);
 				Long now = System.currentTimeMillis();
-
 				if (lags.size() > 9) {
 					lags.remove(0);
 				}
-
 				lags.add(now);
 
-				if (!b)
+				if (!b) {
 					fireOnMailBoxes();
-
+					updateFireworksBlocks();
+				}
 				b = !b;
-
-				updateFireworksBlocks();
 
 				watchDog++;
 				if (watchDog >= (60 * 3)) {
@@ -850,68 +829,197 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						teleportSomeone();
 				}
 
-				for (Player p : Bukkit.getOnlinePlayers()) {
-					if (p.getItemInHand().getType() == Material.STICK) {
-						for (ProtectedArea pa : areas) {
-							if (pa.owner.equals(p.getDisplayName())) {
-
-								final ProtectedArea paf = pa;
-
-								// Kaymak wanted squiggles and alyssa copied
-								if (pa.owner.equals("Kaymaki")
-										|| pa.owner.equals("__Alyssa__")) {
-									paf.highlightAreaKayla();
-								} else {
-									paf.highlightArea();
-								}
-								Bukkit.getScheduler().scheduleSyncDelayedTask(
-										SerenityPlugins.this, new Runnable() {
-											@Override
-											public void run() {
-												if (paf.owner.equals("Kaymaki")) {
-													paf.highlightAreaKayla();
-												} else {
-													paf.highlightArea();
-												}
-											}
-										}, 10L);
-							}
-						}
-					}
-
-					/*
-					 * if (p.isOp()) { if (flameOn) { Location l = new
-					 * Location(p.getLocation() .getWorld(),
-					 * p.getLocation().getX(), p .getLocation().getY() + .5,
-					 * p.getLocation() .getZ());
-					 * ParticleEffect.HEART.display((float) .15, (float) .5,
-					 * (float) .15, (float) 0, 25, l, 20); } }
-					 */
-				}
+				highlightSticks();
 
 				if (getTickrate() < 16) {
 					Bukkit.getLogger().info("§cTickrate: " + getTickrate());
 				}
 
-				if (isAParty) {
-					if (partyMode == 0)
-						partyRandomSolid();
-					if (partyMode == 1)
-						partyRandomDifferent();
-					if (partyMode == 2) {
-						partyRainbow(partyOffset);
-						partyOffset++;
-						if (partyOffset == 10) {
-							partyOffset = 0;
-						}
-					}
-					if (partyMode == 3) {
-						partyPlaid();
-					}
-				}
+				checkParty();
+
 			}
 
 		}, 0L, 20L);
+	}
+
+	protected void checkParty() {
+		if (isAParty) {
+			if (partyMode == 0)
+				partyRandomSolid();
+			if (partyMode == 1)
+				partyRandomDifferent();
+			if (partyMode == 2) {
+				partyRainbow(partyOffset);
+				partyOffset++;
+				if (partyOffset == 10) {
+					partyOffset = 0;
+				}
+			}
+			if (partyMode == 3) {
+				partyPlaid();
+			}
+		}
+	}
+
+	protected void highlightSticks() {
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (p.getItemInHand().getType() == Material.STICK) {
+				for (ProtectedArea pa : areas) {
+					if (pa.owner.equals(p.getDisplayName())) {
+
+						final ProtectedArea paf = pa;
+						if (pa.owner.equals("Kaymaki")
+								|| pa.owner.equals("Insurmountable")) {
+							paf.highlightAreaKayla();
+						} else {
+							paf.highlightArea();
+						}
+						Bukkit.getScheduler().scheduleSyncDelayedTask(
+								SerenityPlugins.this, new Runnable() {
+									@Override
+									public void run() {
+										if (paf.owner.equals("Kaymaki")) {
+											paf.highlightAreaKayla();
+										} else {
+											paf.highlightArea();
+										}
+									}
+								}, 10L);
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void halsEffects(PlayerInteractEvent event) {
+		if (event.getPlayer().isOp()) {
+			if (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
+				if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
+						|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
+					event.setCancelled(true);
+					specEff++;
+					if (specEff > 10) {
+						specEff = 0;
+					}
+				}
+
+				if (event.getAction().equals(Action.LEFT_CLICK_AIR)
+						|| event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
+					event.setCancelled(true);
+					specEff--;
+					if (specEff < 0) {
+						specEff = 10;
+					}
+				}
+
+				switch (specEff) {
+				case 0:
+					event.getPlayer().sendMessage("§cNone");
+					break;
+				case 1:
+					event.getPlayer().sendMessage("§dPurple");
+					break;
+				case 2:
+					event.getPlayer().sendMessage("§cHeart");
+					break;
+				case 3:
+					event.getPlayer().sendMessage("§cFlames");
+					break;
+				case 4:
+					event.getPlayer().sendMessage("§cVillager Hate");
+					break;
+				case 5:
+					event.getPlayer().sendMessage("§cRedstone");
+					break;
+				case 6:
+					event.getPlayer().sendMessage("§cEnchant");
+					break;
+				case 7:
+					event.getPlayer().sendMessage("§cMusic");
+					break;
+				case 8:
+					event.getPlayer().sendMessage("§cExplosion Huge");
+					break;
+				case 9:
+					event.getPlayer().sendMessage("§cExplosion Normal");
+					break;
+				case 10:
+					event.getPlayer().sendMessage("§cLava");
+					break;
+				}
+			}
+		}
+	}
+
+	protected void doHalSpook(Player p) {
+
+		final Player pf = p;
+
+		for (int i = 0; i < 10; i++) {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+				@Override
+				public void run() {
+
+					List<Player> players = new ArrayList<Player>();
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						 if (!p.isOp()) {
+						players.add(p);
+						 }
+					}
+
+					if (!players.isEmpty()) {
+						Location loc = pf.getLocation();
+						loc.setY(loc.getY() + .5);
+
+						switch (specEff) {
+						case 0:
+							break;
+						case 1:
+							ParticleEffect.SPELL_WITCH.display(.125F, .25F,
+									.125F, 0, 25, loc, players);
+							break;
+						case 2:
+							ParticleEffect.HEART.display(.125F, .25F, .125F,
+									50F, 5, loc, players);
+							break;
+						case 3:
+							ParticleEffect.FLAME.display(.125F, .5F, .125F, 0,
+									25, loc, players);
+							break;
+						case 4:
+							ParticleEffect.VILLAGER_ANGRY.display(.125F, .25F,
+									.125F, 0, 25, loc, players);
+							break;
+						case 5:
+							ParticleEffect.REDSTONE.display(.125F, .50F, .125F,
+									25, 25, loc, players);
+							break;
+						case 6:
+							ParticleEffect.ENCHANTMENT_TABLE.display(.125F,
+									.5F, .125F, 0, 25, loc, players);
+							break;
+						case 7:
+							ParticleEffect.NOTE.display(.125F, .25F, .125F, 25,
+									25, loc, players);
+							break;
+						case 8:
+							ParticleEffect.EXPLOSION_HUGE.display(.125F, .25F,
+									.125F, 25, 25, loc, players);
+							break;
+						case 9:
+							ParticleEffect.EXPLOSION_NORMAL.display(.125F, .50F,
+									.125F, 0, 25, loc, players);
+							break;
+						case 10:
+							ParticleEffect.LAVA.display(.125F, .25F, .125F, 0,
+									25, loc, players);
+							break;
+						}
+					}
+				}
+			}, i * 2L);
+		}
 	}
 
 	/*
@@ -947,33 +1055,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 * 
 	 * }
 	 */
-
-	protected void purpAnimation(String name) {
-		final Player pf = Bukkit.getPlayer(name);
-
-		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-				@Override
-				public void run() {
-
-					List<Player> players = new ArrayList<Player>();
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (!p.isOp()) {
-							players.add(p);
-						}
-					}
-
-					if (!players.isEmpty()) {
-						Location loc = pf.getLocation();
-						loc.setY(loc.getY() + .5);
-						ParticleEffect.SPELL_WITCH.display(.125F, .25F, .125F,
-								0, 25, loc, players);
-					}
-				}
-			}, i * 2L);
-		}
-
-	}
 
 	protected void celebrate(String p) {
 
@@ -1034,32 +1115,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						break;
 					}
 
-				}
-			}, i * 2L);
-		}
-	}
-
-	protected void heartAnimation(String p) {
-		final Player pf = Bukkit.getPlayer(p);
-
-		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-				@Override
-				public void run() {
-
-					List<Player> players = new ArrayList<Player>();
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (!p.isOp()) {
-							players.add(p);
-						}
-					}
-
-					if (!players.isEmpty()) {
-						Location loc = pf.getLocation();
-						loc.setY(loc.getY() + .5);
-						ParticleEffect.HEART.display(.125F, .25F, .125F, 50F,
-								5, loc, players);
-					}
 				}
 			}, i * 2L);
 		}
@@ -1376,7 +1431,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void addAMinuteToEachPlayer() {
-		
+
 		String date = sdtf.format(new Date());
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (!p.isOp()) {
@@ -1386,7 +1441,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				addAMinute(p);
 			}
 		}
-		
+
 		if (Bukkit.getOnlinePlayers().size() > 0) {
 			playtimeCfg.saveConfig();
 			playtimeCfg.reloadConfig();
@@ -1414,12 +1469,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (evt.getTo().getWorld().getName().equals("world_nether")) {
 			int currentCount = portalAnalytics.getConfig().getInt(
-					(int)evt.getTo().getX() + "_" + (int)evt.getTo().getY() + "_"
-							+ (int)evt.getTo().getZ(), 0);
+					(int) evt.getTo().getX() + "_" + (int) evt.getTo().getY()
+							+ "_" + (int) evt.getTo().getZ(), 0);
 			currentCount++;
 			portalAnalytics.getConfig().set(
-					(int)evt.getTo().getX() + "_" + (int)evt.getTo().getY() + "_"
-							+ (int)evt.getTo().getZ(), currentCount);
+					(int) evt.getTo().getX() + "_" + (int) evt.getTo().getY()
+							+ "_" + (int) evt.getTo().getZ(), currentCount);
 			portalAnalytics.saveConfig();
 			portalAnalytics.reloadConfig();
 		}
@@ -1495,26 +1550,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPLayerJoin(PlayerJoinEvent event) {
-		if (readyToLogInAsServer) {
-			if (event.getPlayer().isOp()) {
-				event.getPlayer().setSleepingIgnored(true);
-				invisiblePlayers.add(event.getPlayer());
+		if (event.getPlayer().isOp()) {
+			event.getPlayer().setSleepingIgnored(true);
 
-				// I'm the invisible man!
-				for (Player p : Bukkit.getOnlinePlayers()) {
-					// I'm the invisible man!
-					hideInvisiblePlayers(p);
-				}
-
-				event.getPlayer().setGameMode(GameMode.CREATIVE);
-				event.getPlayer().setDisplayName("[Server]");
-				event.setJoinMessage(null);
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				p.hidePlayer(event.getPlayer());
+				event.getPlayer().sendMessage("Hidden from " + p.getName());
 			}
+
+			specEff = 0;
+			event.getPlayer().setGameMode(GameMode.CREATIVE);
+			event.getPlayer().setDisplayName("[Server]");
+			event.setJoinMessage(null);
 		}
 
-		// Incredible how you can
-		// see right through me!
-		hideInvisiblePlayers(event.getPlayer());
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (p.isOp()) {
+				event.getPlayer().hidePlayer(p);
+				p.sendMessage("Hidden from " + event.getPlayer().getName());
+			}
+		}
 
 		World world = event.getPlayer().getWorld();
 		Location location = event.getPlayer().getLocation();
@@ -1526,7 +1581,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		for (Mailbox mb : mailBoxes) {
-			if (mb.getName().equals(event.getPlayer().getName())) {
+			if (mb.getName().equals(event.getPlayer().getDisplayName())) {
 				Chest mbChest = (Chest) mb.getLocation().getBlock().getState();
 
 				ItemStack[] mbItems = mbChest.getInventory().getContents();
@@ -1550,16 +1605,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onPlayerLeave(PlayerQuitEvent event) {
 		attachments.remove(event.getPlayer().getUniqueId());
 
-		if(!event.getPlayer().isOp()){
+		if (!event.getPlayer().isOp()) {
 			String date = sdtf.format(new Date());
-			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(), date);
+			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
+					date);
 			whoIsOnline.saveConfig();
 			whoIsOnline.reloadConfig();
 		}
-		
+
 		if (event.getPlayer().isOp()) {
-			invisiblePlayers.remove(event.getPlayer());
-			flamingPlayers.remove(event.getPlayer());
 			event.setQuitMessage(null);
 		}
 	}
@@ -2192,6 +2246,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ent.remove();
 		return out;
 	}
+	
 
 	/*
 	 * @EventHandler public void onBetItemEvent(InventoryClickEvent event) { if
@@ -2561,15 +2616,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-			if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
-				if (event.getClickedBlock().getX() == -1314
-						&& event.getClickedBlock().getY() == 64
-						&& event.getClickedBlock().getZ() == -650) {
-					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-							"ncp exempt " + event.getPlayer().getDisplayName()
-									+ " MOVING_SURVIVALFLY");
-				}
-			}
+			/*
+			 * if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
+			 * if (event.getClickedBlock().getX() == -1314 &&
+			 * event.getClickedBlock().getY() == 64 &&
+			 * event.getClickedBlock().getZ() == -650) {
+			 * Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ncp exempt " +
+			 * event.getPlayer().getDisplayName() + " MOVING_SURVIVALFLY"); } }
+			 */
 
 			if (event.getClickedBlock().getType() == Material.GOLD_BLOCK) {
 				if (event.getClickedBlock().getX() == -1403
@@ -2619,11 +2673,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						daleCfg.saveConfig();
 						daleCfg.reloadConfig();
 					}
-
-					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-							"ncp unexempt "
-									+ event.getPlayer().getDisplayName()
-									+ " MOVING_SURVIVALFLY");
+					/*
+					 * Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+					 * "ncp unexempt " + event.getPlayer().getDisplayName() +
+					 * " MOVING_SURVIVALFLY");
+					 */
 					racers.remove(event.getPlayer().getDisplayName());
 					return;
 				}
@@ -4362,6 +4416,34 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									.getSize() / 2) + "§b blocks");
 					return true;
 				}
+
+				if (arg3[0].equals("map")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						if (p.getLocation().getWorld().getName()
+								.contains("world_nether")) {
+							int x = (int) p.getLocation().getX() * 8;
+							int z = (int) p.getLocation().getZ() * 8;
+							String html = "http://serenity-mc.org/map/#/" + x
+									+ "/64/" + z + "/max/0/0";
+							p.sendMessage("§3If you build a portal, you should exit near this area:  \n§6"
+									+ html);
+							return true;
+						}
+
+						if (p.getLocation().getWorld().getName()
+								.equals("world")) {
+							int x = (int) p.getLocation().getX();
+							int z = (int) p.getLocation().getZ();
+							String html = "http://serenity-mc.org/map/#/" + x
+									+ "/64/" + z + "/max/0/0";
+							p.sendMessage("§3You are here:  \n§6" + html);
+							return true;
+						}
+
+						return true;
+					}
+				}
 			}
 
 			if (arg3.length == 1) {
@@ -5842,6 +5924,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
+				if (arg3[0].equals("resetdailyscore")) {
+					int today = new Date().getDay();
+					for (OfflinePlayer p : Bukkit.getOfflinePlayers()) {
+
+						if (!p.isOp()) {
+							int currentScore = leaderboardCfg.getConfig()
+									.getInt(p.getName() + ".Day" + today, -1);
+							if (currentScore != -1) {
+								leaderboardCfg.getConfig().set(
+										p.getName() + ".Day" + today, 0);
+							}
+						}
+
+					}
+
+					leaderboardCfg.saveConfig();
+					leaderboardCfg.reloadConfig();
+				}
+
 				if (arg3[0].equals("kill")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						if (p.getLocation().getWorld().getName()
@@ -5927,15 +6028,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					bookCfg.reloadConfig();
 					linksCfg.reloadConfig();
 					sender.sendMessage("Reloaded pod, teams, email, book, and links");
-				}
-
-				if (arg3[0].equals("flames")) {
-					flameOn = !flameOn;
-					sender.sendMessage("Flame on = " + flameOn);
-				}
-				if (arg3[0].equals("purp")) {
-					purpOn = !purpOn;
-					sender.sendMessage("Purp on = " + purpOn);
 				}
 
 				if (arg3[0].equals("sleepers")) {
@@ -6174,6 +6266,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
+				if (arg3[0].equals("cleanleader")) {
+					for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+						if (!op.isWhitelisted()) {
+							if (!op.isOp()) {
+								leaderboardCfg.getConfig().set(op.getName(),
+										null);
+								whoIsOnline.getConfig().set(op.getName(), null);
+							}
+						}
+					}
+				}
+
 				if (arg3[0].equals("secretsheep")) {
 					if (sender instanceof Player) {
 						Player p = (Player) sender;
@@ -6389,6 +6493,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						status += arg3[i];
 					}
 				}
+				status = status.replaceAll("\"", "");
+				status = status.replaceAll("'", "");
+				status = status.replaceAll("<", "");
+				status = status.replaceAll(">", "");
 				PlayerStatus ps = new PlayerStatus(sender.getName(), status,
 						new GregorianCalendar());
 
@@ -7422,14 +7530,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */else {
 			noPerms(sender);
 			return true;
-		}
-	}
-
-	private void hideInvisiblePlayers(Player player) {
-		for (int i = 0; i < invisiblePlayers.size(); i++) {
-			player.hidePlayer(invisiblePlayers.get(i));
-			invisiblePlayers.get(i).sendMessage(
-					"You are hidden from " + player.getDisplayName());
 		}
 	}
 
