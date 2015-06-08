@@ -282,6 +282,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public boolean opParticles = false;
 	public boolean opParticlesDeb = false;
+	
+	public boolean debugTickTimings = false;
 
 	// public String[] betters;
 	// public String[] horses;
@@ -726,16 +728,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		BukkitScheduler scheduler = Bukkit.getScheduler();
 		scheduler.runTaskTimer(this, new Runnable() {
+			
+			
 			Boolean b = false;
 			int watchDog = 0;
 			int minute = 0;
 
 			@Override
 			public void run() {
+				long debugtime = System.currentTimeMillis();
+				
 				for (String p : celebrators.keySet()) {
 					celebrate(p);
 				}
-
+				printDebugTimings("Time to celebrate", debugtime);
 				if (opParticles) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						if (p.isOp()) {
@@ -743,18 +749,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 				}
+				
+				printDebugTimings("Time to op particles", debugtime);
 
 				Long now = System.currentTimeMillis();
 				if (lags.size() > 9) {
 					lags.remove(0);
 				}
 				lags.add(now);
+				
+				printDebugTimings("Time to manipulate lag", debugtime);
 
 				if (!b) {
 					fireOnMailBoxes();
+					printDebugTimings("Time to update mailboxes", debugtime);
 					updateFireworksBlocks();
+					printDebugTimings("Time to update fireworks", debugtime);
 				}
 				b = !b;
+				
+				
 
 				watchDog++;
 				if (watchDog >= (60 * 3)) {
@@ -784,6 +798,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							}
 						}
 						leaderboardCfg.saveConfig();
+						
+						printDebugTimings("Time to do leaderboard stuff", debugtime);
 
 						try {
 							checkAndClearAllChunks();
@@ -797,18 +813,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							Bukkit.getServer().dispatchCommand(
 									Bukkit.getConsoleSender(), "server reload");
 						}
+						printDebugTimings("Time to do watchdog stuff", debugtime);
 						watchDog = 0;
 					}
+					
 				}
 
 				minute++;
 
 				if (minute >= 60) {
 					addAMinuteToEachPlayer();
+					printDebugTimings("Time to add a minute", debugtime);
 					checkForTimes();
+					printDebugTimings("Time to check for times", debugtime);
 					minute = 0;
 					if (everyOtherMinute) {
 						afkTest();
+						printDebugTimings("Time to AFK test", debugtime);
 					}
 					everyOtherMinute = !everyOtherMinute;
 				}
@@ -826,7 +847,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 					// CheckForHorses();
+					printDebugTimings("Time to UNAFK", debugtime);
 				}
+				
 
 				if (minute % 10 == 0) {
 					if (aBattleIsRaging)
@@ -834,16 +857,34 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				highlightSticks();
+				printDebugTimings("Time to highlight sticks", debugtime);
 
 				if (getTickrate() < 16) {
 					Bukkit.getLogger().info("§cTickrate: " + getTickrate());
 				}
 
 				checkParty();
-
+				printDebugTimings("Time to check party sticks", debugtime);
+				
+				printDebugTimings("*****TICK TIME:  ", debugtime);
 			}
 
 		}, 0L, 20L);
+	}
+
+	protected void printDebugTimings(String string, long debugtime) {
+		if(debugTickTimings){
+			long time  = (System.currentTimeMillis() - debugtime);
+			if(time < 5){
+				return;
+			}
+			if(time > 50){
+				getLogger().info("§c" + string + ": " + (System.currentTimeMillis() - debugtime) + "ms");
+			}else{
+				getLogger().info("§6" + string + ": " + (System.currentTimeMillis() - debugtime) + "ms");
+			}
+		}
+		
 	}
 
 	protected void checkParty() {
@@ -1331,10 +1372,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	protected void fireOnMailBoxes() {
 		for (Mailbox mb : mailBoxes) {
 			try {
-				Chest chest = (Chest) mb.getLocation().getBlock().getState();
-
-				ItemStack[] items = chest.getInventory().getContents();
-
+				
+				ItemStack[] items = ((Chest) mb.getLocation().getBlock().getState()).getInventory().getContents();
+				
+				if(items[0]!=null){
+					Location l = new Location(mb.getLocation().getWorld(),
+							mb.getLocation().getX() + .5, mb.getLocation()
+									.getY() + 1.25,
+							mb.getLocation().getZ() + .5);
+					ParticleEffect.HEART.display((float) .25, (float) .25,
+							(float) .25, 0, 5, l, 50);
+				}
+/*
 				for (ItemStack is : items) {
 					if (is != null) {
 						Location l = new Location(mb.getLocation().getWorld(),
@@ -1345,7 +1394,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								(float) .25, 0, 5, l, 50);
 						break;
 					}
-				}
+				}*/
 			} catch (Exception e) {
 				getLogger().info(
 						"Error with Mailbox: " + mb.getLocation().toString());
@@ -6037,6 +6086,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (arg3[0].equals("eff")) {
 					opParticles = !opParticles;
 					sender.sendMessage("Particles on = " + opParticles);
+					return true;
+				}
+				
+				if (arg3[0].equals("timings")) {
+					debugTickTimings = !debugTickTimings;
 					return true;
 				}
 
