@@ -1,14 +1,18 @@
 package com.minecraft.hal.SerenityPlugins;
 
 import org.bukkit.Location;
+import org.bukkit.block.Chest;
+import org.bukkit.inventory.Inventory;
 
 public class Mailbox {
 	public String name;
 	public Location location;
+	public Inventory inv;
 	
 	public Mailbox(String name, Location l) {
 		this.name = name;
 		this.location = l;
+		this.inv = ((Chest) this.getLocation().getBlock().getState()).getInventory();
 	}
 	
 	public Mailbox() {
@@ -47,6 +51,10 @@ public class Mailbox {
 	
 	public void setName(String s){
 		this.name = s;
+	}
+	
+	public boolean hasMail(){
+		return inv.getContents()[0] != null;
 	}
 	
 	

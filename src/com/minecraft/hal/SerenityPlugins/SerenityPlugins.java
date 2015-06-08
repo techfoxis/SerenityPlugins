@@ -735,129 +735,142 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			@Override
 			public void run() {
-				Long now = System.currentTimeMillis();
-				if (lags.size() > 9) {
-					lags.remove(0);
-				}
-				lags.add(now);
-				printDebugTimings("Time to manipulate lag", now);
-				for (String p : celebrators.keySet()) {
-					celebrate(p);
-				}
-				printDebugTimings("Time to celebrate", now);
-				if (opParticles) {
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (p.isOp()) {
-							doHalSpook(p);
+				if (Bukkit.getOnlinePlayers().size() > 0 || debugTickTimings) {
+
+					Long now = System.currentTimeMillis();
+					if (lags.size() > 9) {
+						lags.remove(0);
+					}
+					lags.add(now);
+					printDebugTimings("Time to manipulate lag", now);
+					for (String p : celebrators.keySet()) {
+						celebrate(p);
+					}
+					printDebugTimings("Time to celebrate", now);
+					if (opParticles) {
+						for (Player p : Bukkit.getOnlinePlayers()) {
+							if (p.isOp()) {
+								doHalSpook(p);
+							}
 						}
 					}
-				}
-				printDebugTimings("Time to op particles", now);
+					printDebugTimings("Time to op particles", now);
 
-				if (!b) {
-					fireOnMailBoxes();
-					printDebugTimings("Time to update mailboxes", now);
-					updateFireworksBlocks();
-					printDebugTimings("Time to update fireworks", now);
-				}
-				b = !b;
+					if (!b) {
+						fireOnMailBoxes();
+						printDebugTimings("Time to update mailboxes", now);
+						updateFireworksBlocks();
+						printDebugTimings("Time to update fireworks", now);
+					}
+					b = !b;
 
-				watchDog++;
-				if (watchDog >= (60 * 3)) {
-					int currentDay = new Date().getDay();
-					if (getServer().getOnlinePlayers().size() != 0) {
-						for (Player p : Bukkit.getOnlinePlayers()) {
-							if (!p.isOp()) {
-								if (!isAfk(p)) {
-									int currentScore = leaderboardCfg
-											.getConfig().getInt(
-													p.getName() + ".Day"
-															+ currentDay, 0);
-									leaderboardCfg.getConfig().set(
-											p.getName() + ".Day" + currentDay,
-											currentScore + 1);
-									for (int i = 0; i < 7; i++) {
-										if (i != currentDay) {
-											leaderboardCfg.getConfig().set(
-													p.getName() + ".Day" + i,
-													leaderboardCfg.getConfig()
-															.get(p.getName()
-																	+ ".Day"
-																	+ i, 0));
+					watchDog++;
+					if (watchDog >= (60 * 3)) {
+						int currentDay = new Date().getDay();
+						if (getServer().getOnlinePlayers().size() != 0) {
+							for (Player p : Bukkit.getOnlinePlayers()) {
+								if (!p.isOp()) {
+									if (!isAfk(p)) {
+										int currentScore = leaderboardCfg
+												.getConfig()
+												.getInt(p.getName() + ".Day"
+														+ currentDay, 0);
+										leaderboardCfg.getConfig().set(
+												p.getName() + ".Day"
+														+ currentDay,
+												currentScore + 1);
+										for (int i = 0; i < 7; i++) {
+											if (i != currentDay) {
+												leaderboardCfg
+														.getConfig()
+														.set(p.getName()
+																+ ".Day" + i,
+																leaderboardCfg
+																		.getConfig()
+																		.get(p.getName()
+																				+ ".Day"
+																				+ i,
+																				0));
+											}
 										}
 									}
 								}
 							}
+							leaderboardCfg.saveConfig();
+
+							printDebugTimings("Time to do leaderboard stuff",
+									now);
+
+							try {
+								checkAndClearAllChunks();
+							} catch (Exception e) {
+								getLogger()
+										.info("An exception was thrown in CheckAndClearChunks");
+								Bukkit.getServer()
+										.broadcastMessage(
+												"§c[WARNING WARNING WARNING]\n\n\n*************Something went wrong!  Reloading the plugin!  Please email me if you read this and I will love you forever!  Type C&CC in the subject.  SerenityMCOwner@gmail.com\n[WARNING WARNING WARNING]\nThis might happen again in 10 minutes too!  But hopefully it won't!!!");
+
+								Bukkit.getServer().dispatchCommand(
+										Bukkit.getConsoleSender(),
+										"server reload");
+							}
+							printDebugTimings("Time to do watchdog stuff", now);
+							watchDog = 0;
 						}
-						leaderboardCfg.saveConfig();
 
-						printDebugTimings("Time to do leaderboard stuff", now);
-
-						try {
-							checkAndClearAllChunks();
-						} catch (Exception e) {
-							getLogger()
-									.info("An exception was thrown in CheckAndClearChunks");
-							Bukkit.getServer()
-									.broadcastMessage(
-											"§c[WARNING WARNING WARNING]\n\n\n*************Something went wrong!  Reloading the plugin!  Please email me if you read this and I will love you forever!  Type C&CC in the subject.  SerenityMCOwner@gmail.com\n[WARNING WARNING WARNING]\nThis might happen again in 10 minutes too!  But hopefully it won't!!!");
-
-							Bukkit.getServer().dispatchCommand(
-									Bukkit.getConsoleSender(), "server reload");
-						}
-						printDebugTimings("Time to do watchdog stuff", now);
-						watchDog = 0;
 					}
 
-				}
+					minute++;
 
-				minute++;
-
-				if (minute >= 60) {
-					addAMinuteToEachPlayer();
-					printDebugTimings("Time to add a minute", now);
-					checkForTimes();
-					printDebugTimings("Time to check for times", now);
-					minute = 0;
-					if (everyOtherMinute) {
-						afkTest();
-						printDebugTimings("Time to AFK test", now);
+					if (minute >= 60) {
+						addAMinuteToEachPlayer();
+						printDebugTimings("Time to add a minute", now);
+						checkForTimes();
+						printDebugTimings("Time to check for times", now);
+						minute = 0;
+						if (everyOtherMinute) {
+							afkTest();
+							printDebugTimings("Time to AFK test", now);
+						}
+						everyOtherMinute = !everyOtherMinute;
 					}
-					everyOtherMinute = !everyOtherMinute;
-				}
 
-				if (minute % 5 == 0) {
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (afkPlayers.contains(p)) {
-							if (playerLocations.containsKey(p.getDisplayName())) {
-								if (!playerLocations.get(p.getDisplayName())
-										.getDirection()
-										.equals(p.getLocation().getDirection())) {
-									unAfk(p);
+					if (minute % 5 == 0) {
+						for (Player p : Bukkit.getOnlinePlayers()) {
+							if (afkPlayers.contains(p)) {
+								if (playerLocations.containsKey(p
+										.getDisplayName())) {
+									if (!playerLocations
+											.get(p.getDisplayName())
+											.getDirection()
+											.equals(p.getLocation()
+													.getDirection())) {
+										unAfk(p);
+									}
 								}
 							}
 						}
+						// CheckForHorses();
+						printDebugTimings("Time to UNAFK", now);
 					}
-					// CheckForHorses();
-					printDebugTimings("Time to UNAFK", now);
+
+					if (minute % 10 == 0) {
+						if (aBattleIsRaging)
+							teleportSomeone();
+					}
+
+					highlightSticks();
+					printDebugTimings("Time to highlight sticks", now);
+
+					if (getTickrate() < 16) {
+						Bukkit.getLogger().info("§cTickrate: " + getTickrate());
+					}
+
+					checkParty();
+					printDebugTimings("Time to check party sticks", now);
+
+					printDebugTimings("*****TICK TIME:  ", now);
 				}
-
-				if (minute % 10 == 0) {
-					if (aBattleIsRaging)
-						teleportSomeone();
-				}
-
-				highlightSticks();
-				printDebugTimings("Time to highlight sticks", now);
-
-				if (getTickrate() < 16) {
-					Bukkit.getLogger().info("§cTickrate: " + getTickrate());
-				}
-
-				checkParty();
-				printDebugTimings("Time to check party sticks", now);
-
-				printDebugTimings("*****TICK TIME:  ", now);
 			}
 
 		}, 0L, 20L);
@@ -1368,8 +1381,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	protected void fireOnMailBoxes() {
 		for (Mailbox mb : mailBoxes) {
-			if (((Chest) mb.getLocation().getBlock().getState()).getInventory()
-					.getContents()[0] != null) {
+
+			if (mb.hasMail()) {
 				final Location l = new Location(mb.getLocation().getWorld(), mb
 						.getLocation().getX() + .5,
 						mb.getLocation().getY() + 1.25,
@@ -1396,11 +1409,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void checkForTimes() {
-
-		for (Iterator<? extends Player> i = Bukkit.getServer()
-				.getOnlinePlayers().iterator(); i.hasNext();) {
-			Player p = i.next();
-
+		for (Player p: Bukkit.getOnlinePlayers()) {
 			if (!p.hasPermission("SerenityPlugins.oneHour")) {
 				if (playtimeCfg.getConfig().getInt(
 						"Playtime." + p.getUniqueId().toString()) > 60) {
@@ -1443,8 +1452,44 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 			}
-		}
+			if(playtimeCfg.getConfig().getInt("Playtime." + p.getUniqueId().toString()) == 1440){
+				for (ProtectedArea pa : areas) {
+					if (pa.owner.equals("[Server]")) {
+						ArrayList<String> list = new ArrayList<String>();
+						for (ProtectedArea pas : areas) {
+							if (pas.owner.equals("[Server]")) {
+								pas.addTrust(p.getDisplayName());
+								list = pa.trustedPlayers;
+							}
+						}
 
+						String path = "ProtectedAreas." + "[Server].Trusts";
+
+						String[] loc = new String[list.size()];
+						for (int j = 0; j < list.size(); j++) {
+							loc[j] = list.get(j);
+						}
+
+						protectedAreasCfg.getConfig().set(path, loc);
+						protectedAreasCfg.saveConfig();
+						protectedAreasCfg.reloadConfig();
+
+						p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now edit the spawn area!\n");
+
+						for (int j = 0; j < 24; j++) {
+							doRandomFirework(p.getWorld(),
+									p.getLocation());
+						}
+					}
+				}
+			}
+		}
+		
+		
+		
+		
+
+		/*
 		for (ProtectedArea pa : areas) {
 			if (pa.owner.equals("[Server]")) {
 				for (Player player : Bukkit.getOnlinePlayers()) {
@@ -1480,7 +1525,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 			}
-		}
+		}*/
 	}
 
 	protected void addAMinuteToEachPlayer() {
@@ -1635,18 +1680,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		for (Mailbox mb : mailBoxes) {
 			if (mb.getName().equals(event.getPlayer().getDisplayName())) {
-				Chest mbChest = (Chest) mb.getLocation().getBlock().getState();
-
-				ItemStack[] mbItems = mbChest.getInventory().getContents();
-
-				for (ItemStack is : mbItems) {
-					if (is != null) {
-						String msg = getTranslationLanguage(event.getPlayer(),
-								stringKeys.MAILHASMAIL.toString());
-						event.getPlayer().sendMessage(msg);
-						// event.getPlayer().sendMessage("§2You have mail!");
-						return;
-					}
+				if (mb.hasMail()) {
+					String msg = getTranslationLanguage(event.getPlayer(),
+							stringKeys.MAILHASMAIL.toString());
+					event.getPlayer().sendMessage(msg);
+					// event.getPlayer().sendMessage("§2You have mail!");
+					return;
 				}
 			}
 		}
@@ -3207,29 +3246,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			Location location = target.getLocation();
 			location.getWorld().strikeLightningEffect(location);
 			return;
-
-		}
-	}
-
-	// lol disregard this too... it was dumb
-	@EventHandler
-	public void onWaterGun(PlayerInteractEvent event) {
-		Player p = event.getPlayer();
-		if (p.getItemInHand().getType() == Material.BEDROCK
-				&& (event.getAction() == Action.RIGHT_CLICK_AIR || event
-						.getAction() == Action.RIGHT_CLICK_BLOCK)) {
-
-			final Player pf = p;
-			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-				@Override
-				public void run() {
-					ParticleEffect.LAVA.display(
-							pf.getLocation().getDirection(), .3F,
-							pf.getEyeLocation(), 25);
-
-				}
-			});
-			event.setCancelled(true);
 
 		}
 	}
@@ -6087,6 +6103,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				if (arg3[0].equals("timings")) {
 					debugTickTimings = !debugTickTimings;
+					sender.sendMessage("Timings = "+ debugTickTimings);
 					return true;
 				}
 
