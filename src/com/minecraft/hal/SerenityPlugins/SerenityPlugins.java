@@ -282,7 +282,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public boolean opParticles = false;
 	public boolean opParticlesDeb = false;
-	
+
 	public boolean debugTickTimings = false;
 
 	// public String[] betters;
@@ -728,20 +728,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		BukkitScheduler scheduler = Bukkit.getScheduler();
 		scheduler.runTaskTimer(this, new Runnable() {
-			
-			
+
 			Boolean b = false;
 			int watchDog = 0;
 			int minute = 0;
 
 			@Override
 			public void run() {
-				long debugtime = System.currentTimeMillis();
-				
+				Long now = System.currentTimeMillis();
+				if (lags.size() > 9) {
+					lags.remove(0);
+				}
+				lags.add(now);
+				printDebugTimings("Time to manipulate lag", now);
 				for (String p : celebrators.keySet()) {
 					celebrate(p);
 				}
-				printDebugTimings("Time to celebrate", debugtime);
+				printDebugTimings("Time to celebrate", now);
 				if (opParticles) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						if (p.isOp()) {
@@ -749,26 +752,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 				}
-				
-				printDebugTimings("Time to op particles", debugtime);
-
-				Long now = System.currentTimeMillis();
-				if (lags.size() > 9) {
-					lags.remove(0);
-				}
-				lags.add(now);
-				
-				printDebugTimings("Time to manipulate lag", debugtime);
+				printDebugTimings("Time to op particles", now);
 
 				if (!b) {
 					fireOnMailBoxes();
-					printDebugTimings("Time to update mailboxes", debugtime);
+					printDebugTimings("Time to update mailboxes", now);
 					updateFireworksBlocks();
-					printDebugTimings("Time to update fireworks", debugtime);
+					printDebugTimings("Time to update fireworks", now);
 				}
 				b = !b;
-				
-				
 
 				watchDog++;
 				if (watchDog >= (60 * 3)) {
@@ -798,8 +790,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							}
 						}
 						leaderboardCfg.saveConfig();
-						
-						printDebugTimings("Time to do leaderboard stuff", debugtime);
+
+						printDebugTimings("Time to do leaderboard stuff", now);
 
 						try {
 							checkAndClearAllChunks();
@@ -813,23 +805,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							Bukkit.getServer().dispatchCommand(
 									Bukkit.getConsoleSender(), "server reload");
 						}
-						printDebugTimings("Time to do watchdog stuff", debugtime);
+						printDebugTimings("Time to do watchdog stuff", now);
 						watchDog = 0;
 					}
-					
+
 				}
 
 				minute++;
 
 				if (minute >= 60) {
 					addAMinuteToEachPlayer();
-					printDebugTimings("Time to add a minute", debugtime);
+					printDebugTimings("Time to add a minute", now);
 					checkForTimes();
-					printDebugTimings("Time to check for times", debugtime);
+					printDebugTimings("Time to check for times", now);
 					minute = 0;
 					if (everyOtherMinute) {
 						afkTest();
-						printDebugTimings("Time to AFK test", debugtime);
+						printDebugTimings("Time to AFK test", now);
 					}
 					everyOtherMinute = !everyOtherMinute;
 				}
@@ -847,9 +839,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 					// CheckForHorses();
-					printDebugTimings("Time to UNAFK", debugtime);
+					printDebugTimings("Time to UNAFK", now);
 				}
-				
 
 				if (minute % 10 == 0) {
 					if (aBattleIsRaging)
@@ -857,34 +848,40 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				highlightSticks();
-				printDebugTimings("Time to highlight sticks", debugtime);
+				printDebugTimings("Time to highlight sticks", now);
 
 				if (getTickrate() < 16) {
 					Bukkit.getLogger().info("§cTickrate: " + getTickrate());
 				}
 
 				checkParty();
-				printDebugTimings("Time to check party sticks", debugtime);
-				
-				printDebugTimings("*****TICK TIME:  ", debugtime);
+				printDebugTimings("Time to check party sticks", now);
+
+				printDebugTimings("*****TICK TIME:  ", now);
 			}
 
 		}, 0L, 20L);
 	}
 
 	protected void printDebugTimings(String string, long debugtime) {
-		if(debugTickTimings){
-			long time  = (System.currentTimeMillis() - debugtime);
-			if(time < 5){
+		if (debugTickTimings) {
+			long time = (System.currentTimeMillis() - debugtime);
+			if (time < 5) {
 				return;
 			}
-			if(time > 50){
-				getLogger().info("§c" + string + ": " + (System.currentTimeMillis() - debugtime) + "ms");
-			}else{
-				getLogger().info("§6" + string + ": " + (System.currentTimeMillis() - debugtime) + "ms");
+			if (time > 50) {
+				getLogger().info(
+						"§c" + string + ": "
+								+ (System.currentTimeMillis() - debugtime)
+								+ "ms");
+			} else {
+				getLogger().info(
+						"§6" + string + ": "
+								+ (System.currentTimeMillis() - debugtime)
+								+ "ms");
 			}
 		}
-		
+
 	}
 
 	protected void checkParty() {
@@ -1371,34 +1368,30 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	protected void fireOnMailBoxes() {
 		for (Mailbox mb : mailBoxes) {
-			try {
-				
-				ItemStack[] items = ((Chest) mb.getLocation().getBlock().getState()).getInventory().getContents();
-				
-				if(items[0]!=null){
-					Location l = new Location(mb.getLocation().getWorld(),
-							mb.getLocation().getX() + .5, mb.getLocation()
-									.getY() + 1.25,
-							mb.getLocation().getZ() + .5);
-					ParticleEffect.HEART.display((float) .25, (float) .25,
-							(float) .25, 0, 5, l, 50);
-				}
-/*
-				for (ItemStack is : items) {
-					if (is != null) {
-						Location l = new Location(mb.getLocation().getWorld(),
-								mb.getLocation().getX() + .5, mb.getLocation()
-										.getY() + 1.25,
-								mb.getLocation().getZ() + .5);
-						ParticleEffect.HEART.display((float) .25, (float) .25,
-								(float) .25, 0, 5, l, 50);
-						break;
-					}
-				}*/
-			} catch (Exception e) {
-				getLogger().info(
-						"Error with Mailbox: " + mb.getLocation().toString());
+			if (((Chest) mb.getLocation().getBlock().getState()).getInventory()
+					.getContents()[0] != null) {
+				final Location l = new Location(mb.getLocation().getWorld(), mb
+						.getLocation().getX() + .5,
+						mb.getLocation().getY() + 1.25,
+						mb.getLocation().getZ() + .5);
+
+				Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+						new Runnable() {
+
+							@Override
+							public void run() {
+								ParticleEffect.HEART.display((float) .25,
+										(float) .25, (float) .25, 0, 5, l, 50);
+							}
+						});
 			}
+			/*
+			 * for (ItemStack is : items) { if (is != null) { Location l = new
+			 * Location(mb.getLocation().getWorld(), mb.getLocation().getX() +
+			 * .5, mb.getLocation() .getY() + 1.25, mb.getLocation().getZ() +
+			 * .5); ParticleEffect.HEART.display((float) .25, (float) .25,
+			 * (float) .25, 0, 5, l, 50); break; } }
+			 */
 		}
 	}
 
@@ -6056,7 +6049,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage(s);
 
 				}
-				
 
 				if (arg3[0].equals("cleanonline")) {
 					for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
@@ -6066,14 +6058,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										op.getName(), null) != null) {
 									leaderboardCfg.getConfig().set(
 											op.getName(), null);
-									getLogger().info("Cleaning " + op.getName() + " from leaderboard");
+									getLogger().info(
+											"Cleaning " + op.getName()
+													+ " from leaderboard");
 								}
-								
-								if (whoIsOnline.getConfig().get(
-										op.getName(), null) != null) {
-									whoIsOnline.getConfig().set(
-											op.getName(), null);
-									getLogger().info("Cleaning " + op.getName() + " from who is online");
+
+								if (whoIsOnline.getConfig().get(op.getName(),
+										null) != null) {
+									whoIsOnline.getConfig().set(op.getName(),
+											null);
+									getLogger().info(
+											"Cleaning " + op.getName()
+													+ " from who is online");
 								}
 							}
 						}
@@ -6088,7 +6084,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage("Particles on = " + opParticles);
 					return true;
 				}
-				
+
 				if (arg3[0].equals("timings")) {
 					debugTickTimings = !debugTickTimings;
 					return true;
@@ -6381,7 +6377,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.setCustomName("§6" + arg3[1]);
 					}
 				}
-
 
 				if (arg3[0].equals("secretsheep")) {
 					if (sender instanceof Player) {
