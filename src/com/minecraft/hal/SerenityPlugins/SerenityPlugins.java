@@ -130,7 +130,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor podrickCfg;
 	public ConfigAccessor stringsCfg;
 	public ConfigAccessor languagesCfg;
-	public ConfigAccessor teamsCfg;
+	//public ConfigAccessor teamsCfg;
 	public ConfigAccessor emailCfg;
 	public ConfigAccessor bookCfg;
 	public ConfigAccessor linksCfg;
@@ -352,7 +352,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		podrickCfg = new ConfigAccessor(this, "podrick.yml");
 		stringsCfg = new ConfigAccessor(this, "strings.yml");
 		languagesCfg = new ConfigAccessor(this, "languages.yml");
-		teamsCfg = new ConfigAccessor(this, "teams.yml");
+		//teamsCfg = new ConfigAccessor(this, "teams.yml");
 		emailCfg = new ConfigAccessor(this, "email.yml");
 		bookCfg = new ConfigAccessor(this, "book.yml");
 		linksCfg = new ConfigAccessor(this, "links.yml");
@@ -598,9 +598,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 * dutchSpeakers.add(subkey.toString()); } } catch (Exception e) {
 		 * getLogger().info("Exception thrown while trying to dutch players"); }
 		 */
+		/*
 		ConfigurationSection teamsFromConfig = teamsCfg.getConfig()
-				.getConfigurationSection("Team");
+				.getConfigurationSection("Team");*/
 
+		/*
 		try {
 			for (String key : teamsFromConfig.getKeys(false)) {
 				for (Object subkey : teamsFromConfig.getList(key)) {
@@ -609,121 +611,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		} catch (Exception e) {
 			getLogger().info("Exception thrown while trying to add teams");
-		}
+		}*/
 
+		/*
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			playerLocations.put(p.getDisplayName(), p.getLocation());
-		}
-
-		emailCfg.saveDefaultConfig();
+		}*/
 
 		runEverySecond();
-
 		getLogger().info("Serenity Plugins enabled");
-
 	}
-
-	@EventHandler
-	public void EatSecretSomethingEvent(PlayerItemConsumeEvent event) {
-		ItemStack item = event.getItem();
-		if (item.getItemMeta().hasDisplayName()) {
-			if (item.getItemMeta().getDisplayName()
-					.equals(Secret.SECRETITEM2NAME)) {
-				event.setCancelled(true);
-				event.getPlayer().kickPlayer(Secret.SECRETMESSAGE);
-			}
-		}
-		Location l = Secret.SECRETSTANDINGLOCATION;
-		if (event.getPlayer().getLocation().getWorld().getName()
-				.equals("world")) {
-			if (event.getPlayer().getLocation().distance(l) < 3) {
-				Location dest = Secret.SECRETDESTINATION;
-				event.setCancelled(true);
-				event.getPlayer().teleport(dest);
-				Bukkit.getLogger().info(
-						event.getPlayer().getDisplayName()
-								+ " went to the secret room!");
-			}
-		}
-	}
-
-	private void addTrustsToChunks(String name) {
-		try {
-			ConfigurationSection namedChunksFromConfig = protectedAreasCfg
-					.getConfig().getConfigurationSection(
-							"ProtectedAreas." + name);
-			for (String subkey : namedChunksFromConfig.getKeys(true)) {
-				ArrayList<String> coords = new ArrayList<String>();
-				if (subkey.equals("Trusts")) {
-					for (Object subSubkey : namedChunksFromConfig
-							.getList(subkey)) {
-						coords.add(subSubkey.toString());
-					}
-
-					for (ProtectedArea pa : areas) {
-						if (pa.owner.equals(name)) {
-							for (String names : coords) {
-								pa.trustedPlayers.add(names);
-							}
-						}
-					}
-				}
-			}
-		} catch (Exception e) {
-			getLogger()
-					.info("Exception thrown while trying to add protected area trust");
-		}
-
-	}
-
-	@EventHandler
-	private void onPortalCreation(BlockIgniteEvent event) {
-		if (event.getBlock().getRelative(BlockFace.DOWN).getType()
-				.equals(Material.OBSIDIAN)
-				|| event.getBlock().getRelative(BlockFace.UP).getType()
-						.equals(Material.OBSIDIAN)
-				|| event.getBlock().getRelative(BlockFace.SOUTH).getType()
-						.equals(Material.OBSIDIAN)
-				|| event.getBlock().getRelative(BlockFace.EAST).getType()
-						.equals(Material.OBSIDIAN)
-				|| event.getBlock().getRelative(BlockFace.WEST).getType()
-						.equals(Material.OBSIDIAN)
-				|| event.getBlock().getRelative(BlockFace.NORTH).getType()
-						.equals(Material.OBSIDIAN)) {
-			Location l = event.getBlock().getLocation();
-			if (l.getWorld().getName().equals("world_nether")) {
-				Location dest = new Location(Bukkit.getWorld("world"),
-						l.getX() * 8, l.getY(), l.getZ() * 8);
-				for (ProtectedArea pa : areas) {
-					if (pa.equals(dest)) {
-						if (!pa.hasPermission(event.getPlayer()
-								.getDisplayName())) {
-							event.setCancelled(true);
-							event.getPlayer()
-									.sendMessage(
-											getTranslationLanguage(event
-													.getPlayer(),
-													stringKeys.PORTBADPORTAL
-															.toString()));
-						}
-					}
-				}
-			}
-		}
-	}
-
-	@EventHandler
-	private void onProtAreaFire(BlockIgniteEvent event) {
-		if (!(event.getCause() == IgniteCause.FLINT_AND_STEEL)) {
-			for (ProtectedArea pa : areas) {
-				if (pa.equals(event.getBlock().getLocation())) {
-					event.setCancelled(true);
-					return;
-				}
-			}
-		}
-	}
-
+	
 	private void runEverySecond() {
 
 		BukkitScheduler scheduler = Bukkit.getScheduler();
@@ -874,6 +772,107 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 		}, 0L, 20L);
+	}
+
+	@EventHandler
+	public void EatSecretSomethingEvent(PlayerItemConsumeEvent event) {
+		ItemStack item = event.getItem();
+		if (item.getItemMeta().hasDisplayName()) {
+			if (item.getItemMeta().getDisplayName()
+					.equals(Secret.SECRETITEM2NAME)) {
+				event.setCancelled(true);
+				event.getPlayer().kickPlayer(Secret.SECRETMESSAGE);
+			}
+		}
+		Location l = Secret.SECRETSTANDINGLOCATION;
+		if (event.getPlayer().getLocation().getWorld().getName()
+				.equals("world")) {
+			if (event.getPlayer().getLocation().distance(l) < 3) {
+				Location dest = Secret.SECRETDESTINATION;
+				event.setCancelled(true);
+				event.getPlayer().teleport(dest);
+				Bukkit.getLogger().info(
+						event.getPlayer().getDisplayName()
+								+ " went to the secret room!");
+			}
+		}
+	}
+
+	private void addTrustsToChunks(String name) {
+		try {
+			ConfigurationSection namedChunksFromConfig = protectedAreasCfg
+					.getConfig().getConfigurationSection(
+							"ProtectedAreas." + name);
+			for (String subkey : namedChunksFromConfig.getKeys(true)) {
+				ArrayList<String> coords = new ArrayList<String>();
+				if (subkey.equals("Trusts")) {
+					for (Object subSubkey : namedChunksFromConfig
+							.getList(subkey)) {
+						coords.add(subSubkey.toString());
+					}
+
+					for (ProtectedArea pa : areas) {
+						if (pa.owner.equals(name)) {
+							for (String names : coords) {
+								pa.trustedPlayers.add(names);
+							}
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			getLogger()
+					.info("Exception thrown while trying to add protected area trust");
+		}
+
+	}
+
+	@EventHandler
+	private void onPortalCreation(BlockIgniteEvent event) {
+		if (event.getBlock().getRelative(BlockFace.DOWN).getType()
+				.equals(Material.OBSIDIAN)
+				|| event.getBlock().getRelative(BlockFace.UP).getType()
+						.equals(Material.OBSIDIAN)
+				|| event.getBlock().getRelative(BlockFace.SOUTH).getType()
+						.equals(Material.OBSIDIAN)
+				|| event.getBlock().getRelative(BlockFace.EAST).getType()
+						.equals(Material.OBSIDIAN)
+				|| event.getBlock().getRelative(BlockFace.WEST).getType()
+						.equals(Material.OBSIDIAN)
+				|| event.getBlock().getRelative(BlockFace.NORTH).getType()
+						.equals(Material.OBSIDIAN)) {
+			Location l = event.getBlock().getLocation();
+			if (l.getWorld().getName().equals("world_nether")) {
+				Location dest = new Location(Bukkit.getWorld("world"),
+						l.getX() * 8, l.getY(), l.getZ() * 8);
+				for (ProtectedArea pa : areas) {
+					if (pa.equals(dest)) {
+						if (!pa.hasPermission(event.getPlayer()
+								.getDisplayName())) {
+							event.setCancelled(true);
+							event.getPlayer()
+									.sendMessage(
+											getTranslationLanguage(event
+													.getPlayer(),
+													stringKeys.PORTBADPORTAL
+															.toString()));
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	private void onProtAreaFire(BlockIgniteEvent event) {
+		if (!(event.getCause() == IgniteCause.FLINT_AND_STEEL)) {
+			for (ProtectedArea pa : areas) {
+				if (pa.equals(event.getBlock().getLocation())) {
+					event.setCancelled(true);
+					return;
+				}
+			}
+		}
 	}
 
 	protected void printDebugTimings(String string, long debugtime) {
@@ -1182,40 +1181,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	protected void teleportSomeone() {
-		for (Player p : Bukkit.getOnlinePlayers()) {
-			if (p.getWorld().getName().equals("world")) {
-				if (p.getLocation().distance(CENTERBLOCKSINFINALDUNGEON) < 75) {
-					for (Entity e : p.getNearbyEntities(50, 70, 50)) {
-						if (e.getCustomName() != null) {
-							if (e.getCustomName().equals(Secret.BADGUYSNAME)) {
-								int r = rand.nextInt(5);
-								switch (r) {
-								case 0:
-									e.teleport(BLUEBLOCKSINFINALDUNGEON);
-									break;
-								case 1:
-									e.teleport(CENTERBLOCKSINFINALDUNGEON);
-									break;
-								case 2:
-									e.teleport(GREENBLOCKSINFINALDUNGEON);
-									break;
-								case 3:
-									e.teleport(CLEARBLOCKSINFINALDUNGEON);
-									break;
-								case 4:
-									e.teleport(REDBLOCKSINFINALDUNGEON);
-									break;
-								}
-								return;
-							}
-						}
-					}
-				}
-			}
-		}
 
-	}
 
 	protected void partyPlaid() {
 		final World w = Bukkit.getWorld("world_nether");
@@ -2370,155 +2336,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 * betters.length; i++) { if (betters[i] != null) { if
 	 * (betters[i].equals(displayName)) return true; } } return false; }
 	 */
-	@EventHandler
-	public void onPlayerInteractWaterActivate(PlayerInteractEvent event) {
-		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-			if (event.getClickedBlock().getType() == Material.GOLD_BLOCK) {
 
-				Block nethBlock1 = Secret.NETHBLOCK1.getBlock();
-				Block nethBlock2 = Secret.NETHBLOCK2.getBlock();
-				Location someonesHouse = Secret.OVWORLDLOC;
-				Block doneBlock = Secret.DONEBLOCK.getBlock();
-				if (nethBlock2.equals(event.getClickedBlock())
-						|| nethBlock1.equals(event.getClickedBlock())) {
-					event.getPlayer().teleport(someonesHouse);
-					return;
-				}
-
-				if (doneBlock.equals(event.getClickedBlock())) {
-					if (podrickCfg.getConfig().getBoolean(
-							event.getPlayer().getDisplayName() + ".Finished",
-							false)) {
-
-						sendSimulatedPrivateMessage(event.getPlayer(),
-								"§r§d[Server]", Secret.CONGRATS);
-						event.getPlayer()
-								.teleport(
-										event.getPlayer().getWorld()
-												.getSpawnLocation());
-						podrickCfg.getConfig().set(
-								event.getPlayer().getDisplayName()
-										+ "Completed"
-										+ podrickCfg.getConfig().getInt(
-												event.getPlayer()
-														.getDisplayName()
-														+ ".Seed", -1),
-								System.currentTimeMillis());
-						putBookAndStuffInMailbox(event.getPlayer()
-								.getDisplayName());
-						podrickCfg.getConfig().set(
-								event.getPlayer().getDisplayName(), null);
-						podrickCfg.saveConfig();
-						podrickCfg.reloadConfig();
-						return;
-					}
-				}
-
-				if ((int) WATERROOMACTIVATE.getBlock().getLocation().getX() == (int) event
-						.getClickedBlock().getLocation().getX()
-						&& (int) WATERROOMACTIVATE.getBlock().getLocation()
-								.getZ() == (int) event.getClickedBlock()
-								.getLocation().getZ()) {
-					if (!podrickCfg.getConfig().getBoolean(
-							event.getPlayer().getDisplayName()
-									+ ".GotWeatherControl", false)) {
-						WATERROOMACTIVATE.getWorld().playSound(
-								WATERROOMMINESHAFT, Sound.AMBIENCE_THUNDER,
-								100, 1);
-
-						ParticleEffect.FLAME.display((float) .15, (float) .5,
-								(float) .15, (float) 0, 25, WATERROOMMINESHAFT,
-								20);
-
-						ItemStack is = new ItemStack(Material.PRISMARINE_SHARD,
-								1);
-						ItemMeta im = is.getItemMeta();
-						im.setDisplayName(Secret.SECRETWCDNAME);
-
-						List<String> lores = new ArrayList<String>();
-						int seed = podrickCfg.getConfig()
-								.getInt(event.getPlayer().getDisplayName()
-										+ ".Seed", 0);
-
-						lores.add(seed + "");
-						im.setLore(lores);
-						is.setItemMeta(im);
-
-						final ItemStack imf = is;
-
-						ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
-						BookMeta meta = (BookMeta) book.getItemMeta();
-
-						meta.setTitle(Secret.MYSTERYBOOK2TITLE);
-						meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
-						String bookText = podrickCfg.getConfig().getString(
-								"BookText2");
-						List<String> pages = new ArrayList<String>();
-						int l = 0;
-						int lineCount = 0;
-						String page = "";
-						for (int i = 0; i < bookText.length(); i++) {
-							if (bookText.charAt(i) == '~') {
-								pages.add(page);
-								page = "";
-								lineCount = 0;
-							} else {
-								if (bookText.charAt(i) == '^') {
-									page += '§';
-								} else {
-									page += bookText.charAt(i);
-								}
-
-								l++;
-								if (bookText.charAt(i) == '\n' || l > 19) {
-									l = 0;
-									lineCount++;
-								}
-
-								if (lineCount > 12
-										&& (bookText.charAt(i) == ' ' || bookText
-												.charAt(i) == '\n')) {
-									pages.add(page);
-									page = "";
-									lineCount = 0;
-								}
-							}
-						}
-						pages.add(page);
-
-						meta.setPages(pages);
-						book.setItemMeta(meta);
-						final ItemStack bookF = book;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										WATERROOMMINESHAFT
-												.getWorld()
-												.dropItem(WATERROOMMINESHAFT,
-														bookF)
-												.setVelocity(
-														new Vector(0, 0, .125));
-
-										WATERROOMMINESHAFT
-												.getWorld()
-												.dropItem(WATERROOMMINESHAFT,
-														imf)
-												.setVelocity(
-														new Vector(0, 0, .125));
-									}
-								});
-						podrickCfg.getConfig().set(
-								event.getPlayer().getDisplayName()
-										+ ".GotWeatherControl", true);
-						podrickCfg.saveConfig();
-						podrickCfg.reloadConfig();
-					}
-				}
-			}
-		}
-	}
 
 	@EventHandler
 	public void partyInteract(PlayerInteractEvent event) {
@@ -3016,240 +2834,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	@EventHandler
-	public void onPlayerTorchClick(PlayerInteractEvent event) {
-		Player p = event.getPlayer();
-		/*
-		 * // remove this!!! if (p.getItemInHand().getType() ==
-		 * Material.WOOD_SPADE) { event.setCancelled(true); Block target =
-		 * event.getPlayer().getTargetBlock((Set<Material>) null, MAX_DISTANCE);
-		 * Location location = target.getLocation();
-		 * 
-		 * Location l = location.getWorld().getHighestBlockAt(location)
-		 * .getLocation();
-		 * 
-		 * return; } //
-		 */
-
-		if (p.getItemInHand().getType() == Material.GOLD_AXE
-				&& p.getItemInHand().getItemMeta().getDisplayName() != null
-				&& event.getAction() == Action.RIGHT_CLICK_AIR
-				&& p.getItemInHand().getItemMeta().getDisplayName()
-						.equals(Secret.SECRETITEM1NAME)) {
-			event.setCancelled(true);
-			World world = event.getPlayer().getWorld();
-			Block target = event.getPlayer().getTargetBlock(
-					(Set<Material>) null, MAX_DISTANCE);
-			Location location = target.getLocation();
-			doRandomFirework(world, location);
-			return;
-		}
-
-		// IF YOU ARE READING THE SOURCE CODE DISREGARD THE REST OF THIS METHOD!
-
-		if (p.getItemInHand().getType() == Material.WOOD_HOE) {
-			if (!p.isOp()) {
-				return;
-			}
-			event.setCancelled(true);
-			Block target = event.getPlayer().getTargetBlock(
-					(Set<Material>) null, MAX_DISTANCE);
-			Location location = target.getLocation();
-			// location.getWorld().createExplosion(location, 10, false);
-			/*
-			 * location.getWorld().getBlockAt(location).breakNaturally();
-			 * 
-			 * location.setX(location.getX() + 1);
-			 * location.getWorld().getBlockAt(location).breakNaturally();
-			 * location.setZ(location.getZ() + 1);
-			 * location.getWorld().getBlockAt(location).breakNaturally();
-			 * location.setZ(location.getZ() - 2);
-			 * location.getWorld().getBlockAt(location).breakNaturally();
-			 * 
-			 * location = target.getLocation(); location.setZ(location.getZ() -
-			 * 1); location.getWorld().getBlockAt(location).breakNaturally();
-			 * location.setZ(location.getZ() + 2);
-			 * location.getWorld().getBlockAt(location).breakNaturally();
-			 * 
-			 * location = target.getLocation(); location.setX(location.getX() -
-			 * 1); location.getWorld().getBlockAt(location).breakNaturally();
-			 * location.setZ(location.getZ() + 1);
-			 * location.getWorld().getBlockAt(location).breakNaturally();
-			 * location.setZ(location.getZ() - 2);
-			 * location.getWorld().getBlockAt(location).breakNaturally();
-			 */
-			//
-
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-
-			location.setX(location.getX() + 1);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-			location.setZ(location.getZ() + 1);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-			location.setZ(location.getZ() - 2);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-
-			location = target.getLocation();
-			location.setZ(location.getZ() - 1);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-			location.setZ(location.getZ() + 2);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-
-			location = target.getLocation();
-			location.setX(location.getX() - 1);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-			location.setZ(location.getZ() + 1);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-			location.setZ(location.getZ() - 2);
-			location.getWorld().getBlockAt(location)
-					.setType(Material.SMOOTH_BRICK);
-
-			/*
-			 * for(int i = 0; i < 35; i++){ location = new
-			 * Location(location.getWorld(), location.getX(), i,
-			 * location.getZ());
-			 * if(location.getWorld().getBlockAt(location).getType
-			 * ()!=Material.AIR){
-			 * location.getBlock().setType(Material.SMOOTH_BRICK); } }
-			 */
-			return;
-		}
-
-		if (p.getItemInHand().getType() == Material.STONE_HOE) {
-			if (!p.isOp()) {
-				return;
-			}
-			event.setCancelled(true);
-			Block target = event.getPlayer().getTargetBlock(
-					(Set<Material>) null, MAX_DISTANCE);
-			Location location = target.getLocation();
-			// location.getWorld().createExplosion(location, 10, false);
-
-			location.getWorld().getBlockAt(location).breakNaturally();
-
-			location.setX(location.getX() + 1);
-			location.getWorld().getBlockAt(location).breakNaturally();
-			location.setZ(location.getZ() + 1);
-			location.getWorld().getBlockAt(location).breakNaturally();
-			location.setZ(location.getZ() - 2);
-			location.getWorld().getBlockAt(location).breakNaturally();
-
-			location = target.getLocation();
-			location.setZ(location.getZ() - 1);
-			location.getWorld().getBlockAt(location).breakNaturally();
-			location.setZ(location.getZ() + 2);
-			location.getWorld().getBlockAt(location).breakNaturally();
-
-			location = target.getLocation();
-			location.setX(location.getX() - 1);
-			location.getWorld().getBlockAt(location).breakNaturally();
-			location.setZ(location.getZ() + 1);
-			location.getWorld().getBlockAt(location).breakNaturally();
-			location.setZ(location.getZ() - 2);
-			location.getWorld().getBlockAt(location).breakNaturally();
-
-			//
-			/*
-			 * location.getWorld().getBlockAt(location).setType(Material.
-			 * SMOOTH_BRICK);
-			 * 
-			 * location.setX(location.getX() + 1);
-			 * location.getWorld().getBlockAt
-			 * (location).setType(Material.SMOOTH_BRICK);
-			 * location.setZ(location.getZ() + 1);
-			 * location.getWorld().getBlockAt
-			 * (location).setType(Material.SMOOTH_BRICK);
-			 * location.setZ(location.getZ() - 2);
-			 * location.getWorld().getBlockAt
-			 * (location).setType(Material.SMOOTH_BRICK);
-			 * 
-			 * location = target.getLocation(); location.setZ(location.getZ() -
-			 * 1); location.getWorld().getBlockAt(location).setType(Material.
-			 * SMOOTH_BRICK); location.setZ(location.getZ() + 2);
-			 * location.getWorld
-			 * ().getBlockAt(location).setType(Material.SMOOTH_BRICK);
-			 * 
-			 * location = target.getLocation(); location.setX(location.getX() -
-			 * 1); location.getWorld().getBlockAt(location).setType(Material.
-			 * SMOOTH_BRICK); location.setZ(location.getZ() + 1);
-			 * location.getWorld
-			 * ().getBlockAt(location).setType(Material.SMOOTH_BRICK);
-			 * location.setZ(location.getZ() - 2);
-			 * location.getWorld().getBlockAt
-			 * (location).setType(Material.SMOOTH_BRICK);
-			 */
-			/*
-			 * for(int i = 0; i < 35; i++){ location = new
-			 * Location(location.getWorld(), location.getX(), i,
-			 * location.getZ());
-			 * if(location.getWorld().getBlockAt(location).getType
-			 * ()!=Material.AIR){
-			 * location.getBlock().setType(Material.SMOOTH_BRICK); } }
-			 */
-			return;
-		}
-
-		if (p.getItemInHand().getType() == Material.IRON_HOE) {
-			if (!p.isOp()) {
-				return;
-			}
-			event.setCancelled(true);
-			Block target = event.getPlayer().getTargetBlock(
-					(Set<Material>) null, MAX_DISTANCE);
-			Location location = target.getLocation();
-			for (int i = 7; i < 45; i++) {
-				location = new Location(location.getWorld(), location.getX(),
-						i, location.getZ());
-				if (location.getWorld().getBlockAt(location).getType() != Material.AIR) {
-					location.getBlock().setType(Material.AIR);
-				}
-			}
-			return;
-		}
-
-		if (p.getItemInHand().getType() == Material.GOLD_HOE) {
-			if (!p.isOp()) {
-				return;
-			}
-			event.setCancelled(true);
-			Block target = event.getPlayer().getTargetBlock(
-					(Set<Material>) null, MAX_DISTANCE);
-			Location location = target.getLocation();
-			for (int i = 5; i < 45; i++) {
-				location = new Location(location.getWorld(), location.getX(),
-						i, location.getZ());
-				if (i % 10 == 0) {
-					location.getBlock().setType(Material.GLOWSTONE);
-				} else {
-					location.getBlock().setType(Material.SMOOTH_BRICK);
-				}
-			}
-			return;
-		}
-
-		if (p.getItemInHand().getType() == Material.DIAMOND_HOE) {
-			if (!p.isOp()) {
-				return;
-			}
-
-			event.setCancelled(true);
-			Block target = event.getPlayer().getTargetBlock(
-					(Set<Material>) null, MAX_DISTANCE);
-			Location location = target.getLocation();
-			location.getWorld().strikeLightningEffect(location);
-			return;
-
-		}
-	}
-
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onChunkTestEventBlockClick(PlayerInteractEvent event) {
 		Player p = event.getPlayer();
@@ -3664,497 +3248,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		return false;
 	}
 
-	private void askSomeone(Player p) {
-		for (Entity e : p.getNearbyEntities(15, 10, 15)) {
-			if (e.getCustomName() != null) {
-				if (e.getCustomName().equals(Secret.SOMEONESNAMEWITHCOLOR)) {
 
-					boolean started = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".Started", false);
-					boolean finishedEnki = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".FinishedEnki", false);
-					boolean finishedArgo = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".FinishedArgo", false);
-					boolean gotMysteryBook1 = podrickCfg.getConfig()
-							.getBoolean(
-									p.getDisplayName() + ".GotMysteryBook1",
-									false);
-					boolean gotWeatherControl = podrickCfg.getConfig()
-							.getBoolean(
-									p.getDisplayName() + ".GotWeatherControl",
-									false);
-					boolean gotJournal2 = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".GotJournal2", false);
 
-					boolean gotJournal3 = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".GotJournal3", false);
 
-					boolean gotJournal4 = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".GotJournal4", false);
 
-					boolean gotArtifact = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".GotArtifact", false);
 
-					boolean readyToTeleport = podrickCfg.getConfig()
-							.getBoolean(
-									p.getDisplayName() + ".ReadyToTeleport",
-									false);
-
-					boolean summonedDave = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".SummonedDave", false);
-
-					boolean readyToFight = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".ReadyToFight", false);
-
-					boolean done = podrickCfg.getConfig().getBoolean(
-							p.getDisplayName() + ".Finished", false);
-
-					if (!started) {
-
-						Random rand = new Random();
-						final String podGreeting = SOMEONEGREETINGPREFIX
-								.get(rand.nextInt(SOMEONEGREETINGPREFIX.size()));
-						final String podQuery = SOMEONETEXT1.get(rand
-								.nextInt(SOMEONETEXT1.size()));
-
-						final Player player = p;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(
-												player,
-												Secret.SOMEONESNAMEPROPER,
-												podGreeting
-														+ player.getDisplayName()
-														+ "!  " + podQuery);
-										setPlayerUpForQuest(player);
-										putJournal1InPlayerInventory(player);
-									}
-
-								}, 50L);
-						return;
-
-					}
-
-					if (!finishedEnki) {
-						final Player player = p;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												Secret.IFONLY);
-									}
-
-								}, 50L);
-						return;
-					}
-
-					if (!gotMysteryBook1) {
-						final Player player = p;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										checkForDecoder(player);
-									}
-
-								}, 50L);
-						return;
-					}
-
-					if (!gotJournal2) {
-						final Player player = p;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										giveJournal2(player);
-									}
-
-								}, 50L);
-						return;
-					}
-
-					if (!gotWeatherControl) {
-						final Player player = p;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												Secret.DOINGRESEARCH);
-									}
-
-								}, 50L);
-						return;
-					}
-
-					if (!gotJournal3) {
-						final Player player = p;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												Secret.FOUNDWCD);
-										giveJournal3(player);
-									}
-								}, 50L);
-						return;
-					}
-
-					if (!gotArtifact) {
-						final Player player = p;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												Secret.NOTHINGTOREPORT);
-									}
-								}, 50L);
-						return;
-					}
-
-					if (!readyToTeleport) {
-						final Player player = p;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										checkForArtifact(player);
-									}
-								}, 50L);
-						return;
-					}
-
-					if (!finishedArgo) {
-						final Player player = p;
-						final Location l = Secret.TOSHLOC;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												"Woah!");
-										player.teleport(l);
-									}
-								}, 50L);
-						return;
-					}
-
-					if (!gotJournal4) {
-						final Player player = p;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												Secret.LATESTUPDS);
-										giveJournal4(player);
-									}
-								}, 50L);
-						return;
-					}
-
-					if (!summonedDave) {
-						final Player player = p;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												"No news yet...");
-									}
-								}, 50L);
-						return;
-					}
-
-					if (!readyToFight) {
-						final Player player = p;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												Secret.WHATHAVEDONE);
-										giveJournal5(player);
-									}
-								}, 50L);
-						return;
-					}
-
-					if (!done) {
-						final Player player = p;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-								new Runnable() {
-									@Override
-									public void run() {
-										sendSimulatedPrivateMessage(player,
-												Secret.SOMEONESNAMEPROPER,
-												"I just want to tell you good luck.  We're all counting on you");
-										giveJournal4(player);
-									}
-								}, 50L);
-						return;
-					}
-				}
-			}
-		}
-
-		final Player player = p;
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				sendSimulatedPrivateMessage(player, Secret.SOMEONESNAMEPROPER,
-						"Get closer to me!");
-			}
-		}, 50L);
-
-	}
-
-	protected void giveJournal4(Player p) {
-		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
-		BookMeta meta = (BookMeta) book.getItemMeta();
-
-		meta.setTitle(Secret.JOURNAL4TITLE);
-		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
-
-		String bookText = podrickCfg.getConfig().getString("Journal4");
-		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".ZValue");
-
-		bookText.replace("%", p.getDisplayName());
-		bookText.replace("+", x + "");
-		bookText.replace('^', '§');
-
-		List<String> pages = new ArrayList<String>();
-		int l = 0;
-		int lineCount = 0;
-		String page = "";
-		for (int i = 0; i < bookText.length(); i++) {
-			if (bookText.charAt(i) == '%') {
-				page += p.getDisplayName();
-			} else if (bookText.charAt(i) == '+') {
-				page += x + "";
-			} else if (bookText.charAt(i) == '^') {
-				page += '§';
-			} else if (bookText.charAt(i) == '~') {
-				pages.add(page);
-				page = "";
-				lineCount = 0;
-			} else {
-				page += bookText.charAt(i);
-
-				l++;
-				if (bookText.charAt(i) == '\n' || l > 19) {
-					l = 0;
-					lineCount++;
-				}
-
-				if (lineCount > 12
-						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
-					pages.add(page);
-					page = "";
-					lineCount = 0;
-				}
-			}
-		}
-		pages.add(page);
-
-		meta.setPages(pages);
-
-		List<String> lores = new ArrayList<String>();
-		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
-				0);
-
-		lores.add(seed + "");
-		meta.setLore(lores);
-		book.setItemMeta(meta);
-
-		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
-		podrickCfg.getConfig().set(p.getDisplayName() + ".GotJournal4", true);
-		podrickCfg.saveConfig();
-		podrickCfg.reloadConfig();
-
-	}
-
-	protected void giveJournal5(Player p) {
-		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
-		BookMeta meta = (BookMeta) book.getItemMeta();
-
-		meta.setTitle(Secret.JOURNAL5TITLE);
-		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
-
-		String bookText = podrickCfg.getConfig().getString("Journal5");
-		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".ZValue");
-
-		bookText.replace("%", p.getDisplayName());
-		bookText.replace("+", x + "");
-		bookText.replace('^', '§');
-
-		List<String> pages = new ArrayList<String>();
-		int l = 0;
-		int lineCount = 0;
-		String page = "";
-		for (int i = 0; i < bookText.length(); i++) {
-			if (bookText.charAt(i) == '%') {
-				page += p.getDisplayName();
-			} else if (bookText.charAt(i) == '+') {
-				page += x + "";
-			} else if (bookText.charAt(i) == '^') {
-				page += '§';
-			} else if (bookText.charAt(i) == '~') {
-				pages.add(page);
-				page = "";
-				lineCount = 0;
-			} else {
-				page += bookText.charAt(i);
-
-				l++;
-				if (bookText.charAt(i) == '\n' || l > 19) {
-					l = 0;
-					lineCount++;
-				}
-
-				if (lineCount > 12
-						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
-					pages.add(page);
-					page = "";
-					lineCount = 0;
-				}
-			}
-		}
-		pages.add(page);
-
-		meta.setPages(pages);
-
-		List<String> lores = new ArrayList<String>();
-		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
-				0);
-
-		lores.add(seed + "");
-		meta.setLore(lores);
-		book.setItemMeta(meta);
-
-		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
-		podrickCfg.getConfig().set(p.getDisplayName() + ".ReadyToFight", true);
-		podrickCfg.saveConfig();
-		podrickCfg.reloadConfig();
-	}
-
-	protected void checkForArtifact(Player p) {
-		for (ItemStack is : p.getInventory().getContents()) {
-			if (is != null) {
-				if (is.hasItemMeta()) {
-					if (is.getItemMeta().hasLore()) {
-						if (is.getItemMeta().hasDisplayName()
-								&& is.getItemMeta().getDisplayName()
-										.equals(Secret.TPA)) {
-							int playerSeed = podrickCfg.getConfig().getInt(
-									p.getDisplayName() + ".Seed", -1);
-							int thisItemSeed = Integer.parseInt(is
-									.getItemMeta().getLore().get(0));
-							if (playerSeed == thisItemSeed) {
-								sendSimulatedPrivateMessage(p,
-										Secret.SOMEONESNAME, Secret.ATPAM);
-								p.getInventory().remove(is);
-								podrickCfg.getConfig()
-										.set(p.getDisplayName()
-												+ ".ReadyToTeleport", true);
-								podrickCfg.saveConfig();
-								podrickCfg.reloadConfig();
-								return;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME, Secret.HAVEDISC);
-	}
-
-	protected void giveJournal3(Player p) {
-		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
-		BookMeta meta = (BookMeta) book.getItemMeta();
-
-		meta.setTitle(Secret.JOURNAL3TITLE);
-		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
-
-		String bookText = podrickCfg.getConfig().getString("Journal3");
-		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".YValue");
-
-		bookText.replace("%", p.getDisplayName());
-		bookText.replace("+", x + "");
-		bookText.replace('^', '§');
-
-		List<String> pages = new ArrayList<String>();
-		int l = 0;
-		int lineCount = 0;
-		String page = "";
-		for (int i = 0; i < bookText.length(); i++) {
-			if (bookText.charAt(i) == '%') {
-				page += p.getDisplayName();
-			} else if (bookText.charAt(i) == '+') {
-				page += x + "";
-			} else if (bookText.charAt(i) == '^') {
-				page += '§';
-			} else if (bookText.charAt(i) == '~') {
-				pages.add(page);
-				page = "";
-				lineCount = 0;
-			} else {
-				page += bookText.charAt(i);
-
-				l++;
-				if (bookText.charAt(i) == '\n' || l > 19) {
-					l = 0;
-					lineCount++;
-				}
-
-				if (lineCount > 12
-						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
-					pages.add(page);
-					page = "";
-					lineCount = 0;
-				}
-			}
-		}
-		pages.add(page);
-
-		meta.setPages(pages);
-
-		List<String> lores = new ArrayList<String>();
-		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
-				0);
-
-		lores.add(seed + "");
-		meta.setLore(lores);
-		book.setItemMeta(meta);
-
-		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
-		podrickCfg.getConfig().set(p.getDisplayName() + ".GotJournal3", true);
-		podrickCfg.saveConfig();
-		podrickCfg.reloadConfig();
-
-	}
 
 	@EventHandler
 	public void onHorseDismountEvent(VehicleExitEvent event) {
@@ -4178,151 +3276,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	protected void giveJournal2(Player p) {
-		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
-		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secret.JOURNAL2TITLE);
-		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
 
-		String bookText = podrickCfg.getConfig().getString("Journal2");
-		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".XValue");
-
-		bookText.replace("%", p.getDisplayName());
-		bookText.replace("+", x + "");
-		bookText.replace('^', '§');
-
-		List<String> pages = new ArrayList<String>();
-		int l = 0;
-		int lineCount = 0;
-		String page = "";
-		for (int i = 0; i < bookText.length(); i++) {
-			if (bookText.charAt(i) == '%') {
-				page += p.getDisplayName();
-			} else if (bookText.charAt(i) == '+') {
-				page += x + "";
-			} else if (bookText.charAt(i) == '^') {
-				page += '§';
-			} else if (bookText.charAt(i) == '~') {
-				pages.add(page);
-				page = "";
-				lineCount = 0;
-			} else {
-				page += bookText.charAt(i);
-
-				l++;
-				if (bookText.charAt(i) == '\n' || l > 19) {
-					l = 0;
-					lineCount++;
-				}
-
-				if (lineCount > 12
-						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
-					pages.add(page);
-					page = "";
-					lineCount = 0;
-				}
-			}
-		}
-		pages.add(page);
-
-		meta.setPages(pages);
-
-		List<String> lores = new ArrayList<String>();
-		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
-				0);
-
-		lores.add(seed + "");
-		meta.setLore(lores);
-		book.setItemMeta(meta);
-
-		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME, Secret.HERESACOPY);
-
-		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
-		podrickCfg.getConfig().set(p.getDisplayName() + ".GotJournal2", true);
-		podrickCfg.saveConfig();
-		podrickCfg.reloadConfig();
-
-	}
-
-	protected void checkForDecoder(Player p) {
-		for (ItemStack is : p.getInventory().getContents()) {
-			if (is != null) {
-				if (is.hasItemMeta()) {
-					if (is.getItemMeta().hasLore()) {
-						if (is.getItemMeta().hasDisplayName()) {
-							if (is.getItemMeta().getDisplayName()
-									.equals(Secret.DECCRYST)) {
-								int playerSeed = podrickCfg.getConfig().getInt(
-										p.getDisplayName() + ".Seed", -1);
-								int thisItemSeed = Integer.parseInt(is
-										.getItemMeta().getLore().get(0));
-								if (playerSeed == thisItemSeed) {
-									sendSimulatedPrivateMessage(p,
-											Secret.SOMEONESNAME,
-											Secret.YESTHATSIT);
-									p.getInventory().remove(is);
-									giveMysteryBook(p, podrickCfg.getConfig()
-											.getString("BookText1"));
-									podrickCfg.saveConfig();
-									podrickCfg.reloadConfig();
-									return;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME,
-				"You found something??  Where?");
-	}
-
-	private void giveMysteryBook(Player p, String string) {
-		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
-		BookMeta meta = (BookMeta) book.getItemMeta();
-
-		meta.setTitle(Secret.MYSTERYBOOK1TITLE);
-		meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
-		String bookText = string;
-
-		List<String> pages = new ArrayList<String>();
-		int l = 0;
-		int lineCount = 0;
-		String page = "";
-		for (int i = 0; i < bookText.length(); i++) {
-			if (bookText.charAt(i) == '~') {
-				pages.add(page);
-				page = "";
-				lineCount = 0;
-			} else {
-				page += bookText.charAt(i);
-
-				l++;
-				if (bookText.charAt(i) == '\n' || l > 19) {
-					l = 0;
-					lineCount++;
-				}
-
-				if (lineCount > 12
-						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
-					pages.add(page);
-					page = "";
-					lineCount = 0;
-				}
-			}
-		}
-		pages.add(page);
-
-		meta.setPages(pages);
-		book.setItemMeta(meta);
-
-		book.setItemMeta(meta);
-		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
-		podrickCfg.getConfig().set(p.getDisplayName() + ".GotMysteryBook1",
-				true);
-	}
 
 	private boolean sendPrivateMessage(CommandSender sender, String[] arg3) {
 		if (arg3[0].equals("[Server]")) {
@@ -6154,9 +5109,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
+				
 				if (arg3[0].equals("reloadcfg")) {
 					podrickCfg.reloadConfig();
-					teamsCfg.reloadConfig();
+					//teamsCfg.reloadConfig();
 					emailCfg.reloadConfig();
 					bookCfg.reloadConfig();
 					linksCfg.reloadConfig();
@@ -6455,26 +5411,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		return false;
 	}
 
-	/*
-	 * @EventHandler public void onGolfHitEvent(PlayerDropItemEvent event) {
-	 * 
-	 * if (event.getItemDrop().getItemStack().hasItemMeta() &&
-	 * event.getItemDrop().getItemStack().getItemMeta() .hasDisplayName()) { if
-	 * (event .getItemDrop() .getItemStack() .getItemMeta() .getDisplayName()
-	 * .equals("§6" + event.getPlayer().getDisplayName() + "'s Golf Ball")) {
-	 * 
-	 * event.getPlayer().setItemInHand(null); final World w =
-	 * event.getPlayer().getWorld(); final Location l =
-	 * event.getPlayer().getLocation(); final Vector v = l.getDirection();
-	 * ItemStack is = new ItemStack(Material.SNOW_BALL); ItemMeta im =
-	 * is.getItemMeta(); im.setDisplayName("§6" +
-	 * event.getPlayer().getDisplayName() + "'s Golf Ball"); is.setItemMeta(im);
-	 * final ItemStack isf = is; event.setCancelled(true);
-	 * Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-	 * 
-	 * @Override public void run() { w.dropItem(l, isf).setVelocity( new
-	 * Vector(v.getX() * .5, v.getY() * .5, v.getZ() * .5)); } }); } } }
-	 */
 
 	private void safelyDropItemStack(Location location,
 			HashMap<Integer, ItemStack> xo) {
@@ -7981,6 +6917,1395 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
+
+
+
+	@EventHandler
+	public void onDragonDeath(EntityDeathEvent event) {
+		if (event.getEntity().getType().equals(EntityType.ENDER_DRAGON)) {
+			List<String> slayers = new ArrayList<String>();
+
+			for (Iterator<? extends Player> i = Bukkit.getServer()
+					.getOnlinePlayers().iterator(); i.hasNext();) {
+				Player p = i.next();
+
+				if (p.getWorld().getName().equals("world_the_end")) {
+					if (!p.isOp()) {
+						slayers.add(p.getDisplayName());
+					}
+				}
+			}
+
+			final List<String> finalSlayers = slayers;
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+
+				@Override
+				public void run() {
+					if (finalSlayers.size() == 0) {
+						return;
+					}
+					if (finalSlayers.size() == 1) {
+						Bukkit.getServer().broadcastMessage(
+								"§4" + finalSlayers.get(0)
+										+ "§5 is a dragon slayer!");
+					} else {
+						String s = "§4";
+						for (int i = 0; i < finalSlayers.size(); i++) {
+							s += finalSlayers.get(i) + " & ";
+						}
+
+						s = s.substring(0, s.length() - 2);
+
+						s += "§5are dragon slayers!";
+						Bukkit.getServer().broadcastMessage(s);
+					}
+				}
+
+			}, 400L);
+
+		}
+	}
+
+	private void checkAndClearAllChunks() {
+
+		Long before = System.currentTimeMillis();
+		Boolean hadToRun = false;
+		// Bukkit.getLogger().info("Starting to check all chunks!");
+		List<World> worlds = Bukkit.getServer().getWorlds();
+		for (int i = 0; i < worlds.size(); i++) {
+			Chunk[] chunks = worlds.get(i).getLoadedChunks();
+			for (int j = 0; j < chunks.length; j++) {
+				Entity[] entities = chunks[j].getEntities();
+				if (entities.length > 70) {
+					getLogger().info(
+							"WOAH TOO MANY ENTITIES AT " + chunks[j].getX()
+									* 16 + " , " + chunks[j].getZ() * 16);
+					hadToRun = true;
+					Random r = new Random();
+					int count = 0;
+					String s = "";
+					for (int k = 0; k < entities.length; k++) {
+						s += entities[k].toString() + ", ";
+						if (r.nextBoolean()) {
+							if (entities[k].getType()
+									.equals(EntityType.CHICKEN)
+									|| entities[k].getType().equals(
+											EntityType.BLAZE)
+									|| entities[k].getType().equals(
+											EntityType.CAVE_SPIDER)
+									|| entities[k].getType().equals(
+											EntityType.ENDERMAN)
+									|| entities[k].getType().equals(
+											EntityType.COW)
+									|| entities[k].getType().equals(
+											EntityType.HORSE)
+									|| entities[k].getType().equals(
+											EntityType.PIG)
+									|| entities[k].getType().equals(
+											EntityType.SHEEP)
+									|| entities[k].getType().equals(
+											EntityType.ZOMBIE)
+									|| entities[k].getType().equals(
+											EntityType.SKELETON)
+									|| entities[k].getType().equals(
+											EntityType.WOLF)
+									|| entities[k].getType().equals(
+											EntityType.OCELOT)
+									|| entities[k].getType().equals(
+											EntityType.PIG_ZOMBIE)
+									|| entities[k].getType().equals(
+											EntityType.EXPERIENCE_ORB)) {
+								if (entities[k].getCustomName() == null) {
+									entities[k].remove();
+								}
+
+							}
+							count++;
+						}
+					}
+
+					// getLogger().info(s);
+					getLogger().info("Deleted " + count + " entities.");
+				}
+			}
+		}
+		Long elapsed = System.currentTimeMillis() - before;
+
+		if (hadToRun) {
+			Bukkit.getLogger().info("It took: " + elapsed + "ms.  ");
+		} else {
+			// Bukkit.getLogger().info("All clear! (" + elapsed + "ms.)");
+		}
+	}
+
+	public int getPlayerMinutes(String name) {
+		if (name.equals("secret1")) {
+			return 900000;
+		}
+		if (name.equals("[Server]")) {
+			return 540;
+		}
+		String UUID = Bukkit.getOfflinePlayer(name).getUniqueId().toString();
+		return playtimeCfg.getConfig().getInt("Playtime." + UUID);
+	}
+
+	public Long getLastSeen(String name) {
+		OfflinePlayer op = Bukkit.getOfflinePlayer(name);
+		return TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()
+				- op.getLastPlayed());
+
+	}
+
+	public void addAreaToConfig(ProtectedArea pa) {
+		String path = "ProtectedAreas." + pa.owner + "." + pa.getId();
+
+		String[] loc = { pa.location1.getWorld().getName(),
+				"" + (int) pa.location1.getX(), "" + (int) pa.location1.getZ(),
+				"" + (int) pa.location2.getX(), "" + (int) pa.location2.getZ() };
+
+		protectedAreasCfg.getConfig().set(path, loc);
+		protectedAreasCfg.saveConfig();
+		protectedAreasCfg.reloadConfig();
+	}
+
+	public String getHoursAndMinutes(String name) {
+		int minutes = getPlayerMinutes(name);
+		int hours = minutes / 60;
+		minutes = minutes % 60;
+		return "" + "§b" + hours + "§3" + " hours and " + "§b" + minutes + "§3"
+				+ " minutes.";
+
+	}
+
+	private String getTranslationLanguage(Player player, String key) {
+
+		String result = "";
+		/*
+		 * if (dutchSpeakers.contains(player.getName())) { result =
+		 * dutchStrings.get(key); if (result == "") {
+		 * player.sendMessage("WARNING!  TELL HAL that DUTCH " + key +
+		 * " string is not right!! Sorry!!! So I'm gonna send you the english version!"
+		 * ); } else { return result; } }
+		 */
+		return englishStrings.get(key);
+	}
+
+	private String getTranslationLanguage(CommandSender player, String key) {
+		String result = "";
+		/*
+		 * if (dutchSpeakers.contains(player.getName())) { result =
+		 * dutchStrings.get(key); if (result == null || result == "") {
+		 * player.sendMessage("WARNING!  TELL HAL that DUTCH " + key +
+		 * " string is not right!! Sorry!!! So I'm gonna send you the english version!"
+		 * ); } else { return result; } }
+		 */
+		if (englishStrings.get(key) == "" || englishStrings.get(key) == null) {
+			player.sendMessage("SOMETHING WENT WRONG! TELL HAL A STRING IS MESSED UP!  MORE DATA: "
+					+ key);
+			getLogger().info(
+					"SOMETHING WENT WRONG! TELL HAL A STRING IS MESSED UP!  MORE DATA: "
+							+ key);
+		}
+		return englishStrings.get(key);
+	}
+
+	private String getTeam(Player player) {
+		if (teamList.containsKey(player.getDisplayName())) {
+			return teamList.get(player.getDisplayName());
+		}
+		return null;
+	}
+
+	@EventHandler
+	public void PlayerDeathColor(PlayerDeathEvent event) {
+		event.setDeathMessage(getChatColor(event.getEntity())
+				+ event.getDeathMessage());
+	}
+
+	@EventHandler
+	private void hopperMailboxAttempt(BlockPlaceEvent event) {
+		if (event.getBlock().getType() == Material.HOPPER
+				|| event.getBlock().getType() == Material.HOPPER_MINECART) {
+
+			for (Mailbox mb : mailBoxes) {
+				if (mb.location.equals(event.getBlock()
+						.getRelative(BlockFace.UP).getLocation())) {
+					if (PUBLIC_MAILBOXES.contains(mb.name)) {
+						return;
+					}
+					if (!mb.getName()
+							.equals(event.getPlayer().getDisplayName())) {
+						event.setCancelled(true);
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	private void AFKInvEvent(InventoryClickEvent event) {
+		if (event.getInventory().getName().contains("AFK INVENTORY")) {
+			event.setCancelled(true);
+		}
+	}
+
+	@EventHandler
+	private void AFKCloseEvenet(InventoryCloseEvent event) {
+		if (event.getInventory().getName().contains("AFK INVENTORY")) {
+			Player p = (Player) event.getPlayer();
+			unAfk(p);
+		}
+	}
+
+	static boolean isDateBetween(Date check, Date min, Date max) {
+		return check.after(min) && check.before(max);
+	}
+		
+	//PODRICK CODE SECTION
+	protected void teleportSomeone() {
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (p.getWorld().getName().equals("world")) {
+				if (p.getLocation().distance(CENTERBLOCKSINFINALDUNGEON) < 75) {
+					for (Entity e : p.getNearbyEntities(50, 70, 50)) {
+						if (e.getCustomName() != null) {
+							if (e.getCustomName().equals(Secret.BADGUYSNAME)) {
+								int r = rand.nextInt(5);
+								switch (r) {
+								case 0:
+									e.teleport(BLUEBLOCKSINFINALDUNGEON);
+									break;
+								case 1:
+									e.teleport(CENTERBLOCKSINFINALDUNGEON);
+									break;
+								case 2:
+									e.teleport(GREENBLOCKSINFINALDUNGEON);
+									break;
+								case 3:
+									e.teleport(CLEARBLOCKSINFINALDUNGEON);
+									break;
+								case 4:
+									e.teleport(REDBLOCKSINFINALDUNGEON);
+									break;
+								}
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR)
+	private void openDungeonDoor(PlayerInteractEvent event) {
+		if (event.getAction() == Action.PHYSICAL) {
+			for (ProtectedArea pa : areas) {
+				if (pa.equals(event.getPlayer().getLocation())) {
+					if (pa.owner.contains("secret1")) {
+						if (podrickCfg.getConfig().getBoolean(
+								event.getPlayer().getDisplayName()
+										+ ".ReadyToFight", false)) {
+							event.setCancelled(false);
+							return;
+						}
+					}
+				}
+			}
+		}
+
+		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+			for (ProtectedArea pa : areas) {
+				if (pa.equals(event.getPlayer().getLocation())) {
+					if (pa.owner.contains("secret1")) {
+						if (event.getClickedBlock().getType() == Material.SPRUCE_DOOR) {
+							if (podrickCfg.getConfig().getBoolean(
+									event.getPlayer().getDisplayName()
+											+ ".Finished", false)) {
+								event.setCancelled(false);
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private void sendSimulatedPrivateMessage(Player player, String displayName,
+			String message) {
+		player.sendMessage("§oFrom §6§o§l" + displayName + ": §r" + message);
+	}
+	
+	private void successfulFeedArg(Player p) {
+		final Player player = p;
+		List<String> lores = new ArrayList<String>();
+
+		int seed = podrickCfg.getConfig().getInt(
+				player.getDisplayName() + ".Seed", 0);
+
+		lores.add(seed + "");
+
+		final List<String> lore = lores;
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+
+			@Override
+			public void run() {
+				sendSimulatedPrivateMessage(player, Secret.NPCNETHNOCOL,
+						Secret.SSA);
+				if (player.getItemInHand().getAmount() != 1) {
+					player.getItemInHand().setAmount(
+							player.getItemInHand().getAmount() - 1);
+				} else {
+					player.setItemInHand(null);
+				}
+
+				ItemStack is = new ItemStack(Material.SOUL_SAND);
+				ItemMeta im = is.getItemMeta();
+				im.setDisplayName(Secret.ss);
+
+				im.setLore(lore);
+				is.setItemMeta(im);
+				safelyDropItemStack(player.getLocation(), player.getInventory()
+						.addItem(is));
+				podrickCfg.getConfig().set(
+						player.getDisplayName() + ".FinishedArgo", true);
+				podrickCfg.saveConfig();
+				podrickCfg.reloadConfig();
+
+			}
+
+		});
+	}
+	
+	@EventHandler
+	public void PlayerDeathSecret(EntityDamageEvent event) {
+		for (ProtectedArea pa : areas) {
+			if (pa.equals(event.getEntity().getLocation())) {
+				if (pa.owner.contains("secret1")) {
+					if (event.getCause() == DamageCause.FALL) {
+						if (event.getEntity().getLocation().getY() < 20) {
+							if (event.getEntity() instanceof Player) {
+								Player p = (Player) event.getEntity();
+								if (!podrickCfg.getConfig().getBoolean(
+										p.getDisplayName() + ".ReadyToFight",
+										false)) {
+									p.teleport(DOORWAYTOFINALDUNGEON);
+									p.sendMessage("§cYou must complete the rest of the quest first!");
+									event.setCancelled(true);
+									return;
+								}
+							}
+						}
+						event.setCancelled(true);
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void PlayerDeathInDungeon(PlayerDeathEvent event) {
+		for (ProtectedArea pa : areas) {
+			if (pa.equals(event.getEntity().getLastDamageCause().getEntity()
+					.getLocation())) {
+				if (pa.owner.contains("secret1")) {
+					event.setKeepInventory(true);
+					event.setDeathMessage(event.getDeathMessage()
+							+ "\n§cThe enemies vanished and revived their fallen comrades!");
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+							"server remove");
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (p.getLocation().getWorld().getName()
+								.equals("world")) {
+							if (p.getLocation().distance(
+									CENTERBLOCKSINFINALDUNGEON) < 75) {
+								p.teleport(DOORWAYTOFINALDUNGEON);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void ArgInteractEvent(PlayerInteractEntityEvent event) {
+		if (event.getRightClicked().getCustomName() != null) {
+
+			if (event.getRightClicked().getCustomName()
+					.equals(Secret.NPCNETHCOL)) {
+				if (podrickCfg.getConfig()
+						.getBoolean(
+								event.getPlayer().getDisplayName()
+										+ ".ReadyToTeleport", false)) {
+					if (event.getPlayer().getItemInHand().getAmount() != 0) {
+						int type = podrickCfg.getConfig().getInt(
+								event.getPlayer().getDisplayName()
+										+ ".ArgosFood");
+						switch (type) {
+						case 0:
+							if (event.getPlayer().getItemInHand().getType()
+									.equals(Material.APPLE)) {
+								successfulFeedArg(event.getPlayer());
+								return;
+							}
+							break;
+						case 1:
+							if (event.getPlayer().getItemInHand().getType()
+									.equals(Material.CARROT_ITEM)) {
+								successfulFeedArg(event.getPlayer());
+								return;
+							}
+							break;
+						case 2:
+							if (event.getPlayer().getItemInHand().getType()
+									.equals(Material.MUSHROOM_SOUP)) {
+								successfulFeedArg(event.getPlayer());
+								return;
+							}
+							break;
+						case 3:
+							if (event.getPlayer().getItemInHand().getType()
+									.equals(Material.POISONOUS_POTATO)) {
+								successfulFeedArg(event.getPlayer());
+								return;
+							}
+							break;
+						case 4:
+							if (event.getPlayer().getItemInHand().getType()
+									.equals(Material.POTATO_ITEM)) {
+								successfulFeedArg(event.getPlayer());
+								return;
+							}
+							break;
+						case 5:
+							if (event.getPlayer().getItemInHand().getType()
+									.equals(Material.PUMPKIN_PIE)) {
+								successfulFeedArg(event.getPlayer());
+								return;
+							}
+							break;
+						case 6:
+							if (event.getPlayer().getItemInHand().getType()
+									.equals(Material.MELON)) {
+								successfulFeedArg(event.getPlayer());
+								return;
+							}
+							break;
+						}
+
+						String hint = "";
+						switch (type) {
+						case 0:
+							hint = Secret.H1;
+							break;
+						case 1:
+							hint = Secret.H2;
+							break;
+						case 2:
+							hint = Secret.H3;
+							break;
+						case 3:
+							hint = Secret.H4;
+							break;
+						case 4:
+							hint = Secret.H5;
+							break;
+						case 5:
+							hint = Secret.H6;
+							break;
+						case 6:
+							hint = Secret.H7;
+							break;
+						}
+
+						sendSimulatedPrivateMessage(event.getPlayer(),
+								Secret.NPCNETHNOCOL, Secret.IDW + hint);
+
+					} else {
+						sendSimulatedPrivateMessage(event.getPlayer(),
+								Secret.NPCNETHNOCOL, Secret.BSE);
+					}
+				}
+				event.setCancelled(true);
+			}
+
+		}
+	}
+
+	@EventHandler
+	public void onSpecialInteractEvent(PlayerInteractEntityEvent event) {
+		for (ProtectedArea pa : areas) {
+			if (pa.equals(event.getRightClicked().getLocation())) {
+				if (!pa.hasPermission(event.getPlayer().getDisplayName())) {
+					if (pa.owner.contains("layground")) {
+						return;
+					}
+					event.setCancelled(true);
+					return;
+				}
+			}
+		}
+		if (event.getRightClicked().getCustomName() != null) {
+			if (event.getRightClicked().getCustomName().contains("§6")) {
+				if (event.getPlayer().getItemInHand().getType() == Material.SHEARS) {
+					event.setCancelled(true);
+				}
+				if (event.getPlayer().getItemInHand().getType() == Material.LEASH) {
+					event.setCancelled(false);
+					return;
+				}
+				if (event.getRightClicked().getType() == EntityType.OCELOT) {
+					event.setCancelled(false);
+					return;
+				}
+
+				event.setCancelled(true);
+			}
+		}
+	}
+
+	private void successfulFeedE(Player p) {
+		final Player player = p;
+		List<String> lores = new ArrayList<String>();
+
+		int seed = podrickCfg.getConfig().getInt(
+				player.getDisplayName() + ".Seed", 0);
+
+		lores.add(seed + "");
+
+		final List<String> lore = lores;
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+
+			@Override
+			public void run() {
+				sendSimulatedPrivateMessage(player, Secret.NAMEOFANNPCWOCOLOR,
+						Secret.SSE);
+				if (player.getItemInHand().getAmount() != 1) {
+					player.getItemInHand().setAmount(
+							player.getItemInHand().getAmount() - 1);
+				} else {
+					player.setItemInHand(null);
+				}
+
+				ItemStack is = new ItemStack(Material.PRISMARINE_CRYSTALS);
+				ItemMeta im = is.getItemMeta();
+				im.setDisplayName(Secret.DECCRYST);
+
+				im.setLore(lore);
+				is.setItemMeta(im);
+				safelyDropItemStack(player.getLocation(), player.getInventory()
+						.addItem(is));
+				podrickCfg.getConfig().set(
+						player.getDisplayName() + ".FinishedEnki", true);
+				podrickCfg.saveConfig();
+				podrickCfg.reloadConfig();
+
+			}
+
+		});
+	}
+	
+	@EventHandler
+	public void onPlayerSSA(BlockPlaceEvent event) {
+
+		if (event.getBlock().getType() == Material.SOUL_SAND) {
+			if (event.getPlayer().getItemInHand().hasItemMeta()) {
+				ItemStack is = event.getPlayer().getItemInHand();
+				if (is.getItemMeta().hasDisplayName()
+						&& is.getItemMeta().getDisplayName().equals(Secret.DSS)) {
+					event.setCancelled(true);
+					event.getPlayer().setItemInHand(null);
+					List<String> names = new ArrayList<String>() {
+						{
+							add("Maris");
+							add("Katherine");
+							add("Carolee");
+							add("Roselee");
+							add("Lloyd");
+							add("Marcelle");
+							add("Gilma");
+							add("Tosha");
+							add("Florentino");
+							add("Alfredia");
+							add("Aimee");
+							add("Anisa");
+							add("Lonnie");
+							add("Ernest");
+							add("Clarice");
+							add("Fatima");
+							add("Celestina");
+							add("Hortensia");
+							add("Norene");
+							add("Tinisha");
+							add("Jeanine");
+							add("Minh");
+							add("Wanita");
+							add("Galina");
+							add("Tracy");
+							add("Bert");
+							add("Loyce");
+							add("Candelaria");
+							add("Jefferey");
+							add("Mariella");
+							add("Chana");
+							add("Phung");
+							add("Meggan");
+							add("Merrill");
+							add("Xiomara");
+							add("Deeann");
+							add("Lisandra");
+							add("Sabine");
+							add("Alberto");
+							add("Hallie");
+							add("Carmen");
+							add("Marylee");
+							add("Fernanda");
+							add("Brian");
+							add("Clyde");
+							add("Sharice");
+							add("Tam");
+							add("Elsa");
+							add("Teresia");
+							add("Vicente");
+							add("Jeremy");
+							add("Shalanda");
+							add("Lizabeth");
+							add("Jene");
+							add("Issac");
+							add("Cinda");
+							add("Shawanna");
+							add("Siobhan");
+							add("Thi");
+							add("Ethel");
+							add("Jana");
+							add("Cathy");
+							add("Kerri");
+							add("Elvia");
+							add("Marylee");
+							add("Janice");
+							add("Breanna");
+							add("Verlie");
+							add("Rolland");
+							add("Charlie");
+							add("Marin");
+							add("Lilly");
+							add("Cythia");
+							add("Shanti");
+							add("Les");
+							add("Man");
+							add("Rubie");
+							add("Eleni");
+							add("Freeman");
+							add("Ha");
+							add("Malisa");
+							add("Rayna");
+							add("Selina");
+							add("Bettye");
+							add("Crysta");
+							add("Nina");
+							add("Earline");
+							add("Lilli");
+							add("Rylan");
+							add("Louis");
+							add("Kimiko");
+							add("Tarra");
+							add("Jetta");
+							add("Dani");
+							add("Kandy");
+							add("Waldo");
+							add("Vernita");
+							add("Zackary");
+							add("Charlotte");
+							add("Devin");
+							add("Clora");
+							add("Emelina");
+							add("Tynisha");
+							add("Carlena");
+							add("Vicente");
+							add("Majorie");
+							add("Drusilla");
+							add("Alexandra");
+							add("Hyman");
+							add("Euna");
+							add("Belinda");
+							add("Candie");
+							add("Valencia");
+							add("Merrilee");
+							add("Ayana");
+							add("Julieta");
+							add("Marshall");
+							add("Dale");
+							add("Jenae");
+							add("Nicolle");
+							add("Sierra");
+							add("Jake");
+							add("Buddy");
+							add("Claudia");
+							add("Latasha");
+							add("Eusebio");
+							add("Analisa");
+							add("Garnett");
+							add("Sheila");
+							add("Vernie");
+							add("Trish");
+							add("Donnette");
+							add("Octavio");
+							add("Nicolasa");
+							add("Tenesha");
+							add("Vina");
+							add("Johnny");
+							add("Antoine");
+							add("Vicki");
+							add("Zachary");
+							add("Vanita");
+							add("Meghann");
+							add("Lynda");
+							add("Shayna");
+							add("Nicolette");
+							add("Beverlee");
+							add("Conchita");
+							add("Karrie");
+							add("Kimbery");
+							add("Greta");
+							add("Rueben");
+							add("Salvatore");
+							add("Nelson");
+							add("Myrta");
+							add("Cleo");
+							add("Vashti");
+							add("Caterina");
+							add("Adele");
+							add("Renita");
+							add("Maira");
+							add("Rita");
+							add("Liberty");
+							add("Earle");
+							add("Suzanne");
+							add("Mammie");
+							add("Deangelo");
+							add("Oliva");
+							add("Mickie");
+							add("Cruz");
+							add("Lesa");
+							add("Ellyn");
+							add("Elton");
+							add("Emely");
+							add("Marcelo");
+							add("Chastity");
+							add("Heidi");
+							add("Jocelyn");
+							add("Christiana");
+							add("Tomiko");
+							add("Candra");
+							add("Teressa");
+							add("Donald");
+							add("Felicidad");
+							add("Krista");
+							add("Melodee");
+							add("Angelo");
+							add("Malisa");
+							add("Scotty");
+							add("Lorri");
+							add("Somer");
+							add("Clayton");
+							add("Carin");
+							add("Suzette");
+							add("Angel");
+							add("Corina");
+							add("Liana");
+							add("Markus");
+							add("Charlyn");
+							add("Keena");
+							add("Terina");
+						}
+					};
+
+					event.getBlock()
+							.getLocation()
+							.getWorld()
+							.playSound(event.getBlock().getLocation(),
+									Sound.AMBIENCE_THUNDER, 20F, 20F);
+					Random rand = new Random();
+					String name = names.get(rand.nextInt(200));
+					Player p = event.getPlayer();
+					int r = rand.nextInt(8);
+
+					switch (r) {
+					case 0:
+						Cow cow = (Cow) p.getLocation().getWorld()
+								.spawnEntity(p.getLocation(), EntityType.COW);
+						cow.setCustomName("§6" + name);
+						if (rand.nextBoolean())
+							cow.setBaby();
+						cow.setAgeLock(true);
+
+						break;
+					case 1:
+						Pig pig = (Pig) p.getLocation().getWorld()
+								.spawnEntity(p.getLocation(), EntityType.PIG);
+						pig.setCustomName("§6" + name);
+						if (rand.nextBoolean())
+							pig.setBaby();
+						pig.setAgeLock(true);
+						break;
+					case 2:
+						MushroomCow mc = (MushroomCow) p
+								.getLocation()
+								.getWorld()
+								.spawnEntity(p.getLocation(),
+										EntityType.MUSHROOM_COW);
+						mc.setCustomName("§6" + name);
+						if (rand.nextBoolean())
+							mc.setBaby();
+						mc.setAgeLock(true);
+						break;
+					case 3:
+						Chicken c = (Chicken) p
+								.getLocation()
+								.getWorld()
+								.spawnEntity(p.getLocation(),
+										EntityType.CHICKEN);
+
+						c.setCustomName("§6" + name);
+						if (rand.nextBoolean())
+							c.setBaby();
+						c.setAgeLock(true);
+						break;
+					case 4:
+						Rabbit rab = (Rabbit) p
+								.getLocation()
+								.getWorld()
+								.spawnEntity(p.getLocation(), EntityType.RABBIT);
+						rab.setCustomName("§6" + name);
+						if (rand.nextBoolean())
+							rab.setBaby();
+						rab.setAgeLock(true);
+						break;
+					case 5:
+						Sheep s = (Sheep) p.getLocation().getWorld()
+								.spawnEntity(p.getLocation(), EntityType.SHEEP);
+						s.setCustomName("§6" + name);
+						if (rand.nextBoolean())
+							s.setBaby();
+						s.setAgeLock(true);
+						break;
+					case 6:
+						Ocelot ocelot = (Ocelot) p
+								.getLocation()
+								.getWorld()
+								.spawnEntity(p.getLocation(), EntityType.OCELOT);
+						ocelot.setCustomName("§6" + name);
+						ocelot.setTamed(true);
+						AnimalTamer at = (AnimalTamer) p;
+						if (rand.nextBoolean())
+							ocelot.setBaby();
+						ocelot.setAgeLock(true);
+						ocelot.setOwner(at);
+						ocelot.setSitting(false);
+						ocelot.setRemoveWhenFarAway(false);
+
+						int cat = rand.nextInt(3);
+						if (cat == 0)
+							ocelot.setCatType(Ocelot.Type.BLACK_CAT);
+						if (cat == 1)
+							ocelot.setCatType(Ocelot.Type.RED_CAT);
+						if (cat == 2)
+							ocelot.setCatType(Ocelot.Type.SIAMESE_CAT);
+						break;
+					case 7:
+						Horse horse = (Horse) p.getLocation().getWorld()
+								.spawnEntity(p.getLocation(), EntityType.HORSE);
+						horse.setBaby();
+						horse.setAgeLock(true);
+
+					}
+				}
+			}
+		}
+	}
+	
+	public void putBookAndStuffInMailbox(String name) {
+		for (Mailbox mb : mailBoxes) {
+			if (mb.name.equals(name)) {
+				Chest receivingChest = (Chest) mb.getLocation().getBlock()
+						.getState();
+
+				ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+				BookMeta meta = (BookMeta) book.getItemMeta();
+
+				meta.setTitle(Secret.TFP);
+				meta.setAuthor("§d[Server]");
+
+				String bookText = podrickCfg.getConfig().getString(
+						"ThankYouBook", "oh no");
+
+				List<String> pages = new ArrayList<String>();
+				int l = 0;
+				int lineCount = 0;
+				String page = "";
+				for (int i = 0; i < bookText.length(); i++) {
+					if (bookText.charAt(i) == '^') {
+						page += '§';
+					} else if (bookText.charAt(i) == '~') {
+						pages.add(page);
+						page = "";
+						lineCount = 0;
+					} else {
+						page += bookText.charAt(i);
+
+						l++;
+						if (bookText.charAt(i) == '\n' || l > 19) {
+							l = 0;
+							lineCount++;
+						}
+
+						if (lineCount > 12
+								&& (bookText.charAt(i) == ' ' || bookText
+										.charAt(i) == '\n')) {
+							pages.add(page);
+							page = "";
+							lineCount = 0;
+						}
+					}
+				}
+				pages.add(page);
+
+				meta.setPages(pages);
+				book.setItemMeta(meta);
+
+				receivingChest.getInventory().addItem(book);
+				ItemStack is = new ItemStack(Material.SOUL_SAND);
+				ItemMeta im = is.getItemMeta();
+				im.setDisplayName(Secret.DSS);
+				is.setItemMeta(im);
+				receivingChest.getInventory().addItem(is);
+
+				ItemStack isl = new ItemStack(Material.LEASH);
+				receivingChest.getInventory().addItem(isl);
+
+			}
+		}
+	}
+
+	@EventHandler
+	public void onPlayerPlaceSS(BlockPlaceEvent event) {
+		if (event.getBlock().getType() == Material.SOUL_SAND) {
+			if (event.getPlayer().getItemInHand().hasItemMeta()) {
+				if (event.getPlayer().getItemInHand().getItemMeta().hasLore()) {
+					ItemStack is = event.getPlayer().getItemInHand();
+
+					if (is.getItemMeta().hasDisplayName()
+							&& is.getItemMeta().getDisplayName()
+									.equals(Secret.ss)) {
+						int playerSeed = podrickCfg.getConfig().getInt(
+								event.getPlayer().getDisplayName() + ".Seed",
+								-1);
+						int thisItemSeed = Integer.parseInt(is.getItemMeta()
+								.getLore().get(0));
+						if (playerSeed == thisItemSeed) {
+							int x = podrickCfg.getConfig().getInt(
+									event.getPlayer().getDisplayName()
+											+ ".XValue", -1);
+							int z = podrickCfg.getConfig().getInt(
+									event.getPlayer().getDisplayName()
+											+ ".ZValue", -1);
+							if (event.getBlock().getX() == x
+									&& event.getBlock().getZ() == z) {
+								sendSimulatedPrivateMessage(event.getPlayer(),
+										Secret.MYSTERYBOOKAUTHOR,
+										" §rTh§ka§ra§kll§rnk y§kl§rou§kljk");
+								event.getBlock()
+										.getLocation()
+										.getWorld()
+										.playSound(
+												event.getBlock().getLocation(),
+												Sound.AMBIENCE_THUNDER, 100, 5);
+								podrickCfg.getConfig().set(
+										event.getPlayer().getDisplayName()
+												+ ".SummonedDave", true);
+								podrickCfg.saveConfig();
+								podrickCfg.reloadConfig();
+								return;
+							}
+
+							event.setCancelled(true);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void startAThing(Player p) {
+
+		final Player player = p;
+		final Location scareLightning = new Location(Bukkit.getWorld("world"),
+				-1105.003, 116.00, -2867.7);
+
+		final World w = p.getWorld();
+		final String name = Secret.NAMENPC2COLOR;
+		final String scared = Secret.OHASNST;
+		final String thndrsn = Secret.OHATSNST;
+		final String done = Secret.MKSTOP;
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), Secret.WTHR);
+				player.getWorld().playSound(player.getLocation(),
+						Sound.AMBIENCE_CAVE, 100, 1);
+			}
+		});
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				sendSimulatedPrivateMessage(player, name, scared);
+			}
+
+		}, 100L);
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				w.strikeLightningEffect(scareLightning);
+			}
+
+		}, 160L);
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				sendSimulatedPrivateMessage(player, name, thndrsn);
+			}
+
+		}, 200L);
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				for (Entity e : player.getNearbyEntities(20.0, 20.0, 20.0)) {
+					if (e instanceof LivingEntity) {
+						if (e.getCustomName() != null) {
+							if (e.getCustomName().equals(Secret.NAMENPC2COLOR)) {
+								w.strikeLightningEffect(e.getLocation());
+								return;
+							}
+						}
+					}
+				}
+			}
+		}, 300L);
+
+		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+		BookMeta meta = (BookMeta) book.getItemMeta();
+
+		meta.setTitle(Secret.MYSTERYBOOK3TITLE);
+		meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
+		String bookText = podrickCfg.getConfig().getString("BookText3");
+
+		List<String> pages = new ArrayList<String>();
+		int l = 0;
+		int lineCount = 0;
+		String page = "";
+		for (int i = 0; i < bookText.length(); i++) {
+			if (bookText.charAt(i) == '~') {
+				pages.add(page);
+				page = "";
+				lineCount = 0;
+			} else {
+				page += bookText.charAt(i);
+
+				l++;
+				if (bookText.charAt(i) == '\n' || l > 19) {
+					l = 0;
+					lineCount++;
+				}
+
+				if (lineCount > 12
+						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
+					pages.add(page);
+					page = "";
+					lineCount = 0;
+				}
+			}
+		}
+		pages.add(page);
+
+		meta.setPages(pages);
+		book.setItemMeta(meta);
+
+		book.setItemMeta(meta);
+
+		final ItemStack bookF = book;
+		final Location bookLoc = Secret.B3LOCLOC;
+		final Location loc = Secret.B3LOC;
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				player.teleport(loc);
+				player.setFallDistance(0F);
+				loc.getWorld().strikeLightningEffect(loc);
+				loc.getWorld().dropItem(bookLoc, bookF);
+			}
+		}, 400L);
+
+		ItemStack is = new ItemStack(Material.GHAST_TEAR);
+		ItemMeta im = is.getItemMeta();
+		im.setDisplayName(Secret.TPA);
+
+		List<String> lores = new ArrayList<String>();
+
+		int seed = podrickCfg.getConfig().getInt(
+				player.getDisplayName() + ".Seed", 0);
+
+		lores.add(seed + "");
+
+		im.setLore(lores);
+		is.setItemMeta(im);
+
+		final ItemStack imf = is;
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+
+			@Override
+			public void run() {
+				sendSimulatedPrivateMessage(player, name, done);
+				safelyDropItemStack(player.getLocation(), player.getInventory()
+						.addItem(imf));
+				podrickCfg.getConfig().set(
+						player.getDisplayName() + ".GotArtifact", true);
+				podrickCfg.saveConfig();
+				podrickCfg.reloadConfig();
+
+			}
+		}, 320L);
+	}
+
+
+	@EventHandler
+	public void EInteractEvent(PlayerInteractEntityEvent event) {
+		if (event.getRightClicked().getCustomName() != null) {
+			if (event.getRightClicked().getCustomName()
+					.equals(Secret.NAMEOFANNPC)) {
+
+				if (podrickCfg.getConfig().getBoolean(
+						event.getPlayer().getDisplayName() + ".Started", false) == true) {
+					if (podrickCfg.getConfig().getBoolean(
+							event.getPlayer().getDisplayName()
+									+ ".FinishedEnki", false) == false) {
+
+						if (event.getPlayer().getItemInHand().getAmount() != 0) {
+							int type = podrickCfg.getConfig().getInt(
+									event.getPlayer().getDisplayName()
+											+ ".EnkisFood");
+
+							switch (type) {
+							case 0:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F1)
+										&& event.getPlayer().getItemInHand()
+												.getDurability() == 2) {
+									successfulFeedE(event.getPlayer());
+									return;
+
+								}
+								break;
+							case 1:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F1)
+										&& event.getPlayer().getItemInHand()
+												.getDurability() == 1) {
+									successfulFeedE(event.getPlayer());
+									return;
+								}
+								break;
+							case 2:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F1)
+										&& event.getPlayer().getItemInHand()
+												.getDurability() == 3) {
+									successfulFeedE(event.getPlayer());
+									return;
+								}
+								break;
+							case 3:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F2)) {
+									successfulFeedE(event.getPlayer());
+									return;
+								}
+								break;
+							case 4:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F3)) {
+									successfulFeedE(event.getPlayer());
+									return;
+								}
+								break;
+							case 5:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F4)) {
+									successfulFeedE(event.getPlayer());
+									return;
+								}
+								break;
+							case 6:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F5)) {
+									successfulFeedE(event.getPlayer());
+									return;
+								}
+								break;
+
+							case 7:
+								if (event.getPlayer().getItemInHand().getType()
+										.equals(Secret.F6)) {
+									successfulFeedE(event.getPlayer());
+									return;
+								}
+								break;
+							}
+							sendSimulatedPrivateMessage(event.getPlayer(),
+									Secret.NAMEOFANNPCWOCOLOR, Secret.HGY);
+							return;
+						} else {
+							sendSimulatedPrivateMessage(event.getPlayer(),
+									Secret.NAMEOFANNPCWOCOLOR, Secret.BGY);
+						}
+
+					}
+					event.setCancelled(true);
+				}
+			}
+		}
+
+	}
+
+	@EventHandler
+	public void AInteractEvent(PlayerInteractEntityEvent event) {
+
+		
+		if (event.getRightClicked().getCustomName() != null) {
+			if (event.getRightClicked().getCustomName()
+					.equals(Secret.NAMENPC2COLOR)) {
+				if (podrickCfg.getConfig().getBoolean(
+						event.getPlayer().getDisplayName() + ".GotJournal3",
+						false)) {
+					if (podrickCfg.getConfig().getBoolean(
+							event.getPlayer().getDisplayName()
+									+ ".FinishedAlphonse", false) == false) {
+						if (event.getPlayer().getItemInHand() != null) {
+							if (event.getPlayer().getItemInHand().hasItemMeta()) {
+								if (event.getPlayer().getItemInHand()
+										.getItemMeta().hasDisplayName()) {
+									if (event.getPlayer().getItemInHand()
+											.getItemMeta().getDisplayName()
+											.equals(Secret.SECRETWCDNAME)) {
+										if (event.getPlayer().getItemInHand()
+												.getItemMeta().hasLore()) {
+											int thisItemSeed = Integer
+													.parseInt(event.getPlayer()
+															.getItemInHand()
+															.getItemMeta()
+															.getLore().get(0));
+											int seed = podrickCfg.getConfig()
+													.getInt(event.getPlayer()
+															.getDisplayName()
+															+ ".Seed");
+											if (thisItemSeed == seed) {
+												event.getPlayer()
+														.setItemInHand(null);
+												startAThing(event.getPlayer());
+												return;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					sendSimulatedPrivateMessage(event.getPlayer(),
+							Secret.NAMENPC2NOCOLOR, Secret.WONTGET);
+					return;
+				}
+			}
+		}
+	}
+
+	private void spawn1EntityInEachCorner(EntityType z, PotionEffect pe,
+			PotionEffect pe2, String nombre) {
+
+		final String name = nombre;
+		final PotionEffect potionEffect = pe;
+		final EntityType zombie = z;
+		final PotionEffect potionEffect2 = pe2;
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
+						GREENBLOCKSINFINALDUNGEON, zombie);
+				e.setCustomName(name);
+				if (e instanceof Creature) {
+					Creature enemy = (Creature) e;
+					enemy.addPotionEffect(potionEffect);
+					enemy.addPotionEffect(potionEffect2);
+				}
+
+			}
+		});
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
+						REDBLOCKSINFINALDUNGEON, zombie);
+				e.setCustomName(name);
+				if (e instanceof Creature) {
+					Creature enemy = (Creature) e;
+					enemy.addPotionEffect(potionEffect);
+					enemy.addPotionEffect(potionEffect2);
+				}
+
+			}
+		});
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
+						BLUEBLOCKSINFINALDUNGEON, zombie);
+				e.setCustomName(name);
+				if (e instanceof Creature) {
+					Creature enemy = (Creature) e;
+					enemy.addPotionEffect(potionEffect);
+					enemy.addPotionEffect(potionEffect2);
+				}
+
+			}
+		});
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
+						CLEARBLOCKSINFINALDUNGEON, zombie);
+				e.setCustomName(name);
+				if (e instanceof Creature) {
+					Creature enemy = (Creature) e;
+					enemy.addPotionEffect(potionEffect);
+					enemy.addPotionEffect(potionEffect2);
+				}
+
+			}
+		});
+	}
+
 	@EventHandler
 	public void onDungeonKill(EntityDeathEvent event) {
 		if (event.getEntity().getCustomName() != null) {
@@ -8305,486 +8630,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		});
 	}
 
-	private void spawn1EntityInEachCorner(EntityType z, PotionEffect pe,
-			PotionEffect pe2, String nombre) {
 
-		final String name = nombre;
-		final PotionEffect potionEffect = pe;
-		final EntityType zombie = z;
-		final PotionEffect potionEffect2 = pe2;
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
-						GREENBLOCKSINFINALDUNGEON, zombie);
-				e.setCustomName(name);
-				if (e instanceof Creature) {
-					Creature enemy = (Creature) e;
-					enemy.addPotionEffect(potionEffect);
-					enemy.addPotionEffect(potionEffect2);
-				}
-
-			}
-		});
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
-						REDBLOCKSINFINALDUNGEON, zombie);
-				e.setCustomName(name);
-				if (e instanceof Creature) {
-					Creature enemy = (Creature) e;
-					enemy.addPotionEffect(potionEffect);
-					enemy.addPotionEffect(potionEffect2);
-				}
-
-			}
-		});
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
-						BLUEBLOCKSINFINALDUNGEON, zombie);
-				e.setCustomName(name);
-				if (e instanceof Creature) {
-					Creature enemy = (Creature) e;
-					enemy.addPotionEffect(potionEffect);
-					enemy.addPotionEffect(potionEffect2);
-				}
-
-			}
-		});
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				Entity e = CENTERBLOCKSINFINALDUNGEON.getWorld().spawnEntity(
-						CLEARBLOCKSINFINALDUNGEON, zombie);
-				e.setCustomName(name);
-				if (e instanceof Creature) {
-					Creature enemy = (Creature) e;
-					enemy.addPotionEffect(potionEffect);
-					enemy.addPotionEffect(potionEffect2);
-				}
-
-			}
-		});
-	}
-
-	@EventHandler
-	public void onDragonDeath(EntityDeathEvent event) {
-		if (event.getEntity().getType().equals(EntityType.ENDER_DRAGON)) {
-			List<String> slayers = new ArrayList<String>();
-
-			for (Iterator<? extends Player> i = Bukkit.getServer()
-					.getOnlinePlayers().iterator(); i.hasNext();) {
-				Player p = i.next();
-
-				if (p.getWorld().getName().equals("world_the_end")) {
-					if (!p.isOp()) {
-						slayers.add(p.getDisplayName());
-					}
-				}
-			}
-
-			final List<String> finalSlayers = slayers;
-			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-
-				@Override
-				public void run() {
-					if (finalSlayers.size() == 0) {
-						return;
-					}
-					if (finalSlayers.size() == 1) {
-						Bukkit.getServer().broadcastMessage(
-								"§4" + finalSlayers.get(0)
-										+ "§5 is a dragon slayer!");
-					} else {
-						String s = "§4";
-						for (int i = 0; i < finalSlayers.size(); i++) {
-							s += finalSlayers.get(i) + " & ";
-						}
-
-						s = s.substring(0, s.length() - 2);
-
-						s += "§5are dragon slayers!";
-						Bukkit.getServer().broadcastMessage(s);
-					}
-				}
-
-			}, 400L);
-
-		}
-	}
-
-	private void checkAndClearAllChunks() {
-
-		Long before = System.currentTimeMillis();
-		Boolean hadToRun = false;
-		// Bukkit.getLogger().info("Starting to check all chunks!");
-		List<World> worlds = Bukkit.getServer().getWorlds();
-		for (int i = 0; i < worlds.size(); i++) {
-			Chunk[] chunks = worlds.get(i).getLoadedChunks();
-			for (int j = 0; j < chunks.length; j++) {
-				Entity[] entities = chunks[j].getEntities();
-				if (entities.length > 70) {
-					getLogger().info(
-							"WOAH TOO MANY ENTITIES AT " + chunks[j].getX()
-									* 16 + " , " + chunks[j].getZ() * 16);
-					hadToRun = true;
-					Random r = new Random();
-					int count = 0;
-					String s = "";
-					for (int k = 0; k < entities.length; k++) {
-						s += entities[k].toString() + ", ";
-						if (r.nextBoolean()) {
-							if (entities[k].getType()
-									.equals(EntityType.CHICKEN)
-									|| entities[k].getType().equals(
-											EntityType.BLAZE)
-									|| entities[k].getType().equals(
-											EntityType.CAVE_SPIDER)
-									|| entities[k].getType().equals(
-											EntityType.ENDERMAN)
-									|| entities[k].getType().equals(
-											EntityType.COW)
-									|| entities[k].getType().equals(
-											EntityType.HORSE)
-									|| entities[k].getType().equals(
-											EntityType.PIG)
-									|| entities[k].getType().equals(
-											EntityType.SHEEP)
-									|| entities[k].getType().equals(
-											EntityType.ZOMBIE)
-									|| entities[k].getType().equals(
-											EntityType.SKELETON)
-									|| entities[k].getType().equals(
-											EntityType.WOLF)
-									|| entities[k].getType().equals(
-											EntityType.OCELOT)
-									|| entities[k].getType().equals(
-											EntityType.PIG_ZOMBIE)
-									|| entities[k].getType().equals(
-											EntityType.EXPERIENCE_ORB)) {
-								if (entities[k].getCustomName() == null) {
-									entities[k].remove();
-								}
-
-							}
-							count++;
-						}
-					}
-
-					// getLogger().info(s);
-					getLogger().info("Deleted " + count + " entities.");
-				}
-			}
-		}
-		Long elapsed = System.currentTimeMillis() - before;
-
-		if (hadToRun) {
-			Bukkit.getLogger().info("It took: " + elapsed + "ms.  ");
-		} else {
-			// Bukkit.getLogger().info("All clear! (" + elapsed + "ms.)");
-		}
-	}
-
-	public int getPlayerMinutes(String name) {
-		if (name.equals("secret1")) {
-			return 900000;
-		}
-		if (name.equals("[Server]")) {
-			return 540;
-		}
-		String UUID = Bukkit.getOfflinePlayer(name).getUniqueId().toString();
-		return playtimeCfg.getConfig().getInt("Playtime." + UUID);
-	}
-
-	public Long getLastSeen(String name) {
-		OfflinePlayer op = Bukkit.getOfflinePlayer(name);
-		return TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()
-				- op.getLastPlayed());
-
-	}
-
-	public void addAreaToConfig(ProtectedArea pa) {
-		String path = "ProtectedAreas." + pa.owner + "." + pa.getId();
-
-		String[] loc = { pa.location1.getWorld().getName(),
-				"" + (int) pa.location1.getX(), "" + (int) pa.location1.getZ(),
-				"" + (int) pa.location2.getX(), "" + (int) pa.location2.getZ() };
-
-		protectedAreasCfg.getConfig().set(path, loc);
-		protectedAreasCfg.saveConfig();
-		protectedAreasCfg.reloadConfig();
-	}
-
-	public String getHoursAndMinutes(String name) {
-		int minutes = getPlayerMinutes(name);
-		int hours = minutes / 60;
-		minutes = minutes % 60;
-		return "" + "§b" + hours + "§3" + " hours and " + "§b" + minutes + "§3"
-				+ " minutes.";
-
-	}
-
-	private String getTranslationLanguage(Player player, String key) {
-
-		String result = "";
-		/*
-		 * if (dutchSpeakers.contains(player.getName())) { result =
-		 * dutchStrings.get(key); if (result == "") {
-		 * player.sendMessage("WARNING!  TELL HAL that DUTCH " + key +
-		 * " string is not right!! Sorry!!! So I'm gonna send you the english version!"
-		 * ); } else { return result; } }
-		 */
-		return englishStrings.get(key);
-	}
-
-	private String getTranslationLanguage(CommandSender player, String key) {
-		String result = "";
-		/*
-		 * if (dutchSpeakers.contains(player.getName())) { result =
-		 * dutchStrings.get(key); if (result == null || result == "") {
-		 * player.sendMessage("WARNING!  TELL HAL that DUTCH " + key +
-		 * " string is not right!! Sorry!!! So I'm gonna send you the english version!"
-		 * ); } else { return result; } }
-		 */
-		if (englishStrings.get(key) == "" || englishStrings.get(key) == null) {
-			player.sendMessage("SOMETHING WENT WRONG! TELL HAL A STRING IS MESSED UP!  MORE DATA: "
-					+ key);
-			getLogger().info(
-					"SOMETHING WENT WRONG! TELL HAL A STRING IS MESSED UP!  MORE DATA: "
-							+ key);
-		}
-		return englishStrings.get(key);
-	}
-
-	private String getTeam(Player player) {
-		if (teamList.containsKey(player.getDisplayName())) {
-			return teamList.get(player.getDisplayName());
-		}
-		return null;
-	}
-
-	@EventHandler
-	public void EInteractEvent(PlayerInteractEntityEvent event) {
-		if (event.getRightClicked().getCustomName() != null) {
-			if (event.getRightClicked().getCustomName()
-					.equals(Secret.NAMEOFANNPC)) {
-
-				if (podrickCfg.getConfig().getBoolean(
-						event.getPlayer().getDisplayName() + ".Started", false) == true) {
-					if (podrickCfg.getConfig().getBoolean(
-							event.getPlayer().getDisplayName()
-									+ ".FinishedEnki", false) == false) {
-
-						if (event.getPlayer().getItemInHand().getAmount() != 0) {
-							int type = podrickCfg.getConfig().getInt(
-									event.getPlayer().getDisplayName()
-											+ ".EnkisFood");
-
-							switch (type) {
-							case 0:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F1)
-										&& event.getPlayer().getItemInHand()
-												.getDurability() == 2) {
-									successfulFeedE(event.getPlayer());
-									return;
-
-								}
-								break;
-							case 1:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F1)
-										&& event.getPlayer().getItemInHand()
-												.getDurability() == 1) {
-									successfulFeedE(event.getPlayer());
-									return;
-								}
-								break;
-							case 2:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F1)
-										&& event.getPlayer().getItemInHand()
-												.getDurability() == 3) {
-									successfulFeedE(event.getPlayer());
-									return;
-								}
-								break;
-							case 3:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F2)) {
-									successfulFeedE(event.getPlayer());
-									return;
-								}
-								break;
-							case 4:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F3)) {
-									successfulFeedE(event.getPlayer());
-									return;
-								}
-								break;
-							case 5:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F4)) {
-									successfulFeedE(event.getPlayer());
-									return;
-								}
-								break;
-							case 6:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F5)) {
-									successfulFeedE(event.getPlayer());
-									return;
-								}
-								break;
-
-							case 7:
-								if (event.getPlayer().getItemInHand().getType()
-										.equals(Secret.F6)) {
-									successfulFeedE(event.getPlayer());
-									return;
-								}
-								break;
-							}
-							sendSimulatedPrivateMessage(event.getPlayer(),
-									Secret.NAMEOFANNPCWOCOLOR, Secret.HGY);
-							return;
-						} else {
-							sendSimulatedPrivateMessage(event.getPlayer(),
-									Secret.NAMEOFANNPCWOCOLOR, Secret.BGY);
-						}
-
-					}
-					event.setCancelled(true);
-				}
-			}
-		}
-
-	}
-
-	@EventHandler
-	public void AInteractEvent(PlayerInteractEntityEvent event) {
-		if (event.getRightClicked().getCustomName() != null) {
-			if (event.getRightClicked().getCustomName()
-					.equals(Secret.NAMENPC2COLOR)) {
-				if (podrickCfg.getConfig().getBoolean(
-						event.getPlayer().getDisplayName() + ".GotJournal3",
-						false)) {
-					if (podrickCfg.getConfig().getBoolean(
-							event.getPlayer().getDisplayName()
-									+ ".FinishedAlphonse", false) == false) {
-						if (event.getPlayer().getItemInHand() != null) {
-							if (event.getPlayer().getItemInHand().hasItemMeta()) {
-								if (event.getPlayer().getItemInHand()
-										.getItemMeta().hasDisplayName()) {
-									if (event.getPlayer().getItemInHand()
-											.getItemMeta().getDisplayName()
-											.equals(Secret.SECRETWCDNAME)) {
-										if (event.getPlayer().getItemInHand()
-												.getItemMeta().hasLore()) {
-											int thisItemSeed = Integer
-													.parseInt(event.getPlayer()
-															.getItemInHand()
-															.getItemMeta()
-															.getLore().get(0));
-											int seed = podrickCfg.getConfig()
-													.getInt(event.getPlayer()
-															.getDisplayName()
-															+ ".Seed");
-											if (thisItemSeed == seed) {
-												event.getPlayer()
-														.setItemInHand(null);
-												startAThing(event.getPlayer());
-												return;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-					sendSimulatedPrivateMessage(event.getPlayer(),
-							Secret.NAMENPC2NOCOLOR, Secret.WONTGET);
-					return;
-				}
-			}
-		}
-	}
-
-	private void startAThing(Player p) {
-
-		final Player player = p;
-		final Location scareLightning = new Location(Bukkit.getWorld("world"),
-				-1105.003, 116.00, -2867.7);
-
-		final World w = p.getWorld();
-		final String name = Secret.NAMENPC2COLOR;
-		final String scared = Secret.OHASNST;
-		final String thndrsn = Secret.OHATSNST;
-		final String done = Secret.MKSTOP;
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), Secret.WTHR);
-				player.getWorld().playSound(player.getLocation(),
-						Sound.AMBIENCE_CAVE, 100, 1);
-			}
-		});
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				sendSimulatedPrivateMessage(player, name, scared);
-			}
-
-		}, 100L);
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				w.strikeLightningEffect(scareLightning);
-			}
-
-		}, 160L);
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				sendSimulatedPrivateMessage(player, name, thndrsn);
-			}
-
-		}, 200L);
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				for (Entity e : player.getNearbyEntities(20.0, 20.0, 20.0)) {
-					if (e instanceof LivingEntity) {
-						if (e.getCustomName() != null) {
-							if (e.getCustomName().equals(Secret.NAMENPC2COLOR)) {
-								w.strikeLightningEffect(e.getLocation());
-								return;
-							}
-						}
-					}
-				}
-			}
-		}, 300L);
-
+	private void giveMysteryBook(Player p, String string) {
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
 		BookMeta meta = (BookMeta) book.getItemMeta();
 
-		meta.setTitle(Secret.MYSTERYBOOK3TITLE);
+		meta.setTitle(Secret.MYSTERYBOOK1TITLE);
 		meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
-		String bookText = podrickCfg.getConfig().getString("BookText3");
+		String bookText = string;
 
 		List<String> pages = new ArrayList<String>();
 		int l = 0;
@@ -8818,826 +8671,745 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		book.setItemMeta(meta);
 
 		book.setItemMeta(meta);
+		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
+		podrickCfg.getConfig().set(p.getDisplayName() + ".GotMysteryBook1",
+				true);
+	}
 
-		final ItemStack bookF = book;
-		final Location bookLoc = Secret.B3LOCLOC;
-		final Location loc = Secret.B3LOC;
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				player.teleport(loc);
-				player.setFallDistance(0F);
-				loc.getWorld().strikeLightningEffect(loc);
-				loc.getWorld().dropItem(bookLoc, bookF);
+	protected void giveJournal3(Player p) {
+		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+		BookMeta meta = (BookMeta) book.getItemMeta();
+
+		meta.setTitle(Secret.JOURNAL3TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
+
+		String bookText = podrickCfg.getConfig().getString("Journal3");
+		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".YValue");
+
+		bookText.replace("%", p.getDisplayName());
+		bookText.replace("+", x + "");
+		bookText.replace('^', '§');
+
+		List<String> pages = new ArrayList<String>();
+		int l = 0;
+		int lineCount = 0;
+		String page = "";
+		for (int i = 0; i < bookText.length(); i++) {
+			if (bookText.charAt(i) == '%') {
+				page += p.getDisplayName();
+			} else if (bookText.charAt(i) == '+') {
+				page += x + "";
+			} else if (bookText.charAt(i) == '^') {
+				page += '§';
+			} else if (bookText.charAt(i) == '~') {
+				pages.add(page);
+				page = "";
+				lineCount = 0;
+			} else {
+				page += bookText.charAt(i);
+
+				l++;
+				if (bookText.charAt(i) == '\n' || l > 19) {
+					l = 0;
+					lineCount++;
+				}
+
+				if (lineCount > 12
+						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
+					pages.add(page);
+					page = "";
+					lineCount = 0;
+				}
 			}
-		}, 400L);
+		}
+		pages.add(page);
 
-		ItemStack is = new ItemStack(Material.GHAST_TEAR);
-		ItemMeta im = is.getItemMeta();
-		im.setDisplayName(Secret.TPA);
+		meta.setPages(pages);
 
 		List<String> lores = new ArrayList<String>();
-
-		int seed = podrickCfg.getConfig().getInt(
-				player.getDisplayName() + ".Seed", 0);
+		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
+				0);
 
 		lores.add(seed + "");
+		meta.setLore(lores);
+		book.setItemMeta(meta);
 
-		im.setLore(lores);
-		is.setItemMeta(im);
+		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
+		podrickCfg.getConfig().set(p.getDisplayName() + ".GotJournal3", true);
+		podrickCfg.saveConfig();
+		podrickCfg.reloadConfig();
 
-		final ItemStack imf = is;
-
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-
-			@Override
-			public void run() {
-				sendSimulatedPrivateMessage(player, name, done);
-				safelyDropItemStack(player.getLocation(), player.getInventory()
-						.addItem(imf));
-				podrickCfg.getConfig().set(
-						player.getDisplayName() + ".GotArtifact", true);
-				podrickCfg.saveConfig();
-				podrickCfg.reloadConfig();
-
-			}
-		}, 320L);
 	}
 
-	@EventHandler
-	public void onPlayerPlaceSS(BlockPlaceEvent event) {
-		if (event.getBlock().getType() == Material.SOUL_SAND) {
-			if (event.getPlayer().getItemInHand().hasItemMeta()) {
-				if (event.getPlayer().getItemInHand().getItemMeta().hasLore()) {
-					ItemStack is = event.getPlayer().getItemInHand();
+	protected void giveJournal2(Player p) {
+		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+		BookMeta meta = (BookMeta) book.getItemMeta();
 
-					if (is.getItemMeta().hasDisplayName()
-							&& is.getItemMeta().getDisplayName()
-									.equals(Secret.ss)) {
-						int playerSeed = podrickCfg.getConfig().getInt(
-								event.getPlayer().getDisplayName() + ".Seed",
-								-1);
-						int thisItemSeed = Integer.parseInt(is.getItemMeta()
-								.getLore().get(0));
-						if (playerSeed == thisItemSeed) {
-							int x = podrickCfg.getConfig().getInt(
-									event.getPlayer().getDisplayName()
-											+ ".XValue", -1);
-							int z = podrickCfg.getConfig().getInt(
-									event.getPlayer().getDisplayName()
-											+ ".ZValue", -1);
-							if (event.getBlock().getX() == x
-									&& event.getBlock().getZ() == z) {
-								sendSimulatedPrivateMessage(event.getPlayer(),
-										Secret.MYSTERYBOOKAUTHOR,
-										" §rTh§ka§ra§kll§rnk y§kl§rou§kljk");
-								event.getBlock()
-										.getLocation()
-										.getWorld()
-										.playSound(
-												event.getBlock().getLocation(),
-												Sound.AMBIENCE_THUNDER, 100, 5);
-								podrickCfg.getConfig().set(
-										event.getPlayer().getDisplayName()
-												+ ".SummonedDave", true);
-								podrickCfg.saveConfig();
-								podrickCfg.reloadConfig();
-								return;
-							}
+		meta.setTitle(Secret.JOURNAL2TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
 
-							event.setCancelled(true);
-						}
-					}
-				}
-			}
-		}
-	}
+		String bookText = podrickCfg.getConfig().getString("Journal2");
+		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".XValue");
 
-	public void putBookAndStuffInMailbox(String name) {
-		for (Mailbox mb : mailBoxes) {
-			if (mb.name.equals(name)) {
-				Chest receivingChest = (Chest) mb.getLocation().getBlock()
-						.getState();
+		bookText.replace("%", p.getDisplayName());
+		bookText.replace("+", x + "");
+		bookText.replace('^', '§');
 
-				ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
-				BookMeta meta = (BookMeta) book.getItemMeta();
-
-				meta.setTitle(Secret.TFP);
-				meta.setAuthor("§d[Server]");
-
-				String bookText = podrickCfg.getConfig().getString(
-						"ThankYouBook", "oh no");
-
-				List<String> pages = new ArrayList<String>();
-				int l = 0;
-				int lineCount = 0;
-				String page = "";
-				for (int i = 0; i < bookText.length(); i++) {
-					if (bookText.charAt(i) == '^') {
-						page += '§';
-					} else if (bookText.charAt(i) == '~') {
-						pages.add(page);
-						page = "";
-						lineCount = 0;
-					} else {
-						page += bookText.charAt(i);
-
-						l++;
-						if (bookText.charAt(i) == '\n' || l > 19) {
-							l = 0;
-							lineCount++;
-						}
-
-						if (lineCount > 12
-								&& (bookText.charAt(i) == ' ' || bookText
-										.charAt(i) == '\n')) {
-							pages.add(page);
-							page = "";
-							lineCount = 0;
-						}
-					}
-				}
+		List<String> pages = new ArrayList<String>();
+		int l = 0;
+		int lineCount = 0;
+		String page = "";
+		for (int i = 0; i < bookText.length(); i++) {
+			if (bookText.charAt(i) == '%') {
+				page += p.getDisplayName();
+			} else if (bookText.charAt(i) == '+') {
+				page += x + "";
+			} else if (bookText.charAt(i) == '^') {
+				page += '§';
+			} else if (bookText.charAt(i) == '~') {
 				pages.add(page);
+				page = "";
+				lineCount = 0;
+			} else {
+				page += bookText.charAt(i);
 
-				meta.setPages(pages);
-				book.setItemMeta(meta);
+				l++;
+				if (bookText.charAt(i) == '\n' || l > 19) {
+					l = 0;
+					lineCount++;
+				}
 
-				receivingChest.getInventory().addItem(book);
-				ItemStack is = new ItemStack(Material.SOUL_SAND);
-				ItemMeta im = is.getItemMeta();
-				im.setDisplayName(Secret.DSS);
-				is.setItemMeta(im);
-				receivingChest.getInventory().addItem(is);
-
-				ItemStack isl = new ItemStack(Material.LEASH);
-				receivingChest.getInventory().addItem(isl);
-
-			}
-		}
-	}
-
-	@EventHandler
-	public void onPlayerSSA(BlockPlaceEvent event) {
-		if (event.getBlock().getType() == Material.SOUL_SAND) {
-			if (event.getPlayer().getItemInHand().hasItemMeta()) {
-				ItemStack is = event.getPlayer().getItemInHand();
-				if (is.getItemMeta().hasDisplayName()
-						&& is.getItemMeta().getDisplayName().equals(Secret.DSS)) {
-					event.setCancelled(true);
-					event.getPlayer().setItemInHand(null);
-					List<String> names = new ArrayList<String>() {
-						{
-							add("Maris");
-							add("Katherine");
-							add("Carolee");
-							add("Roselee");
-							add("Lloyd");
-							add("Marcelle");
-							add("Gilma");
-							add("Tosha");
-							add("Florentino");
-							add("Alfredia");
-							add("Aimee");
-							add("Anisa");
-							add("Lonnie");
-							add("Ernest");
-							add("Clarice");
-							add("Fatima");
-							add("Celestina");
-							add("Hortensia");
-							add("Norene");
-							add("Tinisha");
-							add("Jeanine");
-							add("Minh");
-							add("Wanita");
-							add("Galina");
-							add("Tracy");
-							add("Bert");
-							add("Loyce");
-							add("Candelaria");
-							add("Jefferey");
-							add("Mariella");
-							add("Chana");
-							add("Phung");
-							add("Meggan");
-							add("Merrill");
-							add("Xiomara");
-							add("Deeann");
-							add("Lisandra");
-							add("Sabine");
-							add("Alberto");
-							add("Hallie");
-							add("Carmen");
-							add("Marylee");
-							add("Fernanda");
-							add("Brian");
-							add("Clyde");
-							add("Sharice");
-							add("Tam");
-							add("Elsa");
-							add("Teresia");
-							add("Vicente");
-							add("Jeremy");
-							add("Shalanda");
-							add("Lizabeth");
-							add("Jene");
-							add("Issac");
-							add("Cinda");
-							add("Shawanna");
-							add("Siobhan");
-							add("Thi");
-							add("Ethel");
-							add("Jana");
-							add("Cathy");
-							add("Kerri");
-							add("Elvia");
-							add("Marylee");
-							add("Janice");
-							add("Breanna");
-							add("Verlie");
-							add("Rolland");
-							add("Charlie");
-							add("Marin");
-							add("Lilly");
-							add("Cythia");
-							add("Shanti");
-							add("Les");
-							add("Man");
-							add("Rubie");
-							add("Eleni");
-							add("Freeman");
-							add("Ha");
-							add("Malisa");
-							add("Rayna");
-							add("Selina");
-							add("Bettye");
-							add("Crysta");
-							add("Nina");
-							add("Earline");
-							add("Lilli");
-							add("Rylan");
-							add("Louis");
-							add("Kimiko");
-							add("Tarra");
-							add("Jetta");
-							add("Dani");
-							add("Kandy");
-							add("Waldo");
-							add("Vernita");
-							add("Zackary");
-							add("Charlotte");
-							add("Devin");
-							add("Clora");
-							add("Emelina");
-							add("Tynisha");
-							add("Carlena");
-							add("Vicente");
-							add("Majorie");
-							add("Drusilla");
-							add("Alexandra");
-							add("Hyman");
-							add("Euna");
-							add("Belinda");
-							add("Candie");
-							add("Valencia");
-							add("Merrilee");
-							add("Ayana");
-							add("Julieta");
-							add("Marshall");
-							add("Dale");
-							add("Jenae");
-							add("Nicolle");
-							add("Sierra");
-							add("Jake");
-							add("Buddy");
-							add("Claudia");
-							add("Latasha");
-							add("Eusebio");
-							add("Analisa");
-							add("Garnett");
-							add("Sheila");
-							add("Vernie");
-							add("Trish");
-							add("Donnette");
-							add("Octavio");
-							add("Nicolasa");
-							add("Tenesha");
-							add("Vina");
-							add("Johnny");
-							add("Antoine");
-							add("Vicki");
-							add("Zachary");
-							add("Vanita");
-							add("Meghann");
-							add("Lynda");
-							add("Shayna");
-							add("Nicolette");
-							add("Beverlee");
-							add("Conchita");
-							add("Karrie");
-							add("Kimbery");
-							add("Greta");
-							add("Rueben");
-							add("Salvatore");
-							add("Nelson");
-							add("Myrta");
-							add("Cleo");
-							add("Vashti");
-							add("Caterina");
-							add("Adele");
-							add("Renita");
-							add("Maira");
-							add("Rita");
-							add("Liberty");
-							add("Earle");
-							add("Suzanne");
-							add("Mammie");
-							add("Deangelo");
-							add("Oliva");
-							add("Mickie");
-							add("Cruz");
-							add("Lesa");
-							add("Ellyn");
-							add("Elton");
-							add("Emely");
-							add("Marcelo");
-							add("Chastity");
-							add("Heidi");
-							add("Jocelyn");
-							add("Christiana");
-							add("Tomiko");
-							add("Candra");
-							add("Teressa");
-							add("Donald");
-							add("Felicidad");
-							add("Krista");
-							add("Melodee");
-							add("Angelo");
-							add("Malisa");
-							add("Scotty");
-							add("Lorri");
-							add("Somer");
-							add("Clayton");
-							add("Carin");
-							add("Suzette");
-							add("Angel");
-							add("Corina");
-							add("Liana");
-							add("Markus");
-							add("Charlyn");
-							add("Keena");
-							add("Terina");
-						}
-					};
-
-					event.getBlock()
-							.getLocation()
-							.getWorld()
-							.playSound(event.getBlock().getLocation(),
-									Sound.AMBIENCE_THUNDER, 20F, 20F);
-					Random rand = new Random();
-					String name = names.get(rand.nextInt(200));
-					Player p = event.getPlayer();
-					int r = rand.nextInt(8);
-
-					switch (r) {
-					case 0:
-						Cow cow = (Cow) p.getLocation().getWorld()
-								.spawnEntity(p.getLocation(), EntityType.COW);
-						cow.setCustomName("§6" + name);
-						if (rand.nextBoolean())
-							cow.setBaby();
-						cow.setAgeLock(true);
-
-						break;
-					case 1:
-						Pig pig = (Pig) p.getLocation().getWorld()
-								.spawnEntity(p.getLocation(), EntityType.PIG);
-						pig.setCustomName("§6" + name);
-						if (rand.nextBoolean())
-							pig.setBaby();
-						pig.setAgeLock(true);
-						break;
-					case 2:
-						MushroomCow mc = (MushroomCow) p
-								.getLocation()
-								.getWorld()
-								.spawnEntity(p.getLocation(),
-										EntityType.MUSHROOM_COW);
-						mc.setCustomName("§6" + name);
-						if (rand.nextBoolean())
-							mc.setBaby();
-						mc.setAgeLock(true);
-						break;
-					case 3:
-						Chicken c = (Chicken) p
-								.getLocation()
-								.getWorld()
-								.spawnEntity(p.getLocation(),
-										EntityType.CHICKEN);
-
-						c.setCustomName("§6" + name);
-						if (rand.nextBoolean())
-							c.setBaby();
-						c.setAgeLock(true);
-						break;
-					case 4:
-						Rabbit rab = (Rabbit) p
-								.getLocation()
-								.getWorld()
-								.spawnEntity(p.getLocation(), EntityType.RABBIT);
-						rab.setCustomName("§6" + name);
-						if (rand.nextBoolean())
-							rab.setBaby();
-						rab.setAgeLock(true);
-						break;
-					case 5:
-						Sheep s = (Sheep) p.getLocation().getWorld()
-								.spawnEntity(p.getLocation(), EntityType.SHEEP);
-						s.setCustomName("§6" + name);
-						if (rand.nextBoolean())
-							s.setBaby();
-						s.setAgeLock(true);
-						break;
-					case 6:
-						Ocelot ocelot = (Ocelot) p
-								.getLocation()
-								.getWorld()
-								.spawnEntity(p.getLocation(), EntityType.OCELOT);
-						ocelot.setCustomName("§6" + name);
-						ocelot.setTamed(true);
-						AnimalTamer at = (AnimalTamer) p;
-						if (rand.nextBoolean())
-							ocelot.setBaby();
-						ocelot.setAgeLock(true);
-						ocelot.setOwner(at);
-						ocelot.setSitting(false);
-						ocelot.setRemoveWhenFarAway(false);
-
-						int cat = rand.nextInt(3);
-						if (cat == 0)
-							ocelot.setCatType(Ocelot.Type.BLACK_CAT);
-						if (cat == 1)
-							ocelot.setCatType(Ocelot.Type.RED_CAT);
-						if (cat == 2)
-							ocelot.setCatType(Ocelot.Type.SIAMESE_CAT);
-						break;
-					case 7:
-						Horse horse = (Horse) p.getLocation().getWorld()
-								.spawnEntity(p.getLocation(), EntityType.HORSE);
-						horse.setBaby();
-						horse.setAgeLock(true);
-
-					}
+				if (lineCount > 12
+						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
+					pages.add(page);
+					page = "";
+					lineCount = 0;
 				}
 			}
 		}
+		pages.add(page);
+
+		meta.setPages(pages);
+
+		List<String> lores = new ArrayList<String>();
+		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
+				0);
+
+		lores.add(seed + "");
+		meta.setLore(lores);
+		book.setItemMeta(meta);
+
+		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME, Secret.HERESACOPY);
+
+		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
+		podrickCfg.getConfig().set(p.getDisplayName() + ".GotJournal2", true);
+		podrickCfg.saveConfig();
+		podrickCfg.reloadConfig();
+
 	}
 
-	@EventHandler
-	public void PlayerDeathColor(PlayerDeathEvent event) {
-		event.setDeathMessage(getChatColor(event.getEntity())
-				+ event.getDeathMessage());
-	}
-
-	@EventHandler
-	public void PlayerDeathSecret(EntityDamageEvent event) {
-		for (ProtectedArea pa : areas) {
-			if (pa.equals(event.getEntity().getLocation())) {
-				if (pa.owner.contains("secret1")) {
-					if (event.getCause() == DamageCause.FALL) {
-						if (event.getEntity().getLocation().getY() < 20) {
-							if (event.getEntity() instanceof Player) {
-								Player p = (Player) event.getEntity();
-								if (!podrickCfg.getConfig().getBoolean(
-										p.getDisplayName() + ".ReadyToFight",
-										false)) {
-									p.teleport(DOORWAYTOFINALDUNGEON);
-									p.sendMessage("§cYou must complete the rest of the quest first!");
-									event.setCancelled(true);
+	protected void checkForDecoder(Player p) {
+		for (ItemStack is : p.getInventory().getContents()) {
+			if (is != null) {
+				if (is.hasItemMeta()) {
+					if (is.getItemMeta().hasLore()) {
+						if (is.getItemMeta().hasDisplayName()) {
+							if (is.getItemMeta().getDisplayName()
+									.equals(Secret.DECCRYST)) {
+								int playerSeed = podrickCfg.getConfig().getInt(
+										p.getDisplayName() + ".Seed", -1);
+								int thisItemSeed = Integer.parseInt(is
+										.getItemMeta().getLore().get(0));
+								if (playerSeed == thisItemSeed) {
+									sendSimulatedPrivateMessage(p,
+											Secret.SOMEONESNAME,
+											Secret.YESTHATSIT);
+									p.getInventory().remove(is);
+									giveMysteryBook(p, podrickCfg.getConfig()
+											.getString("BookText1"));
+									podrickCfg.saveConfig();
+									podrickCfg.reloadConfig();
 									return;
 								}
 							}
 						}
-						event.setCancelled(true);
-						return;
 					}
 				}
 			}
 		}
+
+		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME,
+				"You found something??  Where?");
 	}
 
-	@EventHandler
-	public void PlayerDeathInDungeon(PlayerDeathEvent event) {
-		for (ProtectedArea pa : areas) {
-			if (pa.equals(event.getEntity().getLastDamageCause().getEntity()
-					.getLocation())) {
-				if (pa.owner.contains("secret1")) {
-					event.setKeepInventory(true);
-					event.setDeathMessage(event.getDeathMessage()
-							+ "\n§cThe enemies vanished and revived their fallen comrades!");
-					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-							"server remove");
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (p.getLocation().getWorld().getName()
-								.equals("world")) {
-							if (p.getLocation().distance(
-									CENTERBLOCKSINFINALDUNGEON) < 75) {
-								p.teleport(DOORWAYTOFINALDUNGEON);
-							}
-						}
-					}
+	protected void giveJournal5(Player p) {
+		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+		BookMeta meta = (BookMeta) book.getItemMeta();
+
+		meta.setTitle(Secret.JOURNAL5TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
+
+		String bookText = podrickCfg.getConfig().getString("Journal5");
+		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".ZValue");
+
+		bookText.replace("%", p.getDisplayName());
+		bookText.replace("+", x + "");
+		bookText.replace('^', '§');
+
+		List<String> pages = new ArrayList<String>();
+		int l = 0;
+		int lineCount = 0;
+		String page = "";
+		for (int i = 0; i < bookText.length(); i++) {
+			if (bookText.charAt(i) == '%') {
+				page += p.getDisplayName();
+			} else if (bookText.charAt(i) == '+') {
+				page += x + "";
+			} else if (bookText.charAt(i) == '^') {
+				page += '§';
+			} else if (bookText.charAt(i) == '~') {
+				pages.add(page);
+				page = "";
+				lineCount = 0;
+			} else {
+				page += bookText.charAt(i);
+
+				l++;
+				if (bookText.charAt(i) == '\n' || l > 19) {
+					l = 0;
+					lineCount++;
+				}
+
+				if (lineCount > 12
+						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
+					pages.add(page);
+					page = "";
+					lineCount = 0;
 				}
 			}
 		}
-	}
+		pages.add(page);
 
-	@EventHandler
-	public void ArgInteractEvent(PlayerInteractEntityEvent event) {
-		if (event.getRightClicked().getCustomName() != null) {
+		meta.setPages(pages);
 
-			if (event.getRightClicked().getCustomName()
-					.equals(Secret.NPCNETHCOL)) {
-				if (podrickCfg.getConfig()
-						.getBoolean(
-								event.getPlayer().getDisplayName()
-										+ ".ReadyToTeleport", false)) {
-					if (event.getPlayer().getItemInHand().getAmount() != 0) {
-						int type = podrickCfg.getConfig().getInt(
-								event.getPlayer().getDisplayName()
-										+ ".ArgosFood");
-						switch (type) {
-						case 0:
-							if (event.getPlayer().getItemInHand().getType()
-									.equals(Material.APPLE)) {
-								successfulFeedArg(event.getPlayer());
-								return;
-							}
-							break;
-						case 1:
-							if (event.getPlayer().getItemInHand().getType()
-									.equals(Material.CARROT_ITEM)) {
-								successfulFeedArg(event.getPlayer());
-								return;
-							}
-							break;
-						case 2:
-							if (event.getPlayer().getItemInHand().getType()
-									.equals(Material.MUSHROOM_SOUP)) {
-								successfulFeedArg(event.getPlayer());
-								return;
-							}
-							break;
-						case 3:
-							if (event.getPlayer().getItemInHand().getType()
-									.equals(Material.POISONOUS_POTATO)) {
-								successfulFeedArg(event.getPlayer());
-								return;
-							}
-							break;
-						case 4:
-							if (event.getPlayer().getItemInHand().getType()
-									.equals(Material.POTATO_ITEM)) {
-								successfulFeedArg(event.getPlayer());
-								return;
-							}
-							break;
-						case 5:
-							if (event.getPlayer().getItemInHand().getType()
-									.equals(Material.PUMPKIN_PIE)) {
-								successfulFeedArg(event.getPlayer());
-								return;
-							}
-							break;
-						case 6:
-							if (event.getPlayer().getItemInHand().getType()
-									.equals(Material.MELON)) {
-								successfulFeedArg(event.getPlayer());
-								return;
-							}
-							break;
-						}
-
-						String hint = "";
-						switch (type) {
-						case 0:
-							hint = Secret.H1;
-							break;
-						case 1:
-							hint = Secret.H2;
-							break;
-						case 2:
-							hint = Secret.H3;
-							break;
-						case 3:
-							hint = Secret.H4;
-							break;
-						case 4:
-							hint = Secret.H5;
-							break;
-						case 5:
-							hint = Secret.H6;
-							break;
-						case 6:
-							hint = Secret.H7;
-							break;
-						}
-
-						sendSimulatedPrivateMessage(event.getPlayer(),
-								Secret.NPCNETHNOCOL, Secret.IDW + hint);
-
-					} else {
-						sendSimulatedPrivateMessage(event.getPlayer(),
-								Secret.NPCNETHNOCOL, Secret.BSE);
-					}
-				}
-				event.setCancelled(true);
-			}
-
-		}
-	}
-
-	@EventHandler
-	public void onSpecialInteractEvent(PlayerInteractEntityEvent event) {
-		for (ProtectedArea pa : areas) {
-			if (pa.equals(event.getRightClicked().getLocation())) {
-				if (!pa.hasPermission(event.getPlayer().getDisplayName())) {
-					if (pa.owner.contains("layground")) {
-						return;
-					}
-					event.setCancelled(true);
-					return;
-				}
-			}
-		}
-		if (event.getRightClicked().getCustomName() != null) {
-			if (event.getRightClicked().getCustomName().contains("§6")) {
-				if (event.getPlayer().getItemInHand().getType() == Material.SHEARS) {
-					event.setCancelled(true);
-				}
-				if (event.getPlayer().getItemInHand().getType() == Material.LEASH) {
-					event.setCancelled(false);
-					return;
-				}
-				if (event.getRightClicked().getType() == EntityType.OCELOT) {
-					event.setCancelled(false);
-					return;
-				}
-
-				event.setCancelled(true);
-			}
-		}
-	}
-
-	private void successfulFeedE(Player p) {
-		final Player player = p;
 		List<String> lores = new ArrayList<String>();
-
-		int seed = podrickCfg.getConfig().getInt(
-				player.getDisplayName() + ".Seed", 0);
+		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
+				0);
 
 		lores.add(seed + "");
+		meta.setLore(lores);
+		book.setItemMeta(meta);
 
-		final List<String> lore = lores;
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
+		podrickCfg.getConfig().set(p.getDisplayName() + ".ReadyToFight", true);
+		podrickCfg.saveConfig();
+		podrickCfg.reloadConfig();
+	}
+	
+	protected void giveJournal4(Player p) {
+		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+		BookMeta meta = (BookMeta) book.getItemMeta();
 
-			@Override
-			public void run() {
-				sendSimulatedPrivateMessage(player, Secret.NAMEOFANNPCWOCOLOR,
-						Secret.SSE);
-				if (player.getItemInHand().getAmount() != 1) {
-					player.getItemInHand().setAmount(
-							player.getItemInHand().getAmount() - 1);
-				} else {
-					player.setItemInHand(null);
+		meta.setTitle(Secret.JOURNAL4TITLE);
+		meta.setAuthor(Secret.SOMEONESNAMEWITHCOLOR);
+
+		String bookText = podrickCfg.getConfig().getString("Journal4");
+		int x = podrickCfg.getConfig().getInt(p.getDisplayName() + ".ZValue");
+
+		bookText.replace("%", p.getDisplayName());
+		bookText.replace("+", x + "");
+		bookText.replace('^', '§');
+
+		List<String> pages = new ArrayList<String>();
+		int l = 0;
+		int lineCount = 0;
+		String page = "";
+		for (int i = 0; i < bookText.length(); i++) {
+			if (bookText.charAt(i) == '%') {
+				page += p.getDisplayName();
+			} else if (bookText.charAt(i) == '+') {
+				page += x + "";
+			} else if (bookText.charAt(i) == '^') {
+				page += '§';
+			} else if (bookText.charAt(i) == '~') {
+				pages.add(page);
+				page = "";
+				lineCount = 0;
+			} else {
+				page += bookText.charAt(i);
+
+				l++;
+				if (bookText.charAt(i) == '\n' || l > 19) {
+					l = 0;
+					lineCount++;
 				}
 
-				ItemStack is = new ItemStack(Material.PRISMARINE_CRYSTALS);
-				ItemMeta im = is.getItemMeta();
-				im.setDisplayName(Secret.DECCRYST);
-
-				im.setLore(lore);
-				is.setItemMeta(im);
-				safelyDropItemStack(player.getLocation(), player.getInventory()
-						.addItem(is));
-				podrickCfg.getConfig().set(
-						player.getDisplayName() + ".FinishedEnki", true);
-				podrickCfg.saveConfig();
-				podrickCfg.reloadConfig();
-
+				if (lineCount > 12
+						&& (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
+					pages.add(page);
+					page = "";
+					lineCount = 0;
+				}
 			}
+		}
+		pages.add(page);
 
-		});
-	}
+		meta.setPages(pages);
 
-	private void successfulFeedArg(Player p) {
-		final Player player = p;
 		List<String> lores = new ArrayList<String>();
-
-		int seed = podrickCfg.getConfig().getInt(
-				player.getDisplayName() + ".Seed", 0);
+		int seed = podrickCfg.getConfig().getInt(p.getDisplayName() + ".Seed",
+				0);
 
 		lores.add(seed + "");
+		meta.setLore(lores);
+		book.setItemMeta(meta);
 
-		final List<String> lore = lores;
+		safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
+		podrickCfg.getConfig().set(p.getDisplayName() + ".GotJournal4", true);
+		podrickCfg.saveConfig();
+		podrickCfg.reloadConfig();
+
+	}
+
+
+	private void askSomeone(Player p) {
+		for (Entity e : p.getNearbyEntities(15, 10, 15)) {
+			if (e.getCustomName() != null) {
+				if (e.getCustomName().equals(Secret.SOMEONESNAMEWITHCOLOR)) {
+
+					boolean started = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".Started", false);
+					boolean finishedEnki = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".FinishedEnki", false);
+					boolean finishedArgo = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".FinishedArgo", false);
+					boolean gotMysteryBook1 = podrickCfg.getConfig()
+							.getBoolean(
+									p.getDisplayName() + ".GotMysteryBook1",
+									false);
+					boolean gotWeatherControl = podrickCfg.getConfig()
+							.getBoolean(
+									p.getDisplayName() + ".GotWeatherControl",
+									false);
+					boolean gotJournal2 = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".GotJournal2", false);
+
+					boolean gotJournal3 = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".GotJournal3", false);
+
+					boolean gotJournal4 = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".GotJournal4", false);
+
+					boolean gotArtifact = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".GotArtifact", false);
+
+					boolean readyToTeleport = podrickCfg.getConfig()
+							.getBoolean(
+									p.getDisplayName() + ".ReadyToTeleport",
+									false);
+
+					boolean summonedDave = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".SummonedDave", false);
+
+					boolean readyToFight = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".ReadyToFight", false);
+
+					boolean done = podrickCfg.getConfig().getBoolean(
+							p.getDisplayName() + ".Finished", false);
+
+					if (!started) {
+
+						Random rand = new Random();
+						final String podGreeting = SOMEONEGREETINGPREFIX
+								.get(rand.nextInt(SOMEONEGREETINGPREFIX.size()));
+						final String podQuery = SOMEONETEXT1.get(rand
+								.nextInt(SOMEONETEXT1.size()));
+
+						final Player player = p;
+
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(
+												player,
+												Secret.SOMEONESNAMEPROPER,
+												podGreeting
+														+ player.getDisplayName()
+														+ "!  " + podQuery);
+										setPlayerUpForQuest(player);
+										putJournal1InPlayerInventory(player);
+									}
+
+								}, 50L);
+						return;
+
+					}
+
+					if (!finishedEnki) {
+						final Player player = p;
+
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												Secret.IFONLY);
+									}
+
+								}, 50L);
+						return;
+					}
+
+					if (!gotMysteryBook1) {
+						final Player player = p;
+
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										checkForDecoder(player);
+									}
+
+								}, 50L);
+						return;
+					}
+
+					if (!gotJournal2) {
+						final Player player = p;
+
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										giveJournal2(player);
+									}
+
+								}, 50L);
+						return;
+					}
+
+					if (!gotWeatherControl) {
+						final Player player = p;
+
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												Secret.DOINGRESEARCH);
+									}
+
+								}, 50L);
+						return;
+					}
+
+					if (!gotJournal3) {
+						final Player player = p;
+
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												Secret.FOUNDWCD);
+										giveJournal3(player);
+									}
+								}, 50L);
+						return;
+					}
+
+					if (!gotArtifact) {
+						final Player player = p;
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												Secret.NOTHINGTOREPORT);
+									}
+								}, 50L);
+						return;
+					}
+
+					if (!readyToTeleport) {
+						final Player player = p;
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										checkForArtifact(player);
+									}
+								}, 50L);
+						return;
+					}
+
+					if (!finishedArgo) {
+						final Player player = p;
+						final Location l = Secret.TOSHLOC;
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												"Woah!");
+										player.teleport(l);
+									}
+								}, 50L);
+						return;
+					}
+
+					if (!gotJournal4) {
+						final Player player = p;
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												Secret.LATESTUPDS);
+										giveJournal4(player);
+									}
+								}, 50L);
+						return;
+					}
+
+					if (!summonedDave) {
+						final Player player = p;
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												"No news yet...");
+									}
+								}, 50L);
+						return;
+					}
+
+					if (!readyToFight) {
+						final Player player = p;
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												Secret.WHATHAVEDONE);
+										giveJournal5(player);
+									}
+								}, 50L);
+						return;
+					}
+
+					if (!done) {
+						final Player player = p;
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										sendSimulatedPrivateMessage(player,
+												Secret.SOMEONESNAMEPROPER,
+												"I just want to tell you good luck.  We're all counting on you");
+										giveJournal4(player);
+									}
+								}, 50L);
+						return;
+					}
+				}
+			}
+		}
+
+		final Player player = p;
 		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-
 			@Override
 			public void run() {
-				sendSimulatedPrivateMessage(player, Secret.NPCNETHNOCOL,
-						Secret.SSA);
-				if (player.getItemInHand().getAmount() != 1) {
-					player.getItemInHand().setAmount(
-							player.getItemInHand().getAmount() - 1);
-				} else {
-					player.setItemInHand(null);
-				}
-
-				ItemStack is = new ItemStack(Material.SOUL_SAND);
-				ItemMeta im = is.getItemMeta();
-				im.setDisplayName(Secret.ss);
-
-				im.setLore(lore);
-				is.setItemMeta(im);
-				safelyDropItemStack(player.getLocation(), player.getInventory()
-						.addItem(is));
-				podrickCfg.getConfig().set(
-						player.getDisplayName() + ".FinishedArgo", true);
-				podrickCfg.saveConfig();
-				podrickCfg.reloadConfig();
-
+				sendSimulatedPrivateMessage(player, Secret.SOMEONESNAMEPROPER,
+						"Get closer to me!");
 			}
+		}, 50L);
 
-		});
 	}
-
+	
 	@EventHandler
-	private void hopperMailboxAttempt(BlockPlaceEvent event) {
-		if (event.getBlock().getType() == Material.HOPPER
-				|| event.getBlock().getType() == Material.HOPPER_MINECART) {
-
-			for (Mailbox mb : mailBoxes) {
-				if (mb.location.equals(event.getBlock()
-						.getRelative(BlockFace.UP).getLocation())) {
-					if (PUBLIC_MAILBOXES.contains(mb.name)) {
-						return;
-					}
-					if (!mb.getName()
-							.equals(event.getPlayer().getDisplayName())) {
-						event.setCancelled(true);
-						return;
-					}
-				}
-			}
-		}
-	}
-
-	private void sendSimulatedPrivateMessage(Player player, String displayName,
-			String message) {
-		player.sendMessage("§oFrom §6§o§l" + displayName + ": §r" + message);
-	}
-
-	@EventHandler
-	private void AFKInvEvent(InventoryClickEvent event) {
-		if (event.getInventory().getName().contains("AFK INVENTORY")) {
-			event.setCancelled(true);
-		}
-	}
-
-	@EventHandler
-	private void AFKCloseEvenet(InventoryCloseEvent event) {
-		if (event.getInventory().getName().contains("AFK INVENTORY")) {
-			Player p = (Player) event.getPlayer();
-			unAfk(p);
-		}
-	}
-
-	@EventHandler(priority = EventPriority.MONITOR)
-	private void openDungeonDoor(PlayerInteractEvent event) {
-		if (event.getAction() == Action.PHYSICAL) {
-			for (ProtectedArea pa : areas) {
-				if (pa.equals(event.getPlayer().getLocation())) {
-					if (pa.owner.contains("secret1")) {
-						if (podrickCfg.getConfig().getBoolean(
-								event.getPlayer().getDisplayName()
-										+ ".ReadyToFight", false)) {
-							event.setCancelled(false);
-							return;
-						}
-					}
-				}
-			}
-		}
-
+	public void onPlayerInteractWaterActivate(PlayerInteractEvent event) {
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-			for (ProtectedArea pa : areas) {
-				if (pa.equals(event.getPlayer().getLocation())) {
-					if (pa.owner.contains("secret1")) {
-						if (event.getClickedBlock().getType() == Material.SPRUCE_DOOR) {
-							if (podrickCfg.getConfig().getBoolean(
-									event.getPlayer().getDisplayName()
-											+ ".Finished", false)) {
-								event.setCancelled(false);
+			if (event.getClickedBlock().getType() == Material.GOLD_BLOCK) {
+
+				Block nethBlock1 = Secret.NETHBLOCK1.getBlock();
+				Block nethBlock2 = Secret.NETHBLOCK2.getBlock();
+				Location someonesHouse = Secret.OVWORLDLOC;
+				Block doneBlock = Secret.DONEBLOCK.getBlock();
+				if (nethBlock2.equals(event.getClickedBlock())
+						|| nethBlock1.equals(event.getClickedBlock())) {
+					event.getPlayer().teleport(someonesHouse);
+					return;
+				}
+
+				if (doneBlock.equals(event.getClickedBlock())) {
+					if (podrickCfg.getConfig().getBoolean(
+							event.getPlayer().getDisplayName() + ".Finished",
+							false)) {
+
+						sendSimulatedPrivateMessage(event.getPlayer(),
+								"§r§d[Server]", Secret.CONGRATS);
+						event.getPlayer()
+								.teleport(
+										event.getPlayer().getWorld()
+												.getSpawnLocation());
+						podrickCfg.getConfig().set(
+								event.getPlayer().getDisplayName()
+										+ "Completed"
+										+ podrickCfg.getConfig().getInt(
+												event.getPlayer()
+														.getDisplayName()
+														+ ".Seed", -1),
+								System.currentTimeMillis());
+						putBookAndStuffInMailbox(event.getPlayer()
+								.getDisplayName());
+						podrickCfg.getConfig().set(
+								event.getPlayer().getDisplayName(), null);
+						podrickCfg.saveConfig();
+						podrickCfg.reloadConfig();
+						return;
+					}
+				}
+
+				if ((int) WATERROOMACTIVATE.getBlock().getLocation().getX() == (int) event
+						.getClickedBlock().getLocation().getX()
+						&& (int) WATERROOMACTIVATE.getBlock().getLocation()
+								.getZ() == (int) event.getClickedBlock()
+								.getLocation().getZ()) {
+					if (!podrickCfg.getConfig().getBoolean(
+							event.getPlayer().getDisplayName()
+									+ ".GotWeatherControl", false)) {
+						WATERROOMACTIVATE.getWorld().playSound(
+								WATERROOMMINESHAFT, Sound.AMBIENCE_THUNDER,
+								100, 1);
+
+						ParticleEffect.FLAME.display((float) .15, (float) .5,
+								(float) .15, (float) 0, 25, WATERROOMMINESHAFT,
+								20);
+
+						ItemStack is = new ItemStack(Material.PRISMARINE_SHARD,
+								1);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName(Secret.SECRETWCDNAME);
+
+						List<String> lores = new ArrayList<String>();
+						int seed = podrickCfg.getConfig()
+								.getInt(event.getPlayer().getDisplayName()
+										+ ".Seed", 0);
+
+						lores.add(seed + "");
+						im.setLore(lores);
+						is.setItemMeta(im);
+
+						final ItemStack imf = is;
+
+						ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+						BookMeta meta = (BookMeta) book.getItemMeta();
+
+						meta.setTitle(Secret.MYSTERYBOOK2TITLE);
+						meta.setAuthor(Secret.MYSTERYBOOKAUTHOR);
+						String bookText = podrickCfg.getConfig().getString(
+								"BookText2");
+						List<String> pages = new ArrayList<String>();
+						int l = 0;
+						int lineCount = 0;
+						String page = "";
+						for (int i = 0; i < bookText.length(); i++) {
+							if (bookText.charAt(i) == '~') {
+								pages.add(page);
+								page = "";
+								lineCount = 0;
+							} else {
+								if (bookText.charAt(i) == '^') {
+									page += '§';
+								} else {
+									page += bookText.charAt(i);
+								}
+
+								l++;
+								if (bookText.charAt(i) == '\n' || l > 19) {
+									l = 0;
+									lineCount++;
+								}
+
+								if (lineCount > 12
+										&& (bookText.charAt(i) == ' ' || bookText
+												.charAt(i) == '\n')) {
+									pages.add(page);
+									page = "";
+									lineCount = 0;
+								}
+							}
+						}
+						pages.add(page);
+
+						meta.setPages(pages);
+						book.setItemMeta(meta);
+						final ItemStack bookF = book;
+
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+								new Runnable() {
+									@Override
+									public void run() {
+										WATERROOMMINESHAFT
+												.getWorld()
+												.dropItem(WATERROOMMINESHAFT,
+														bookF)
+												.setVelocity(
+														new Vector(0, 0, .125));
+
+										WATERROOMMINESHAFT
+												.getWorld()
+												.dropItem(WATERROOMMINESHAFT,
+														imf)
+												.setVelocity(
+														new Vector(0, 0, .125));
+									}
+								});
+						podrickCfg.getConfig().set(
+								event.getPlayer().getDisplayName()
+										+ ".GotWeatherControl", true);
+						podrickCfg.saveConfig();
+						podrickCfg.reloadConfig();
+					}
+				}
+			}
+		}
+	}
+
+
+	protected void checkForArtifact(Player p) {
+		for (ItemStack is : p.getInventory().getContents()) {
+			if (is != null) {
+				if (is.hasItemMeta()) {
+					if (is.getItemMeta().hasLore()) {
+						if (is.getItemMeta().hasDisplayName()
+								&& is.getItemMeta().getDisplayName()
+										.equals(Secret.TPA)) {
+							int playerSeed = podrickCfg.getConfig().getInt(
+									p.getDisplayName() + ".Seed", -1);
+							int thisItemSeed = Integer.parseInt(is
+									.getItemMeta().getLore().get(0));
+							if (playerSeed == thisItemSeed) {
+								sendSimulatedPrivateMessage(p,
+										Secret.SOMEONESNAME, Secret.ATPAM);
+								p.getInventory().remove(is);
+								podrickCfg.getConfig()
+										.set(p.getDisplayName()
+												+ ".ReadyToTeleport", true);
+								podrickCfg.saveConfig();
+								podrickCfg.reloadConfig();
 								return;
 							}
 						}
@@ -9645,10 +9417,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}
-	}
 
-	static boolean isDateBetween(Date check, Date min, Date max) {
-		return check.after(min) && check.before(max);
+		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME, Secret.HAVEDISC);
 	}
-
 }
