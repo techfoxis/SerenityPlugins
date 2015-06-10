@@ -900,33 +900,38 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void highlightSticks() {
-		for (Player p : Bukkit.getOnlinePlayers()) {
-			if (p.getItemInHand().getType() == Material.STICK) {
-				for (ProtectedArea pa : areas) {
-					if (pa.owner.equals(p.getDisplayName())) {
+		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
+			@Override
+			public void run(){
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					if (p.getItemInHand().getType() == Material.STICK) {
+						for (ProtectedArea pa : areas) {
+							if (pa.owner.equals(p.getDisplayName())) {
 
-						final ProtectedArea paf = pa;
-						if (pa.owner.equals("Kaymaki")
-								|| pa.owner.equals("Insurmountable")) {
-							paf.highlightAreaKayla();
-						} else {
-							paf.highlightArea();
+								final ProtectedArea paf = pa;
+								if (pa.owner.equals("Kaymaki")
+										|| pa.owner.equals("Insurmountable")) {
+									paf.highlightAreaKayla();
+								} else {
+									paf.highlightArea();
+								}
+								Bukkit.getScheduler().scheduleSyncDelayedTask(
+										SerenityPlugins.this, new Runnable() {
+											@Override
+											public void run() {
+												if (paf.owner.equals("Kaymaki")) {
+													paf.highlightAreaKayla();
+												} else {
+													paf.highlightArea();
+												}
+											}
+										}, 10L);
+							}
 						}
-						Bukkit.getScheduler().scheduleSyncDelayedTask(
-								SerenityPlugins.this, new Runnable() {
-									@Override
-									public void run() {
-										if (paf.owner.equals("Kaymaki")) {
-											paf.highlightAreaKayla();
-										} else {
-											paf.highlightArea();
-										}
-									}
-								}, 10L);
 					}
 				}
 			}
-		}
+		});
 	}
 
 	@EventHandler
@@ -998,7 +1003,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		final Player pf = p;
 
 		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
 				@Override
 				public void run() {
 
@@ -1106,7 +1111,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		final Player pf = Bukkit.getPlayer(p);
 		final Short num = celebrators.get(p);
 		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(global, new Runnable() {
 				@Override
 				public void run() {
 					Location loc = pf.getLocation();
@@ -2179,6 +2184,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					Location location = target.getLocation();
 
 					doRandomFirework(event.getPlayer().getWorld(), location);
+					event.setCancelled(true);
 				}
 			}
 		}
@@ -2190,6 +2196,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (event.getAction().equals(Action.LEFT_CLICK_AIR)
 					|| event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
 				if (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
+					event.setCancelled(true);
 					Short num = celebrators.get(event.getPlayer().getName());
 					celebrators.put(event.getPlayer().getName(),
 							(short) (num + 1));
@@ -2301,17 +2308,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 * "§cYou are already betting on a horse!  Right click that sign to stop betting on it!"
 	 * ); } } break; } } } } } } }
 	 */
-
-	// Taken from
-	// https://bukkit.org/threads/faked-a-location-block-getnearbyentities.117428/
-	// Thank you nathanaelps :)
-	public List<Entity> getNearbyEntities(Location loc, double x, double y,
-			double z) {
-		FallingBlock ent = loc.getWorld().spawnFallingBlock(loc, 132, (byte) 0);
-		List<Entity> out = ent.getNearbyEntities(x, y, z);
-		ent.remove();
-		return out;
-	}
 
 	/*
 	 * @EventHandler public void onBetItemEvent(InventoryClickEvent event) { if
@@ -3491,6 +3487,37 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						return true;
 					}
 				}
+				
+				if (arg3[0].equalsIgnoreCase("celebrate")) {
+
+					Date min = new Date();
+					Date max = new Date();
+					try {
+						min = psdf.parse("06/14");
+						max = psdf.parse("06/22");
+					} catch (ParseException e) {
+					}
+
+					min.setYear(new Date().getYear());
+					max.setYear(new Date().getYear());
+					if (isDateBetween(new Date(), min, max)) {
+						if (sender instanceof Player) {
+							Player p = (Player) sender;
+							if (celebrators.keySet().contains(p.getName())) {
+								celebrators.remove(p.getName());
+								p.sendMessage("§6You are no longer celebrating");
+								return true;
+							}
+							celebrators.put(p.getName(), (short) 0);
+							p.sendMessage("§bHappy Anniversary to §3Serenity!\n§7(Right and left click while holding a §edandelion§7)");
+							return true;
+						}
+					} else {
+						sender.sendMessage("§cIt's not time to celebrate yet...");
+						return true;
+					}
+				}
+				
 				if (arg3[0].equals("wb")) {
 					sender.sendMessage(/*
 										 * "§bCollective Minutes §7(Since May 3, Noon Eastern US time): §3"
@@ -3732,35 +3759,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 
-			else if (arg3[0].equalsIgnoreCase("celebrate")) {
 
-				Date min = new Date();
-				Date max = new Date();
-				try {
-					min = psdf.parse("06/14");
-					max = psdf.parse("06/22");
-				} catch (ParseException e) {
-				}
-
-				min.setYear(new Date().getYear());
-				max.setYear(new Date().getYear());
-				if (isDateBetween(new Date(), min, max)) {
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						if (celebrators.keySet().contains(p.getName())) {
-							celebrators.remove(p.getName());
-							p.sendMessage("§6You are no longer celebrating");
-							return true;
-						}
-						celebrators.put(p.getName(), (short) 0);
-						p.sendMessage("§bHappy Anniversary to §3Serenity!\n§7(Right and left click while holding a §edandelion§7)");
-						return true;
-					}
-				} else {
-					sender.sendMessage("§cIt's not time to celebrate yet...");
-					return true;
-				}
-			}
 
 			else if (arg3[0].equalsIgnoreCase("stuck")) {
 				racers.remove(sender.getName());
@@ -3826,102 +3825,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage(msg);
 
 					return true;
-				}
-
-				if (arg3.length > 2) {
-					if (arg3[1].equalsIgnoreCase("time")) {
-						int time = 0;
-						try {
-							time = Integer.parseInt(arg3[2]);
-						} catch (Exception e) {
-							// sender.sendMessage("§cTime must be an integer value");
-
-							String msg = getTranslationLanguage(sender,
-									stringKeys.PROTTIMEBADARG.toString());
-							sender.sendMessage(msg);
-							return true;
-						}
-
-						final OfflinePlayer[] offP = Bukkit.getOfflinePlayers();
-						final CommandSender senderF = sender;
-						final int timeF = time;
-
-						Bukkit.getScheduler().runTaskAsynchronously(this,
-								new Runnable() {
-
-									@Override
-									public void run() {
-										for (OfflinePlayer op : Bukkit
-												.getOfflinePlayers()) {
-											if (getPlayerMinutes(op.getName()) > timeF) {
-
-												ArrayList<String> list = new ArrayList<String>();
-
-												for (ProtectedArea pa : areas) {
-													if (pa.owner.equals(Bukkit
-															.getServer()
-															.getPlayer(
-																	senderF.getName())
-															.getDisplayName())) {
-														pa.addTrust(op
-																.getName());
-														list = pa.trustedPlayers;
-													}
-												}
-
-												String path = "ProtectedAreas."
-														+ Bukkit.getServer()
-																.getPlayer(
-																		senderF.getName())
-																.getDisplayName()
-														+ ".Trusts";
-
-												String[] loc = new String[list
-														.size()];
-												for (int i = 0; i < list.size(); i++) {
-													loc[i] = list.get(i);
-												}
-
-												protectedAreasCfg.getConfig()
-														.set(path, loc);
-
-												/*
-												 * sender.sendMessage("§2" +
-												 * op.getName() +
-												 * "§3 now has full permissions in all of your protected areas"
-												 * );
-												 */
-
-												String msg = getTranslationLanguage(
-														senderF,
-														stringKeys.PROTADDEDTRUST
-																.toString());
-
-												final String msgF = msg;
-												final String nmF = op.getName();
-
-												Bukkit.getScheduler()
-														.runTaskAsynchronously(
-																global,
-																new Runnable() {
-
-																	@Override
-																	public void run() {
-																		senderF.sendMessage(String
-																				.format(msgF,
-																						nmF));
-																	}
-																});
-
-											}
-										}
-										protectedAreasCfg.saveConfig();
-										protectedAreasCfg.reloadConfig();
-									}
-								});
-
-						return true;
-					}
 				}
 
 				ArrayList<String> list = new ArrayList<String>();
