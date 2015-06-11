@@ -909,12 +909,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							if (pa.owner.equals(p.getDisplayName())) {
 
 								final ProtectedArea paf = pa;
-								if (pa.owner.equals("Kaymaki")
-										|| pa.owner.equals("Insurmountable")) {
-									paf.highlightAreaKayla();
-								} else {
-									paf.highlightArea();
-								}
+								Bukkit.getScheduler().scheduleSyncDelayedTask(SerenityPlugins.this, new Runnable(){
+									@Override 
+									public void run(){
+										if (paf.owner.equals("Kaymaki")
+												|| paf.owner.equals("Insurmountable")) {
+											paf.highlightAreaKayla();
+										} else {
+											paf.highlightArea();
+										}
+									}
+								});
+								
 								Bukkit.getScheduler().scheduleSyncDelayedTask(
 										SerenityPlugins.this, new Runnable() {
 											@Override
@@ -1849,8 +1855,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						+ "§k%s§r> %s");
 			}
 		}
-
 		event.setMessage(getChatColor(event.getPlayer()) + event.getMessage());
+		event.setMessage(event.getMessage().replace("[i]", "§o"));
+		event.setMessage(event.getMessage().replace("[b]", "§l"));
+		event.setMessage(event.getMessage().replace("[s]", "§m"));
+		event.setMessage(event.getMessage().replace("[u]", "§n"));
+		
+		event.setMessage(event.getMessage().replace("[I]", "§o"));
+		event.setMessage(event.getMessage().replace("[B]", "§l"));
+		event.setMessage(event.getMessage().replace("[S]", "§m"));
+		event.setMessage(event.getMessage().replace("[U]", "§n"));
+		
+		event.setMessage(event.getMessage().replace("[/i]", "§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/b]", "§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/s]", "§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/u]", "§r" + getChatColor(event.getPlayer())));
+		
+		event.setMessage(event.getMessage().replace("[/I]", "§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/B]", "§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/S]", "§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/U]", "§r" + getChatColor(event.getPlayer())));
 	}
 
 	protected void setPlayerUpForQuest(Player p) {
