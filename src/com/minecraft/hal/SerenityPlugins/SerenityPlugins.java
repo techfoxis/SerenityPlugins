@@ -6401,21 +6401,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (tickrate < 16) {
 
-			message += "§4"
-					+ new DecimalFormat("##.##").format((tickrate / 20) * 100)
-					+ "%§c speed §f| ";
-			return true;
+			message += "§4";
 		}
-		if (tickrate < 19) {
-			message += "§e"
-					+ new DecimalFormat("##.##").format((tickrate / 20) * 100)
-					+ "%§3 speed §f| ";
-			return true;
-		} else {
-			message += "§2"
-					+ new DecimalFormat("##.##").format((tickrate / 20) * 100)
-					+ "%§3 speed §f| ";
+		else if (tickrate < 19) {
+			message += "§e";
+		}else{
+			message += "§2";
 		}
+		
+		message += new DecimalFormat("##.##").format((tickrate / 20) * 100)
+		+ "%§3 speed §f| ";
 
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
