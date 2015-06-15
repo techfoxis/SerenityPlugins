@@ -91,7 +91,6 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerInventoryEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -151,6 +150,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public Set<PlayerStatus> playerStatuses;
 	public List<FireWorkShow> fireworkShowLocations;
 	public boolean flameOn;
+	public boolean purpOn = false;
 	public final List<String> PUBLIC_MAILBOXES = new ArrayList<String>() {
 		{
 			// todo: make mailboxes automatically public if they begin with #...
@@ -246,7 +246,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public Location WATERROOMACTIVATE;
 	public boolean aBattleIsRaging = false;
 	public Location DOORWAYTOFINALDUNGEON;
-	public List<String> celebrators;
+	public HashMap<String, Short> celebrators;
 
 	public int finalDungeonKillCount;
 
@@ -328,7 +328,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		WATERROOMMINESHAFT = Secret.WATERROOMMINESHAFT;
 		WATERROOMACTIVATE = Secret.WATERROOMACTIVATE;
 		DOORWAYTOFINALDUNGEON = Secret.DOORWAYTOFINALDUNGEON;
-		celebrators = new ArrayList<String>();
+		celebrators = new HashMap<String, Short>();
 
 		racers = new HashMap<String, Long>();
 
@@ -725,7 +725,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public void run() {
 
-				for (String p : celebrators) {
+				for (String p : celebrators.keySet()) {
 					celebrate(p);
 				}
 
@@ -733,6 +733,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						if (p.isOp()) {
 							heartAnimation(p.getName());
+						}
+					}
+				}
+				if (purpOn) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (p.isOp()) {
+							purpAnimation(p.getName());
 						}
 					}
 				}
@@ -902,20 +909,94 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 * }
 	 */
 
+	protected void purpAnimation(String name) {
+		final Player pf = Bukkit.getPlayer(name);
+
+		for (int i = 0; i < 10; i++) {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+				@Override
+				public void run() {
+
+					List<Player> players = new ArrayList<Player>();
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (!p.isOp()) {
+							players.add(p);
+						}
+					}
+
+					if (!players.isEmpty()) {
+						Location loc = pf.getLocation();
+						loc.setY(loc.getY() + .5);
+						ParticleEffect.SPELL_WITCH.display(.125F, .25F, .125F, 0,
+								25, loc, 15);
+					}
+				}
+			}, i * 2L);
+		}
+		
+	}
+
 	protected void celebrate(String p) {
 
 		final Player pf = Bukkit.getPlayer(p);
+		final Short num = celebrators.get(p);
 		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().scheduleAsyncDelayedTask(this,
-					new Runnable() {
-						@Override
-						public void run() {
-							Location loc = pf.getLocation();
-							loc.setY(loc.getY() + .125);
-							ParticleEffect.FIREWORKS_SPARK.display(.25F, .125F,
-									.25F, .0001F, 4, loc, 15);
-						}
-					}, i * 2L);
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+				@Override
+				public void run() {
+					Location loc = pf.getLocation();
+					loc.setY(loc.getY() + .125);
+
+					switch (num) {
+					case 0:
+						ParticleEffect.FIREWORKS_SPARK.display(.25F, .125F,
+								.25F, .0001F, 4, loc, 15);
+						break;
+					case 1:
+						ParticleEffect.FLAME.display(.25F, .125F, .25F, .0001F,
+								4, loc, 15);
+						break;
+					case 2:
+						ParticleEffect.NOTE.display(.25F, .125F, .25F, 50, 4,
+								loc, 15);
+						break;
+					case 3:
+						ParticleEffect.SPELL_MOB.display(.25F, .125F, .25F, 50,
+								4, loc, 15);
+						break;
+
+					case 4:
+						ParticleEffect.HEART.display(.25F, .125F, .25F, 50, 4,
+								loc, 15);
+						break;
+					case 5:
+						ParticleEffect.SMOKE_LARGE.display(.25F, .125F, .25F,
+								.002F, 4, loc, 15);
+						break;
+					case 6:
+						ParticleEffect.REDSTONE.display(.25F, .125F, .25F, 25,
+								4, loc, 15);
+						break;
+					case 7:
+						ParticleEffect.PORTAL.display(.25F, .125F, .25F, .002F,
+								4, loc, 15);
+						break;
+					case 8:
+						ParticleEffect.LAVA.display(.25F, .125F, .25F, .002F,
+								4, loc, 15);
+						break;
+					case 9:
+						ParticleEffect.VILLAGER_HAPPY.display(.25F, .125F,
+								.25F, .002F, 4, loc, 15);
+						break;
+					case 10:
+						ParticleEffect.SPELL_WITCH.display(.25F, .125F, .25F,
+								.002F, 4, loc, 15);
+						break;
+					}
+
+				}
+			}, i * 2L);
 		}
 	}
 
@@ -923,24 +1004,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		final Player pf = Bukkit.getPlayer(p);
 
 		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().scheduleAsyncDelayedTask(this,
-					new Runnable() {
-						@Override
-						public void run() {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+				@Override
+				public void run() {
 
-							List<Player> players = new ArrayList<Player>();
-							for (Player p : Bukkit.getOnlinePlayers()) {
-								if (!p.isOp()) {
-									players.add(p);
-								}
-							}
-
-							Location loc = pf.getLocation();
-							loc.setY(loc.getY() + .5);
-							ParticleEffect.HEART.display(.125F, .25F, .125F,
-									50F, 5, loc, players);
+					List<Player> players = new ArrayList<Player>();
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (!p.isOp()) {
+							players.add(p);
 						}
-					}, i * 2L);
+					}
+
+					if (!players.isEmpty()) {
+						Location loc = pf.getLocation();
+						loc.setY(loc.getY() + .5);
+						ParticleEffect.HEART.display(.125F, .25F, .125F, 50F,
+								5, loc, players);
+					}
+				}
+			}, i * 2L);
 		}
 	}
 
@@ -1909,44 +1991,36 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onCelebrateFW(PlayerInteractEvent event) {
-		if (celebrators.contains(event.getPlayer().getName())) {
+		if (celebrators.keySet().contains(event.getPlayer().getName())) {
 			if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
 					|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
-				Block target = event.getPlayer().getTargetBlock(
-						(Set<Material>) null, MAX_DISTANCE);
-				Location location = target.getLocation();
+				if (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
+					Block target = event.getPlayer().getTargetBlock(
+							(Set<Material>) null, MAX_DISTANCE);
+					Location location = target.getLocation();
 
-				Location l = location.getWorld().getHighestBlockAt(location)
-						.getLocation();
+					Location l = location.getWorld()
+							.getHighestBlockAt(location).getLocation();
 
-				doRandomFirework(event.getPlayer().getWorld(), l);
-
+					doRandomFirework(event.getPlayer().getWorld(), l);
+				}
 			}
 		}
 	}
 
 	@EventHandler
 	public void onCelebrateSomethingElse(PlayerInteractEvent event) {
-		if (celebrators.contains(event.getPlayer().getName())) {
+		if (celebrators.keySet().contains(event.getPlayer().getName())) {
 			if (event.getAction().equals(Action.LEFT_CLICK_AIR)
 					|| event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-
-				Block target = event.getPlayer().getTargetBlock(
-						(Set<Material>) null, MAX_DISTANCE);
-				Location location = target.getLocation();
-
-				Location l = location.getWorld().getHighestBlockAt(location)
-						.getLocation();
-
-				Player p = event.getPlayer();
-
-				/*
-				 * final Entity e = p.getLocation().getWorld()
-				 * .spawnEntity(p.getEyeLocation(), EntityType.);
-				 * e.setCustomName("§cCELEBRATE!");
-				 * e.setVelocity(event.getPlayer
-				 * ().getLocation().getDirection().multiply(5));
-				 */
+				if (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
+					Short num = celebrators.get(event.getPlayer().getName());
+					celebrators.put(event.getPlayer().getName(),
+							(short) (num + 1));
+					if (celebrators.get(event.getPlayer().getName()) > 11) {
+						celebrators.put(event.getPlayer().getName(), (short) 0);
+					}
+				}
 			}
 		}
 	}
@@ -4081,7 +4155,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (p.getName().toUpperCase().contains(rec.toUpperCase())) {
 				p.sendMessage("§oText from Hal: §r" + msg);
-				sendATextToHal("YOU SENT", msg);
+				sendATextToHal("Received", p.getName() + " received the text!");
 				return true;
 			}
 		}
@@ -4258,10 +4332,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean chunk(CommandSender sender, String[] arg3) {
 		if (arg3.length > 0) {
 			if (arg3[0].equalsIgnoreCase("claim")) {
-				
+
 				Player p = Bukkit.getPlayer(sender.getName());
-				
-				if(getPlayerMinutes(p.getDisplayName()) < 60){
+
+				if (getPlayerMinutes(p.getDisplayName()) < 60) {
 					p.sendMessage("§cYou cannot claim an area yet!  Stick around");
 					return true;
 				}
@@ -4475,11 +4549,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (isDateBetween(new Date(), min, max)) {
 					if (sender instanceof Player) {
 						Player p = (Player) sender;
-						if (celebrators.contains(p.getName())) {
+						if (celebrators.keySet().contains(p.getName())) {
 							celebrators.remove(p.getName());
+							p.sendMessage("§6You are no longer celebrating");
 							return true;
 						}
-						celebrators.add(p.getName());
+						celebrators.put(p.getName(), (short) 0);
+						p.sendMessage("§bHappy Anniversary to §3Serenity!\n§7(Right and left click while holding a §edandelion§7)");
 						return true;
 					}
 				} else {
@@ -5779,12 +5855,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						for (Player p : Bukkit.getOnlinePlayers()) {
 							s += p.getName() + " ";
 						}
-					}else{ s = "Nobody is online";
+					} else {
+						s = "Nobody is online";
 					}
-					
+
 					sendATextToHal("SerenityPlugins", s);
-					
-			
+
 				}
 
 				if (arg3[0].equals("reloadcfg")) {
@@ -5799,6 +5875,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (arg3[0].equals("flames")) {
 					flameOn = !flameOn;
 					sender.sendMessage("Flame on = " + flameOn);
+				}
+				if (arg3[0].equals("purp")) {
+					purpOn = !purpOn;
+					sender.sendMessage("Purp on = " + purpOn);
 				}
 
 				if (arg3[0].equals("sleepers")) {
