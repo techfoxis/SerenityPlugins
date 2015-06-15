@@ -928,7 +928,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						Location loc = pf.getLocation();
 						loc.setY(loc.getY() + .5);
 						ParticleEffect.SPELL_WITCH.display(.125F, .25F, .125F, 0,
-								25, loc, 15);
+								25, loc, players);
 					}
 				}
 			}, i * 2L);
