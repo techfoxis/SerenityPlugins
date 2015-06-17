@@ -900,27 +900,29 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void highlightSticks() {
-		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
+		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
 			@Override
-			public void run(){
+			public void run() {
 				for (Player p : Bukkit.getOnlinePlayers()) {
 					if (p.getItemInHand().getType() == Material.STICK) {
 						for (ProtectedArea pa : areas) {
 							if (pa.owner.equals(p.getDisplayName())) {
 
 								final ProtectedArea paf = pa;
-								Bukkit.getScheduler().scheduleSyncDelayedTask(SerenityPlugins.this, new Runnable(){
-									@Override 
-									public void run(){
-										if (paf.owner.equals("Kaymaki")
-												|| paf.owner.equals("Insurmountable")) {
-											paf.highlightAreaKayla();
-										} else {
-											paf.highlightArea();
-										}
-									}
-								});
-								
+								Bukkit.getScheduler().scheduleSyncDelayedTask(
+										SerenityPlugins.this, new Runnable() {
+											@Override
+											public void run() {
+												if (paf.owner.equals("Kaymaki")
+														|| paf.owner
+																.equals("Insurmountable")) {
+													paf.highlightAreaKayla();
+												} else {
+													paf.highlightArea();
+												}
+											}
+										});
+
 								Bukkit.getScheduler().scheduleSyncDelayedTask(
 										SerenityPlugins.this, new Runnable() {
 											@Override
@@ -1009,72 +1011,77 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		final Player pf = p;
 
 		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
-				@Override
-				public void run() {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+					new Runnable() {
+						@Override
+						public void run() {
 
-					List<Player> players = new ArrayList<Player>();
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (!p.isOp() || opParticlesDeb) {
-							players.add(p);
+							List<Player> players = new ArrayList<Player>();
+							for (Player p : Bukkit.getOnlinePlayers()) {
+								if (!p.isOp() || opParticlesDeb) {
+									players.add(p);
+								}
+							}
+
+							if (!players.isEmpty()) {
+								Location loc = pf.getLocation();
+								loc.setY(loc.getY() + .5);
+
+								switch (specEff) {
+								case 0:
+									break;
+								case 1:
+									ParticleEffect.SPELL_WITCH.display(.125F,
+											.25F, .125F, 0, 25, loc, players);
+									break;
+								case 2:
+									ParticleEffect.HEART.display(.125F, .25F,
+											.125F, 50F, 5, loc, players);
+									break;
+								case 3:
+									ParticleEffect.FLAME.display(.125F, .5F,
+											.125F, 0, 25, loc, players);
+									break;
+								case 4:
+									ParticleEffect.VILLAGER_ANGRY.display(
+											.125F, .25F, .125F, 0, 25, loc,
+											players);
+									break;
+								case 5:
+									ParticleEffect.REDSTONE.display(.125F,
+											.50F, .125F, 25, 25, loc, players);
+									break;
+								case 6:
+									ParticleEffect.ENCHANTMENT_TABLE.display(
+											.125F, .5F, .125F, 0, 25, loc,
+											players);
+									break;
+								case 7:
+									ParticleEffect.NOTE.display(.125F, .25F,
+											.125F, 25, 25, loc, players);
+									break;
+								case 8:
+									ParticleEffect.EXPLOSION_HUGE.display(
+											.125F, .25F, .125F, 25, 25, loc,
+											players);
+									break;
+								case 9:
+									ParticleEffect.EXPLOSION_NORMAL.display(
+											.125F, .50F, .125F, 0, 25, loc,
+											players);
+									break;
+								case 10:
+									ParticleEffect.LAVA.display(.125F, .25F,
+											.125F, 0, 25, loc, players);
+									break;
+								case 11:
+									ParticleEffect.SMOKE_LARGE.display(.125F,
+											.50F, .125F, 0, 0, loc, players);
+									break;
+								}
+							}
 						}
-					}
-
-					if (!players.isEmpty()) {
-						Location loc = pf.getLocation();
-						loc.setY(loc.getY() + .5);
-
-						switch (specEff) {
-						case 0:
-							break;
-						case 1:
-							ParticleEffect.SPELL_WITCH.display(.125F, .25F,
-									.125F, 0, 25, loc, players);
-							break;
-						case 2:
-							ParticleEffect.HEART.display(.125F, .25F, .125F,
-									50F, 5, loc, players);
-							break;
-						case 3:
-							ParticleEffect.FLAME.display(.125F, .5F, .125F, 0,
-									25, loc, players);
-							break;
-						case 4:
-							ParticleEffect.VILLAGER_ANGRY.display(.125F, .25F,
-									.125F, 0, 25, loc, players);
-							break;
-						case 5:
-							ParticleEffect.REDSTONE.display(.125F, .50F, .125F,
-									25, 25, loc, players);
-							break;
-						case 6:
-							ParticleEffect.ENCHANTMENT_TABLE.display(.125F,
-									.5F, .125F, 0, 25, loc, players);
-							break;
-						case 7:
-							ParticleEffect.NOTE.display(.125F, .25F, .125F, 25,
-									25, loc, players);
-							break;
-						case 8:
-							ParticleEffect.EXPLOSION_HUGE.display(.125F, .25F,
-									.125F, 25, 25, loc, players);
-							break;
-						case 9:
-							ParticleEffect.EXPLOSION_NORMAL.display(.125F,
-									.50F, .125F, 0, 25, loc, players);
-							break;
-						case 10:
-							ParticleEffect.LAVA.display(.125F, .25F, .125F, 0,
-									25, loc, players);
-							break;
-						case 11:
-							ParticleEffect.SMOKE_LARGE.display(.125F, .50F,
-									.125F, 0, 0, loc, players);
-							break;
-						}
-					}
-				}
-			}, i * 2L);
+					}, i * 2L);
 		}
 	}
 
@@ -1113,66 +1120,69 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 */
 
 	protected void celebrate(String p) {
-
 		final Player pf = Bukkit.getPlayer(p);
-		final Short num = celebrators.get(p);
-		for (int i = 0; i < 10; i++) {
-			Bukkit.getScheduler().runTaskLaterAsynchronously(global, new Runnable() {
-				@Override
-				public void run() {
-					Location loc = pf.getLocation();
-					loc.setY(loc.getY() + .125);
+		if (pf.isOnline()) {
+			final Short num = celebrators.get(p);
+			for (int i = 0; i < 10; i++) {
+				Bukkit.getScheduler().runTaskLaterAsynchronously(global,
+						new Runnable() {
+							@Override
+							public void run() {
+								Location loc = pf.getLocation();
+								loc.setY(loc.getY() + .125);
 
-					switch (num) {
-					case 0:
-						ParticleEffect.FIREWORKS_SPARK.display(.25F, .125F,
-								.25F, .0001F, 4, loc, 15);
-						break;
-					case 1:
-						ParticleEffect.FLAME.display(.25F, .125F, .25F, .0001F,
-								4, loc, 15);
-						break;
-					case 2:
-						ParticleEffect.NOTE.display(.25F, .125F, .25F, 50, 4,
-								loc, 15);
-						break;
-					case 3:
-						ParticleEffect.SPELL_MOB.display(.25F, .125F, .25F, 50,
-								4, loc, 15);
-						break;
+								switch (num) {
+								case 0:
+									ParticleEffect.FIREWORKS_SPARK.display(
+											.25F, .125F, .25F, .0001F, 4, loc,
+											15);
+									break;
+								case 1:
+									ParticleEffect.FLAME.display(.25F, .125F,
+											.25F, .0001F, 4, loc, 15);
+									break;
+								case 2:
+									ParticleEffect.NOTE.display(.25F, .125F,
+											.25F, 50, 4, loc, 15);
+									break;
+								case 3:
+									ParticleEffect.SPELL_MOB.display(.25F,
+											.125F, .25F, 50, 4, loc, 15);
+									break;
 
-					case 4:
-						ParticleEffect.HEART.display(.25F, .125F, .25F, 50, 4,
-								loc, 15);
-						break;
-					case 5:
-						ParticleEffect.SMOKE_LARGE.display(.25F, .125F, .25F,
-								.002F, 4, loc, 15);
-						break;
-					case 6:
-						ParticleEffect.REDSTONE.display(.25F, .125F, .25F, 25,
-								4, loc, 15);
-						break;
-					case 7:
-						ParticleEffect.PORTAL.display(.25F, .125F, .25F, .002F,
-								4, loc, 15);
-						break;
-					case 8:
-						ParticleEffect.LAVA.display(.25F, .125F, .25F, .002F,
-								4, loc, 15);
-						break;
-					case 9:
-						ParticleEffect.VILLAGER_HAPPY.display(.25F, .125F,
-								.25F, .002F, 4, loc, 15);
-						break;
-					case 10:
-						ParticleEffect.SPELL_WITCH.display(.25F, .125F, .25F,
-								.002F, 4, loc, 15);
-						break;
-					}
+								case 4:
+									ParticleEffect.HEART.display(.25F, .125F,
+											.25F, 50, 4, loc, 15);
+									break;
+								case 5:
+									ParticleEffect.SMOKE_LARGE.display(.25F,
+											.125F, .25F, .002F, 4, loc, 15);
+									break;
+								case 6:
+									ParticleEffect.REDSTONE.display(.25F,
+											.125F, .25F, 25, 4, loc, 15);
+									break;
+								case 7:
+									ParticleEffect.PORTAL.display(.25F, .125F,
+											.25F, .002F, 4, loc, 15);
+									break;
+								case 8:
+									ParticleEffect.LAVA.display(.25F, .125F,
+											.25F, .002F, 4, loc, 15);
+									break;
+								case 9:
+									ParticleEffect.VILLAGER_HAPPY.display(.25F,
+											.125F, .25F, .002F, 4, loc, 15);
+									break;
+								case 10:
+									ParticleEffect.SPELL_WITCH.display(.25F,
+											.125F, .25F, .002F, 4, loc, 15);
+									break;
+								}
 
-				}
-			}, i * 2L);
+							}
+						}, i * 2L);
+			}
 		}
 	}
 
@@ -1565,22 +1575,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (getPlayerMinutes(player.getDisplayName()) > 720) {
 			Bukkit.getLogger().info(player.getName() + " is in group 12 hours");
-			/*attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.starter", true);
-			attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.oneHour", true);
-			attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.threeHour", true);*/
+			/*
+			 * attachments.get(player.getUniqueId()).setPermission(
+			 * "SerenityPlugins.starter", true);
+			 * attachments.get(player.getUniqueId()).setPermission(
+			 * "SerenityPlugins.oneHour", true);
+			 * attachments.get(player.getUniqueId()).setPermission(
+			 * "SerenityPlugins.threeHour", true);
+			 */
 			attachments.get(player.getUniqueId()).setPermission(
 					"SerenityPlugins.twelveHour", true);
 			return;
 		}
 		if (getPlayerMinutes(player.getDisplayName()) > 180) {
 			Bukkit.getLogger().info(player.getName() + " is in group 3 hours");
-			/*attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.starter", true);
-			attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.oneHour", true);*/
+			/*
+			 * attachments.get(player.getUniqueId()).setPermission(
+			 * "SerenityPlugins.starter", true);
+			 * attachments.get(player.getUniqueId()).setPermission(
+			 * "SerenityPlugins.oneHour", true);
+			 */
 			attachments.get(player.getUniqueId()).setPermission(
 					"SerenityPlugins.threeHour", true);
 			return;
@@ -1589,8 +1603,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			Bukkit.getLogger().info(player.getName() + " is in group 1 hour");
 			attachments.get(player.getUniqueId()).setPermission(
 					"SerenityPlugins.oneHour", true);
-			/*attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.starter", true);*/
+			/*
+			 * attachments.get(player.getUniqueId()).setPermission(
+			 * "SerenityPlugins.starter", true);
+			 */
 			return;
 		}
 		Bukkit.getLogger().info(player.getName() + " is in group starter");
@@ -1663,6 +1679,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getPlayer().isOp()) {
 			event.setQuitMessage(null);
 		}
+
+		celebrators.remove(event.getPlayer().getName());
+
 	}
 
 	@EventHandler
@@ -1860,21 +1879,29 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		event.setMessage(event.getMessage().replace("[b]", "§l"));
 		event.setMessage(event.getMessage().replace("[s]", "§m"));
 		event.setMessage(event.getMessage().replace("[u]", "§n"));
-		
+
 		event.setMessage(event.getMessage().replace("[I]", "§o"));
 		event.setMessage(event.getMessage().replace("[B]", "§l"));
 		event.setMessage(event.getMessage().replace("[S]", "§m"));
 		event.setMessage(event.getMessage().replace("[U]", "§n"));
-		
-		event.setMessage(event.getMessage().replace("[/i]", "§r" + getChatColor(event.getPlayer())));
-		event.setMessage(event.getMessage().replace("[/b]", "§r" + getChatColor(event.getPlayer())));
-		event.setMessage(event.getMessage().replace("[/s]", "§r" + getChatColor(event.getPlayer())));
-		event.setMessage(event.getMessage().replace("[/u]", "§r" + getChatColor(event.getPlayer())));
-		
-		event.setMessage(event.getMessage().replace("[/I]", "§r" + getChatColor(event.getPlayer())));
-		event.setMessage(event.getMessage().replace("[/B]", "§r" + getChatColor(event.getPlayer())));
-		event.setMessage(event.getMessage().replace("[/S]", "§r" + getChatColor(event.getPlayer())));
-		event.setMessage(event.getMessage().replace("[/U]", "§r" + getChatColor(event.getPlayer())));
+
+		event.setMessage(event.getMessage().replace("[/i]",
+				"§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/b]",
+				"§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/s]",
+				"§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/u]",
+				"§r" + getChatColor(event.getPlayer())));
+
+		event.setMessage(event.getMessage().replace("[/I]",
+				"§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/B]",
+				"§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/S]",
+				"§r" + getChatColor(event.getPlayer())));
+		event.setMessage(event.getMessage().replace("[/U]",
+				"§r" + getChatColor(event.getPlayer())));
 	}
 
 	protected void setPlayerUpForQuest(Player p) {
@@ -3511,7 +3538,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						return true;
 					}
 				}
-				
+
 				if (arg3[0].equalsIgnoreCase("celebrate")) {
 
 					Date min = new Date();
@@ -3541,7 +3568,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						return true;
 					}
 				}
-				
+
 				if (arg3[0].equals("wb")) {
 					sender.sendMessage(/*
 										 * "§bCollective Minutes §7(Since May 3, Noon Eastern US time): §3"
@@ -3782,8 +3809,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return true;
 				}
 			}
-
-
 
 			else if (arg3[0].equalsIgnoreCase("stuck")) {
 				racers.remove(sender.getName());
@@ -4669,7 +4694,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-
 
 	@EventHandler
 	private void onDispenserEvent(BlockDispenseEvent event) {
@@ -6402,15 +6426,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (tickrate < 16) {
 
 			message += "§4";
-		}
-		else if (tickrate < 19) {
+		} else if (tickrate < 19) {
 			message += "§e";
-		}else{
+		} else {
 			message += "§2";
 		}
-		
+
 		message += new DecimalFormat("##.##").format((tickrate / 20) * 100)
-		+ "%§3 speed §f| ";
+				+ "%§3 speed §f| ";
 
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
@@ -6594,16 +6617,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@EventHandler
 	public void onExplosion(EntityExplodeEvent event) {
 		for (Mailbox mb : mailBoxes) {
-			for(Block b: event.blockList()){
-				if(b.getLocation().equals(mb.location)){
+			for (Block b : event.blockList()) {
+				if (b.getLocation().equals(mb.location)) {
 					event.setCancelled(true);
 					return;
 				}
 			}
 		}
-		
+
 		for (ProtectedArea pa : areas) {
-			for (Block b: event.blockList()) {
+			for (Block b : event.blockList()) {
 				if (pa.equals(b.getLocation())) {
 					event.setCancelled(true);
 					return;
@@ -6611,7 +6634,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-	
 
 	@EventHandler
 	public void onChestPlace(BlockPlaceEvent event) {
@@ -7154,14 +7176,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private void AFKInvEvent(InventoryClickEvent event) {
 		if (event.getInventory().getName().contains("AFK INVENTORY")) {
 			event.setCancelled(true);
-		}
-	}
-
-	@EventHandler
-	private void AFKCloseEvenet(InventoryCloseEvent event) {
-		if (event.getInventory().getName().contains("AFK INVENTORY")) {
-			Player p = (Player) event.getPlayer();
-			unAfk(p);
 		}
 	}
 
