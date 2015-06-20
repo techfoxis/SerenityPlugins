@@ -19,7 +19,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -52,7 +51,6 @@ import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ExperienceOrb;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Horse.Style;
@@ -86,7 +84,6 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
@@ -229,7 +226,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	};
 
-	public List<Player> deafPlayers;
 	public boolean serverChatting;
 	public List<Ignoring> ignorers;
 	public List<Long> lags;
@@ -372,7 +368,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		localChatters = new ArrayList<Player>();
 		playerStatuses = new TreeSet<PlayerStatus>();
 		fireworkShowLocations = new ArrayList<FireWorkShow>();
-		deafPlayers = new ArrayList<Player>();
 		serverChatting = false;
 		ignorers = new ArrayList<Ignoring>();
 		lags = new ArrayList<Long>();
@@ -1731,12 +1726,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
-		for (int i = 0; i < deafPlayers.size(); i++) {
-			if (!event.getPlayer().equals(deafPlayers.get(i))) {
-				event.getRecipients().remove(deafPlayers.get(i));
-			}
-		}
-
 		if (mutedNames.contains(event.getPlayer().getDisplayName())) {
 			event.setCancelled(true);
 			return;
@@ -1744,25 +1733,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		event.setFormat("<" + getChatColor(event.getPlayer()) + "%s§r> %s");
 
-		// todo ... make this less shitty
 		if (localChatters.contains(event.getPlayer())) {
-			event.setFormat("  §7§o(%1s) %2$s");
+			event.setFormat("§7§o(%1s) %2$s");
 			event.setMessage("§o" + event.getMessage());
 			event.getRecipients().clear();
-			double x = event.getPlayer().getLocation().getX();
-			double z = event.getPlayer().getLocation().getZ();
 			event.getRecipients().add(event.getPlayer());
 
-			for (Iterator<? extends Player> i = Bukkit.getServer()
-					.getOnlinePlayers().iterator(); i.hasNext();) {
-				Player p = i.next();
-
-				if (Math.abs(p.getLocation().getX() - x) < 100) {
-					if (Math.abs(p.getLocation().getZ() - z) < 100) {
-						if (event.getPlayer().getLocation().getWorld()
-								.equals(p.getLocation().getWorld())) {
-							event.getRecipients().add(p);
-						}
+			World w = event.getPlayer().getWorld();
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				if (w.equals(p.getWorld())) {
+					if (p.getLocation().distance(
+							event.getPlayer().getLocation()) <= 100) {
+						event.getRecipients().add(p);
 					}
 				}
 			}
@@ -1774,25 +1756,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				event.getRecipients().remove(ignorers.get(i).player);
 			}
 		}
-
-		if (deafPlayers.contains(event.getPlayer())) {
-			if (!localChatters.contains(event.getPlayer())) {
-				/*
-				 * event.getPlayer() .sendMessage(
-				 * "§cYou have global chat disabled!  Type §3/chat global §cto turn on global chat!  Or type §3/chat local §cto chat locally!"
-				 * );
-				 */
-
-				String msg = getTranslationLanguage(event.getPlayer(),
-						stringKeys.CHATTRIEDTOCHATWITHGLOBALCHATDISABLED
-								.toString());
-				event.getPlayer().sendMessage(msg);
-
-				event.setCancelled(true);
-			}
-		}
-
-		event.setFormat("<" + getChatColor(event.getPlayer()) + "%s§r> %s");
 
 		// i am purple
 		if (event.getPlayer().getDisplayName().contains("[Server]")) {
@@ -3069,7 +3032,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return server(sender, arg3);
 		}
 
-		else if (commandLabel.equalsIgnoreCase("chat")) {
+		else if (commandLabel.equalsIgnoreCase("lc")) {
 			return chat(sender, arg3);
 		}
 
@@ -3447,162 +3410,212 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 */
 
 	private boolean chat(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.chat")) {
+		if (sender.hasPermission("SerenityPlugins.lc")) {
 			if (arg3.length == 1) {
 				if (arg3[0].equals("tp")) {
-					Location l = Bukkit.getPlayer(sender.getName())
-							.getLocation();
-					if (l.getWorld().getName().equalsIgnoreCase("world")) {
-						if (Math.abs(l.getX()) < 50 && Math.abs(l.getZ()) < 50) {
-							boolean ready = true;
-							for (TeleportClicker tc : teleportClickers) {
-								if (tc.name.equals(sender.getName())) {
-									if (System.currentTimeMillis()
-											- tc.lastClick < 1800000) {
-										ready = false;
-									}
-								}
-							}
-							if (ready) {
-								Random rand = new Random();
-								Location teleLoc;
-
-								boolean safe = false;
-								do {
-									teleLoc = new Location(
-											Bukkit.getWorld("world"),
-											(double) rand.nextInt(15000) - 7500,
-											5.0,
-											(double) rand.nextInt(15000) - 7500);
-
-									if (teleLoc.getWorld()
-											.getHighestBlockAt(teleLoc)
-											.getRelative(BlockFace.DOWN)
-											.getType() != Material.WATER
-											&& teleLoc
-													.getWorld()
-													.getHighestBlockAt(teleLoc)
-													.getRelative(BlockFace.DOWN)
-													.getType() != Material.STATIONARY_WATER) {
-										boolean isprotected = false;
-										for (ProtectedArea pa : areas) {
-											if (pa.equals(teleLoc)) {
-												isprotected = true;
-											}
-										}
-										if (!isprotected) {
-											safe = true;
-										}
-									}
-								} while (!safe);
-
-								teleLoc.setY(teleLoc.getWorld()
-										.getHighestBlockYAt(teleLoc) + 1);
-								Bukkit.getPlayer(sender.getName()).teleport(
-										teleLoc);
-
-								for (int i = 0; i < teleportClickers.size(); i++) {
-									if (teleportClickers.get(i).name
-											.equals(sender.getName())) {
-										teleportClickers.remove(i);
-									}
-								}
-
-								teleportClickers
-										.add(new TeleportClicker(sender
-												.getName(), System
-												.currentTimeMillis()));
-
-								return true;
-							} else {
-
-								String msg = getTranslationLanguage(sender,
-										stringKeys.RANDOMTPWAIT.toString());
-								sender.sendMessage(msg);
-								// sender.sendMessage("§cYou must wait to use that again!");
-								return true;
-							}
-						}
-
-						String msg = getTranslationLanguage(sender,
-								stringKeys.RANDOMTPTOOFAR.toString());
-						sender.sendMessage(msg);
-						// sender.sendMessage("§cYou can only do this at spawn!");
-						return true;
-					} else {
-						String msg = getTranslationLanguage(sender,
-								stringKeys.RANDOMTPWRONGWORLD.toString());
-						sender.sendMessage(msg);
-
-						// sender.sendMessage("§cYou can only do this in the overworld!");
-						return true;
-					}
+					doRandomTeleport(sender);
+					return true;
 				}
 
 				if (arg3[0].equalsIgnoreCase("celebrate")) {
+					celebrate(sender);
+					return true;
+				}
+			}
 
-					Date min = new Date();
-					Date max = new Date();
-					try {
-						min = psdf.parse("06/14");
-						max = psdf.parse("06/22");
-					} catch (ParseException e) {
-					}
-
-					min.setYear(new Date().getYear());
-					max.setYear(new Date().getYear());
-					if (isDateBetween(new Date(), min, max)) {
-						if (sender instanceof Player) {
-							Player p = (Player) sender;
-							if (celebrators.keySet().contains(p.getName())) {
-								celebrators.remove(p.getName());
-								p.sendMessage("§6You are no longer celebrating");
-								return true;
-							}
-							celebrators.put(p.getName(), (short) 0);
-							p.sendMessage("§bHappy Anniversary to §3Serenity!\n§7(Right and left click while holding a §edandelion§7)");
-							return true;
-						}
-					} else {
-						sender.sendMessage("§cIt's not time to celebrate yet...");
-						return true;
-					}
+			if (arg3.length == 1) {
+				if (arg3[0].equalsIgnoreCase("on")) {
+					return enableLocalChat(sender, arg3);
 				}
 
-				if (arg3[0].equals("wb")) {
-					sender.sendMessage(/*
-										 * "§bCollective Minutes §7(Since May 3, Noon Eastern US time): §3"
-										 * +
-										 * expansionCfg.getConfig().getInt("Minutes"
-										 * ) + "\n
-										 */"§bWorld border is now §d"
-							+ (Bukkit.getWorld("world").getWorldBorder()
-									.getSize() / 2) + "§b blocks");
-					return true;
+				if (arg3[0].equalsIgnoreCase("off")) {
+					return enableGlobalChat(sender, arg3);
+				}
+
+				if (arg3[0].equalsIgnoreCase("g")) {
+					return globalChat(sender, arg3);
 				}
 
 			}
 
-			if (arg3.length == 1) {
-				if (arg3[0].equalsIgnoreCase("global")) {
-					return gcToggle(sender, arg3);
-				}
-
-				if (arg3[0].equalsIgnoreCase("local")) {
-					return lctoggle(sender, arg3);
+			if (arg3.length > 1) {
+				if (arg3[0].equalsIgnoreCase("g")) {
+					return globalChat(sender, arg3);
 				}
 			}
 
 			String msg = getTranslationLanguage(sender,
 					stringKeys.CHATHELP.toString());
 			sender.sendMessage(msg);
-
-			// sender.sendMessage("§3Type §2/chat global§3 to toggle global chat\n§3Type §2/chat local §3to toggle local chat");
 			return true;
 		} else {
 			noPerms(sender);
 			return true;
 		}
+	}
+
+	private boolean globalChat(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player) {
+			Player p = (Player) sender;
+			String txt = "";
+			
+			for(int i = 1; i < arg3.length; i++){
+				txt += (arg3[i] + " ");
+			}
+			
+			String message = "<" + getChatColor(p) + p.getDisplayName() + "§r" + "> "	+  getChatColor(p) + txt;
+			
+			List<Player> rec = new ArrayList<Player>();
+			
+			for(Player play: Bukkit.getOnlinePlayers()){
+				rec.add(play);
+			}
+
+			
+			for (int i = 0; i < ignorers.size(); i++) {
+				if (ignorers.get(i).ignoreList.contains(p.getDisplayName())) {
+					rec.remove(ignorers.get(i).player);
+				}
+			}
+			
+			for(Player plr: rec){
+				plr.sendMessage(message);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private boolean enableGlobalChat(CommandSender sender, String[] arg3) {
+		Player p = Bukkit.getPlayer(sender.getName());
+		localChatters.remove(p);
+
+		String msg = getTranslationLanguage(sender,
+				stringKeys.CHATPUBLICNOW.toString());
+		sender.sendMessage(msg);
+		return true;
+	}
+
+	private boolean enableLocalChat(CommandSender sender, String[] arg3) {
+		Player p = Bukkit.getPlayer(sender.getName());
+		if (!localChatters.contains(p))
+			localChatters.add(p);
+
+		String msg = getTranslationLanguage(sender,
+				stringKeys.CHATLOCALNOW.toString());
+		sender.sendMessage(msg);
+		return true;
+	}
+
+	private void celebrate(CommandSender sender) {
+
+		Date min = new Date();
+		Date max = new Date();
+		try {
+			min = psdf.parse("06/14");
+			max = psdf.parse("06/22");
+		} catch (ParseException e) {
+		}
+
+		min.setYear(new Date().getYear());
+		max.setYear(new Date().getYear());
+		if (isDateBetween(new Date(), min, max)) {
+			if (sender instanceof Player) {
+				Player p = (Player) sender;
+				if (celebrators.keySet().contains(p.getName())) {
+					celebrators.remove(p.getName());
+					p.sendMessage("§6You are no longer celebrating");
+					return;
+				}
+				celebrators.put(p.getName(), (short) 0);
+				p.sendMessage("§bHappy Anniversary to §3Serenity!\n§7(Right and left click while holding a §edandelion§7)");
+				return;
+			}
+		} else {
+			sender.sendMessage("§cIt's not time to celebrate yet...");
+			return;
+		}
+
+	}
+
+	private void doRandomTeleport(CommandSender sender) {
+
+		Location l = Bukkit.getPlayer(sender.getName()).getLocation();
+		if (l.getWorld().getName().equalsIgnoreCase("world")) {
+			if (Math.abs(l.getX()) < 50 && Math.abs(l.getZ()) < 50) {
+				boolean ready = true;
+				for (TeleportClicker tc : teleportClickers) {
+					if (tc.name.equals(sender.getName())) {
+						if (System.currentTimeMillis() - tc.lastClick < 1800000) {
+							ready = false;
+						}
+					}
+				}
+				if (ready) {
+					Random rand = new Random();
+					Location teleLoc;
+
+					boolean safe = false;
+					do {
+						teleLoc = new Location(Bukkit.getWorld("world"),
+								(double) rand.nextInt(15000) - 7500, 5.0,
+								(double) rand.nextInt(15000) - 7500);
+
+						if (teleLoc.getWorld().getHighestBlockAt(teleLoc)
+								.getRelative(BlockFace.DOWN).getType() != Material.WATER
+								&& teleLoc.getWorld()
+										.getHighestBlockAt(teleLoc)
+										.getRelative(BlockFace.DOWN).getType() != Material.STATIONARY_WATER) {
+							boolean isprotected = false;
+							for (ProtectedArea pa : areas) {
+								if (pa.equals(teleLoc)) {
+									isprotected = true;
+								}
+							}
+							if (!isprotected) {
+								safe = true;
+							}
+						}
+					} while (!safe);
+
+					teleLoc.setY(teleLoc.getWorld().getHighestBlockYAt(teleLoc) + 1);
+					Bukkit.getPlayer(sender.getName()).teleport(teleLoc);
+
+					for (int i = 0; i < teleportClickers.size(); i++) {
+						if (teleportClickers.get(i).name.equals(sender
+								.getName())) {
+							teleportClickers.remove(i);
+						}
+					}
+
+					teleportClickers.add(new TeleportClicker(sender.getName(),
+							System.currentTimeMillis()));
+
+					return;
+				} else {
+
+					String msg = getTranslationLanguage(sender,
+							stringKeys.RANDOMTPWAIT.toString());
+					sender.sendMessage(msg);
+					// sender.sendMessage("§cYou must wait to use that again!");
+					return;
+				}
+			}
+
+			String msg = getTranslationLanguage(sender,
+					stringKeys.RANDOMTPTOOFAR.toString());
+			sender.sendMessage(msg);
+			// sender.sendMessage("§cYou can only do this at spawn!");
+			return;
+		} else {
+			String msg = getTranslationLanguage(sender,
+					stringKeys.RANDOMTPWRONGWORLD.toString());
+			sender.sendMessage(msg);
+
+			// sender.sendMessage("§cYou can only do this in the overworld!");
+			return;
+		}
+
 	}
 
 	private boolean chunk(CommandSender sender, String[] arg3) {
@@ -4853,14 +4866,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				for (int i = 1; i < arg3.length; i++) {
 					s += arg3[i] + " ";
 				}
+				
+				Bukkit.broadcastMessage(s);
 
-				for (Player p : Bukkit.getOnlinePlayers()) {
-					if (!deafPlayers.contains(p)) {
-						p.sendMessage(s);
-					}
-				}
-
-				getLogger().info(s);
 				return true;
 			}
 
@@ -5446,30 +5454,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						.setExperience(exp);
 			}
 		}, (long) time);
-	}
-
-	private boolean gcToggle(CommandSender sender, String[] arg3) {
-		if (sender instanceof Player) {
-			if (deafPlayers.contains(((Player) sender).getPlayer())) {
-				deafPlayers.remove(((Player) sender).getPlayer());
-				// sender.sendMessage("§2You can now see global chat!");
-
-				String msg = getTranslationLanguage(sender,
-						stringKeys.CHATCANSEEGLOBAL.toString());
-				sender.sendMessage(msg);
-
-			} else {
-				deafPlayers.add(((Player) sender).getPlayer());
-
-				String msg = getTranslationLanguage(sender,
-						stringKeys.CHATCANTSEEGLOBAL.toString());
-				sender.sendMessage(msg);
-
-				// sender.sendMessage("§2You will no longer see global chat!  But you can still see /msg chat and local chat");
-			}
-			return true;
-		}
-		return true;
 	}
 
 	@EventHandler
