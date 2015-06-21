@@ -2673,6 +2673,43 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	@EventHandler
+	public void onDiamondFound(BlockBreakEvent event) {
+		if (event.getBlock().getType().equals(Material.DIAMOND_ORE)) {
+			final String s = event.getPlayer().getDisplayName();
+			final int x = (int) event.getBlock().getLocation().getX();
+			final int y = (int) event.getBlock().getLocation().getY();
+			final int z = (int) event.getBlock().getLocation().getZ();
+
+			if (y < 30) {
+				Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+						new Runnable() {
+							@Override
+							public void run() {
+								Bukkit.getLogger().info("§6" + s + " found §bdiamond at §3" + x + " " + y + " " + z);
+							}
+						}, 0L);
+			}
+		}
+		
+		if (event.getBlock().getType().equals(Material.EMERALD_ORE)) {
+			final String s = event.getPlayer().getDisplayName();
+			final int x = (int) event.getBlock().getLocation().getX();
+			final int y = (int) event.getBlock().getLocation().getY();
+			final int z = (int) event.getBlock().getLocation().getZ();
+
+			if (y < 30) {
+				Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+						new Runnable() {
+							@Override
+							public void run() {
+								Bukkit.getLogger().info("§6" + s + " found §2emerald at §a" + x + " " + y + " " + z);
+							}
+						}, 0L);
+			}
+		}
+	}
+
+	@EventHandler
 	public void onMailboxBreak(PlayerInteractEvent event) {
 		if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
 			if (event.getClickedBlock().getType().equals(Material.CHEST)
@@ -3458,27 +3495,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
 			String txt = "";
-			
-			for(int i = 1; i < arg3.length; i++){
+
+			for (int i = 1; i < arg3.length; i++) {
 				txt += (arg3[i] + " ");
 			}
-			
-			String message = "<" + getChatColor(p) + p.getDisplayName() + "§r" + "> "	+  getChatColor(p) + txt;
-			
+
+			String message = "<" + getChatColor(p) + p.getDisplayName() + "§r"
+					+ "> " + getChatColor(p) + txt;
+
 			List<Player> rec = new ArrayList<Player>();
-			
-			for(Player play: Bukkit.getOnlinePlayers()){
+
+			for (Player play : Bukkit.getOnlinePlayers()) {
 				rec.add(play);
 			}
 
-			
 			for (int i = 0; i < ignorers.size(); i++) {
 				if (ignorers.get(i).ignoreList.contains(p.getDisplayName())) {
 					rec.remove(ignorers.get(i).player);
 				}
 			}
-			
-			for(Player plr: rec){
+
+			for (Player plr : rec) {
 				plr.sendMessage(message);
 			}
 			return true;
@@ -4866,7 +4903,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				for (int i = 1; i < arg3.length; i++) {
 					s += arg3[i] + " ";
 				}
-				
+
 				Bukkit.broadcastMessage(s);
 
 				return true;
