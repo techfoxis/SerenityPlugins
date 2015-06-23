@@ -1444,6 +1444,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						protectedAreasCfg.reloadConfig();
 
 						p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now edit the spawn area!\n");
+						getLogger().info("§c " + p.getDisplayName() + " §6reached 24 hours");
 
 						for (int j = 0; j < 24; j++) {
 							doRandomFirework(p.getWorld(), p.getLocation());
@@ -1572,7 +1573,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		PermissionAttachment attachment = player.addAttachment(this);
 		attachments.put(player.getUniqueId(), attachment);
 
-		if (getPlayerMinutes(player.getDisplayName()) > 720) {
+		if (getPlayerMinutes(player.getDisplayName()) >= 720) {
 			Bukkit.getLogger().info(player.getName() + " is in group 12 hours");
 			/*
 			 * attachments.get(player.getUniqueId()).setPermission(
@@ -1586,7 +1587,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					"SerenityPlugins.twelveHour", true);
 			return;
 		}
-		if (getPlayerMinutes(player.getDisplayName()) > 180) {
+		if (getPlayerMinutes(player.getDisplayName()) >= 180) {
 			Bukkit.getLogger().info(player.getName() + " is in group 3 hours");
 			/*
 			 * attachments.get(player.getUniqueId()).setPermission(
@@ -1598,7 +1599,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					"SerenityPlugins.threeHour", true);
 			return;
 		}
-		if (getPlayerMinutes(player.getDisplayName()) > 60) {
+		if (getPlayerMinutes(player.getDisplayName()) >= 60) {
 			Bukkit.getLogger().info(player.getName() + " is in group 1 hour");
 			attachments.get(player.getUniqueId()).setPermission(
 					"SerenityPlugins.oneHour", true);
