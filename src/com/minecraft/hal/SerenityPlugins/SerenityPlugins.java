@@ -674,7 +674,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (minute >= 60) {
 						addAMinuteToEachPlayer();
 						printDebugTimings("Time to add a minute", now);
-						checkForTimes();
+						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
+								new Runnable() {
+									@Override
+									public void run() {
+										checkForTimes();
+									}
+								}, 10L);
+
 						printDebugTimings("Time to check for times", now);
 						minute = 0;
 						if (everyOtherMinute) {
@@ -1345,30 +1352,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	protected void fireOnMailBoxes() {
 		for (Mailbox mb : mailBoxes) {
-
-			if (mb.hasMail()) {
-				final Location l = new Location(mb.getLocation().getWorld(), mb
-						.getLocation().getX() + .5,
-						mb.getLocation().getY() + 1.25,
-						mb.getLocation().getZ() + .5);
-
-				Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-						new Runnable() {
-
-							@Override
-							public void run() {
-								ParticleEffect.HEART.display((float) .25,
-										(float) .25, (float) .25, 0, 5, l, 50);
-							}
-						});
-			}
-			/*
-			 * for (ItemStack is : items) { if (is != null) { Location l = new
-			 * Location(mb.getLocation().getWorld(), mb.getLocation().getX() +
-			 * .5, mb.getLocation() .getY() + 1.25, mb.getLocation().getZ() +
-			 * .5); ParticleEffect.HEART.display((float) .25, (float) .25,
-			 * (float) .25, 0, 5, l, 50); break; } }
-			 */
+			final Mailbox mbf = mb;
+			Bukkit.getScheduler().scheduleSyncDelayedTask(global, new Runnable(){
+				@Override
+				public void run(){
+					if (mbf.hasMail()) {
+						final Location l = new Location(mbf.getLocation()
+								.getWorld(), mbf.getLocation().getX() + .5, mbf
+								.getLocation().getY() + 1.25, mbf.getLocation()
+								.getZ() + .5);
+						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
+								new Runnable() {
+									@Override
+									public void run() {
+										ParticleEffect.HEART.display((float) .25,
+												(float) .25, (float) .25, 0, 5, l,
+												50);
+									}
+								});
+					}	
+				}
+			}, 1L);
 		}
 	}
 
@@ -1376,7 +1380,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (!p.hasPermission("SerenityPlugins.oneHour")) {
 				if (playtimeCfg.getConfig().getInt(
-						"Playtime." + p.getUniqueId().toString()) > 60) {
+						"Playtime." + p.getUniqueId().toString()) >= 60) {
 
 					p.sendMessage(getTranslationLanguage(p,
 							stringKeys.TIMEONEHOUR.toString()));
@@ -1390,7 +1394,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			if (!p.hasPermission("SerenityPlugins.threeHour")) {
 				if (playtimeCfg.getConfig().getInt(
-						"Playtime." + p.getUniqueId().toString()) > 180) {
+						"Playtime." + p.getUniqueId().toString()) >= 180) {
 					p.sendMessage(getTranslationLanguage(p,
 							stringKeys.TIMETHREEHOUR.toString()));
 					// p.sendMessage("§2\nThanks for playing!  \nYou may now vote for server events with /vote !\n");
@@ -1403,7 +1407,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			if (!p.hasPermission("SerenityPlugins.twelveHour")) {
 				if (playtimeCfg.getConfig().getInt(
-						"Playtime." + p.getUniqueId().toString()) > 720) {
+						"Playtime." + p.getUniqueId().toString()) >= 720) {
 					// p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now change your chat color with /setchatcolor !\n");
 					p.sendMessage(getTranslationLanguage(p,
 							stringKeys.TIMETWELVEHOUR.toString()));
@@ -2685,12 +2689,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						new Runnable() {
 							@Override
 							public void run() {
-								Bukkit.getLogger().info("§6" + s + " found §bdiamond at §3" + x + " " + y + " " + z);
+								Bukkit.getLogger().info(
+										"§6" + s + " found §bdiamond at §3" + x
+												+ " " + y + " " + z);
 							}
 						}, 0L);
 			}
 		}
-		
+
 		if (event.getBlock().getType().equals(Material.EMERALD_ORE)) {
 			final String s = event.getPlayer().getDisplayName();
 			final int x = (int) event.getBlock().getLocation().getX();
@@ -2702,7 +2708,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						new Runnable() {
 							@Override
 							public void run() {
-								Bukkit.getLogger().info("§6" + s + " found §2emerald at §a" + x + " " + y + " " + z);
+								Bukkit.getLogger().info(
+										"§6" + s + " found §2emerald at §a" + x
+												+ " " + y + " " + z);
 							}
 						}, 0L);
 			}
