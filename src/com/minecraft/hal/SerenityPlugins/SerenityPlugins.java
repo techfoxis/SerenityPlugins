@@ -983,7 +983,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
 					event.setCancelled(true);
 					specEff++;
-					if (specEff > 11) {
+					if (specEff > 12) {
 						specEff = 0;
 					}
 				}
@@ -993,7 +993,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					event.setCancelled(true);
 					specEff--;
 					if (specEff < 0) {
-						specEff = 11;
+						specEff = 12;
 					}
 				}
 
@@ -1033,6 +1033,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					break;
 				case 11:
 					event.getPlayer().sendMessage("§8Smoke monster from LOST");
+					break;
+				case 12:
+					event.getPlayer().sendMessage("§cSquiggles");
 					break;
 				}
 			}
@@ -1110,6 +1113,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								case 11:
 									ParticleEffect.SMOKE_LARGE.display(.125F,
 											.50F, .125F, 0, 0, loc, players);
+									break;
+								case 12:
+									ParticleEffect.SPELL_MOB.display(.125F,
+											.50F, .125F, 25, 0, loc, players);
 									break;
 								}
 							}
@@ -6472,6 +6479,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				 * "light purple, yellow, white.");
 				 */
 			}
+			if(sender instanceof Player){
+				Player play = (Player)sender;
+				play.sendMessage(getChatColor(play) + "Chatcolor set!");
+			}
+			
 
 			chatcolorCfg.saveConfig();
 			chatcolorCfg.reloadConfig();
