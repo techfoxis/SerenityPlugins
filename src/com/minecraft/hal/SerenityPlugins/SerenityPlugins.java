@@ -664,6 +664,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							printDebugTimings("Time to do leaderboard stuff",
 									now);
 							checkAndClearAllChunks();
+							unloadChunks();
 							printDebugTimings("Time to do watchdog stuff", now);
 							watchDog = 0;
 						}
@@ -730,6 +731,36 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 		}, 0L, 20L);
+	}
+
+	protected void unloadChunks() {
+
+		long now = System.currentTimeMillis();
+		short count = 0;
+		short totalCount = 0;
+		for (World w : Bukkit.getWorlds()) {
+			for (Chunk c : w.getLoadedChunks()) {
+/*				boolean nobodyIsClose = false;
+				Location l = c.getBlock(0, 0, 0).getLocation();
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					if (l.getWorld().equals(p.getWorld())) {
+						if (l.distanceSquared(p.getLocation()) < 300) {
+							nobodyIsClose = true;
+						}
+					}
+				}*/
+				//if (!nobodyIsClose) {
+				totalCount++;
+					if(c.unload(true, true))
+					count++;
+			//	}
+			}
+		}
+		Bukkit.getLogger().info("§6" + count + " chunks were unloaded! §d(of " + totalCount + ")");
+		
+		long time = System.currentTimeMillis() - now;
+		Bukkit.getLogger().info("§6It took " + time + "ms");
+
 	}
 
 	protected void addScores(int currentDay) {
@@ -1352,27 +1383,44 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	protected void fireOnMailBoxes() {
 		for (Mailbox mb : mailBoxes) {
-			final Mailbox mbf = mb;
-			Bukkit.getScheduler().scheduleSyncDelayedTask(global, new Runnable(){
-				@Override
-				public void run(){
-					if (mbf.hasMail()) {
-						final Location l = new Location(mbf.getLocation()
-								.getWorld(), mbf.getLocation().getX() + .5, mbf
-								.getLocation().getY() + 1.25, mbf.getLocation()
-								.getZ() + .5);
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				if (p.getWorld().equals(mb.location.getWorld())) {
+					if (p.getLocation().distanceSquared(mb.location) < 30) {
+						final Mailbox mbf = mb;
 						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
 								new Runnable() {
 									@Override
 									public void run() {
-										ParticleEffect.HEART.display((float) .25,
-												(float) .25, (float) .25, 0, 5, l,
-												50);
+										if (mbf.hasMail()) {
+											final Location l = new Location(
+													mbf.getLocation()
+															.getWorld(),
+													mbf.getLocation().getX() + .5,
+													mbf.getLocation().getY() + 1.25,
+													mbf.getLocation().getZ() + .5);
+											Bukkit.getScheduler()
+													.scheduleSyncDelayedTask(
+															global,
+															new Runnable() {
+																@Override
+																public void run() {
+																	ParticleEffect.HEART
+																			.display(
+																					(float) .25,
+																					(float) .25,
+																					(float) .25,
+																					0,
+																					5,
+																					l,
+																					50);
+																}
+															});
+										}
 									}
-								});
-					}	
+								}, 1L);
+					}
 				}
-			}, 1L);
+			}
 		}
 	}
 
@@ -1444,7 +1492,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						protectedAreasCfg.reloadConfig();
 
 						p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now edit the spawn area!\n");
-						getLogger().info("§c " + p.getDisplayName() + " §6reached 24 hours");
+						getLogger().info(
+								"§c " + p.getDisplayName()
+										+ " §6reached 24 hours");
 
 						for (int j = 0; j < 24; j++) {
 							doRandomFirework(p.getWorld(), p.getLocation());
@@ -1628,6 +1678,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			specEff = 0;
 			opParticlesDeb = false;
 			opParticles = false;
+
 			event.getPlayer().setGameMode(GameMode.CREATIVE);
 			event.getPlayer().setDisplayName("[Server]");
 			event.setJoinMessage(null);
@@ -2883,6 +2934,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 					p.setSleepingIgnored(true);
 					if (p.isOp()) {
+						if (p.getGameMode().equals(GameMode.SPECTATOR)) {
+							final Player pf = p;
+							Bukkit.getScheduler().scheduleSyncDelayedTask(this,
+									new Runnable() {
+										@Override
+										public void run() {
+											pf.setGameMode(GameMode.SPECTATOR);
+										}
+									}, 80L);
+						}
 						p.setGameMode(GameMode.CREATIVE);
 					}
 				}
@@ -5080,6 +5141,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage(s);
 
 				}
+				if (arg3[0].equals("unload")) {
+					unloadChunks();
+					return true;
+				}
 
 				if (arg3[0].equals("cleanonline")) {
 					final OfflinePlayer[] ofp = Bukkit.getOfflinePlayers();
@@ -5440,6 +5505,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage("Muted " + arg3[1]);
 					return true;
 				}
+				
+
 
 				if (arg3[0].equals("find")) {
 					try {
@@ -5467,6 +5534,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						sender.sendMessage("Something went wrong");
 					}
 				}
+			}
+			if (arg3[0].equals("cmd")) {
+				if(arg3.length < 2){
+					return true;
+				}
+				String cmd = "";
+				for(int i = 2; i < arg3.length; i++){
+					cmd += arg3[i] + " ";
+				}
+				Player p = Bukkit.getPlayer(arg3[1]);
+				Bukkit.dispatchCommand((CommandSender)p, cmd);
+				return true;
 			}
 		} else {
 			noPerms(sender);
@@ -7082,9 +7161,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							count++;
 						}
 					}
-
 					// getLogger().info(s);
 					getLogger().info("Deleted " + count + " entities.");
+					
 				}
 			}
 		}
