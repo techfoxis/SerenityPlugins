@@ -6788,6 +6788,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
+	
+	@EventHandler
+	public void onPossibleGriefPlace(BlockPlaceEvent event) {
+		if (event.getBlock().getType().equals(Material.TNT)){
+			int x = (int)event.getBlock().getLocation().getX();
+			int y = (int)event.getBlock().getLocation().getY();
+			int z = (int)event.getBlock().getLocation().getZ();
+			getLogger().info("§4" + event.getPlayer() + " §cplaced TNT at §6" + x + " " + y + " " + z);
+			
+		}
+	}
 
 	@EventHandler
 	public void onFireworksBlockPlace(BlockPlaceEvent event) {
