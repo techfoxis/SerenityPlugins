@@ -128,7 +128,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor protectedAreasCfg;
 	public ConfigAccessor podrickCfg;
 	public ConfigAccessor stringsCfg;
-	public ConfigAccessor languagesCfg;
 	// public ConfigAccessor teamsCfg;
 	public ConfigAccessor emailCfg;
 	public ConfigAccessor bookCfg;
@@ -349,7 +348,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		chatcolorCfg = new ConfigAccessor(this, "chatcolor.yml");
 		podrickCfg = new ConfigAccessor(this, "podrick.yml");
 		stringsCfg = new ConfigAccessor(this, "strings.yml");
-		languagesCfg = new ConfigAccessor(this, "languages.yml");
 		// teamsCfg = new ConfigAccessor(this, "teams.yml");
 		emailCfg = new ConfigAccessor(this, "email.yml");
 		bookCfg = new ConfigAccessor(this, "book.yml");
@@ -2928,6 +2926,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 					sleepingIgnored++;
 				}
+			}
+		}
+		
+		for(Player p: Bukkit.getServer().getOnlinePlayers()){
+			if(p.isSleeping()){
+				double percentage = (double) sleepingIgnored / onlineCount;
+				percentage *= 100.0;
+
+				String result = new DecimalFormat("##.##")
+						.format(percentage);
+				p.sendMessage("§4Waiting for majority to agree. Current: §6" + result + "%");
 			}
 		}
 
