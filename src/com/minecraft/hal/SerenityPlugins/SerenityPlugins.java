@@ -740,26 +740,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		short totalCount = 0;
 		for (World w : Bukkit.getWorlds()) {
 			for (Chunk c : w.getLoadedChunks()) {
-/*				boolean nobodyIsClose = false;
-				Location l = c.getBlock(0, 0, 0).getLocation();
-				for (Player p : Bukkit.getOnlinePlayers()) {
-					if (l.getWorld().equals(p.getWorld())) {
-						if (l.distanceSquared(p.getLocation()) < 300) {
-							nobodyIsClose = true;
-						}
-					}
-				}*/
-				//if (!nobodyIsClose) {
+				/*
+				 * boolean nobodyIsClose = false; Location l = c.getBlock(0, 0,
+				 * 0).getLocation(); for (Player p : Bukkit.getOnlinePlayers())
+				 * { if (l.getWorld().equals(p.getWorld())) { if
+				 * (l.distanceSquared(p.getLocation()) < 300) { nobodyIsClose =
+				 * true; } } }
+				 */
+				// if (!nobodyIsClose) {
 				totalCount++;
-					if(c.unload(true, true))
+				if (c.unload(true, true))
 					count++;
-			//	}
+				// }
 			}
 		}
-		Bukkit.getLogger().info("§6" + count + " chunks were unloaded! §d(of " + totalCount + ")");
-		
-		long time = System.currentTimeMillis() - now;
-		Bukkit.getLogger().info("§6It took " + time + "ms");
+		if (debugTickTimings) {
+			Bukkit.getLogger().info(
+					"§6" + count + " chunks were unloaded! §d(of " + totalCount
+							+ ")");
+			long time = System.currentTimeMillis() - now;
+			Bukkit.getLogger().info("§6It took " + time + "ms");
+		}
 
 	}
 
@@ -1115,8 +1116,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 											.50F, .125F, 0, 0, loc, players);
 									break;
 								case 12:
-									ParticleEffect.SPELL_MOB.display(.125F,
-											.50F, .125F, 25, 0, loc, players);
+									ParticleEffect.SPELL_MOB.display(.25F,
+											.125F, .25F, 50, 25, loc, players);
 									break;
 								}
 							}
@@ -5512,8 +5513,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage("Muted " + arg3[1]);
 					return true;
 				}
-				
-
 
 				if (arg3[0].equals("find")) {
 					try {
@@ -5543,15 +5542,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 			if (arg3[0].equals("cmd")) {
-				if(arg3.length < 2){
+				if (arg3.length < 2) {
 					return true;
 				}
 				String cmd = "";
-				for(int i = 2; i < arg3.length; i++){
+				for (int i = 2; i < arg3.length; i++) {
 					cmd += arg3[i] + " ";
 				}
 				Player p = Bukkit.getPlayer(arg3[1]);
-				Bukkit.dispatchCommand((CommandSender)p, cmd);
+				Bukkit.dispatchCommand((CommandSender) p, cmd);
 				return true;
 			}
 		} else {
@@ -6479,11 +6478,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				 * "light purple, yellow, white.");
 				 */
 			}
-			if(sender instanceof Player){
-				Player play = (Player)sender;
+			if (sender instanceof Player) {
+				Player play = (Player) sender;
 				play.sendMessage(getChatColor(play) + "Chatcolor set!");
 			}
-			
 
 			chatcolorCfg.saveConfig();
 			chatcolorCfg.reloadConfig();
@@ -6788,15 +6786,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-	
+
 	@EventHandler
 	public void onPossibleGriefPlace(BlockPlaceEvent event) {
-		if (event.getBlock().getType().equals(Material.TNT)){
-			int x = (int)event.getBlock().getLocation().getX();
-			int y = (int)event.getBlock().getLocation().getY();
-			int z = (int)event.getBlock().getLocation().getZ();
-			getLogger().info("§4" + event.getPlayer() + " §cplaced TNT at §6" + x + " " + y + " " + z);
-			
+		if (event.getBlock().getType().equals(Material.TNT)) {
+			int x = (int) event.getBlock().getLocation().getX();
+			int y = (int) event.getBlock().getLocation().getY();
+			int z = (int) event.getBlock().getLocation().getZ();
+			getLogger().info(
+					"§4" + event.getPlayer() + " §cplaced TNT at §6" + x + " "
+							+ y + " " + z);
+
 		}
 	}
 
@@ -7186,7 +7186,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 					// getLogger().info(s);
 					getLogger().info("Deleted " + count + " entities.");
-					
+
 				}
 			}
 		}
