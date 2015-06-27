@@ -4382,6 +4382,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 								String msg = getTranslationLanguage(p,
 										stringKeys.PROTINTERSECT.toString());
+								msg = String.format(msg, "§6X: " + (int)pa.location1.getX() + " Z: " + (int)pa.location1.getZ());
 								p.sendMessage(msg);
 
 								// p.sendMessage("§cThat area intersects with another area!");*/
@@ -6398,7 +6399,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			String color = "";
 			Player p = Bukkit.getPlayerExact(sender.getName());
 			if (arg3.length == 0) {
-				return false;
+				sender.sendMessage("§aHere are your options:  \n"
+						+ "§0black, §1dark blue, §2dark green, \n"
+						+ "§3dark aqua, §4dark red, §5dark purple, \n"
+						+ "§6gold, §7gray, §8dark gray, \n"
+						+ "§9blue, §agreen, §baqua, \n"
+						+ "§cred, §dlight purple, §eyellow, \n"
+						+ "§fwhite");
+				return true;
 			}
 
 			for (int i = 0; i < arg3.length; i++) {
@@ -6474,9 +6482,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						"ChatColor." + p.getUniqueId().toString(), "§k");
 
 			} else {
-				String msg = getTranslationLanguage(sender,
-						stringKeys.CHATCOLORINVALID.toString());
-				sender.sendMessage(msg);
+				sender.sendMessage("§cInvalid color!  Pick one of these:\n"
+						+ "§0black, §1dark blue, §2dark green, \n"
+						+ "§3dark aqua, §4dark red, §5dark purple, \n"
+						+ "§6gold, §7gray, §8dark gray, \n"
+						+ "§9blue, §agreen, §baqua, \n"
+						+ "§cred, §dlight purple, §eyellow, \n"
+						+ "§fwhite");
+				return true;
 				/*
 				 * sender.sendMessage("§4Invalid color!  Here are your options:\n§a"
 				 * +
@@ -6489,7 +6502,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 			if (sender instanceof Player) {
 				Player play = (Player) sender;
-				play.sendMessage(getChatColor(play) + "Chatcolor set!");
+				play.sendMessage(getChatColor(play) + "Chat color set!");
 			}
 
 			chatcolorCfg.saveConfig();
