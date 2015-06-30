@@ -2121,7 +2121,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onSecretVillagerDamage(EntityDamageEvent event) {
 		if (event.getEntity().getCustomName() != null) {
 			if (event.getEntity().getCustomName().contains("§6")
-					|| event.getEntity().getCustomName().contains("§d")) {
+					|| event.getEntity().getCustomName().contains("§d") ||
+					(event.getEntity().getCustomName().contains(Secret.secretName) && event.getEntityType().equals(EntityType.HORSE))) {
 				event.setCancelled(true);
 			}
 		}
@@ -2604,14 +2605,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-			/*
-			 * if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
-			 * if (event.getClickedBlock().getX() == -1314 &&
-			 * event.getClickedBlock().getY() == 64 &&
-			 * event.getClickedBlock().getZ() == -650) {
-			 * Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ncp exempt " +
-			 * event.getPlayer().getDisplayName() + " MOVING_SURVIVALFLY"); } }
-			 */
+
+			if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
+				if (event.getClickedBlock().getX() == -1314
+						&& event.getClickedBlock().getY() == 64
+						&& event.getClickedBlock().getZ() == -650) {
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+							"ncp exempt " + event.getPlayer().getDisplayName()
+									+ " MOVING_SURVIVALFLY");
+				}
+			}
 
 			if (event.getClickedBlock().getType() == Material.GOLD_BLOCK) {
 				if (event.getClickedBlock().getX() == -1403
@@ -2661,11 +2664,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						daleCfg.saveConfig();
 						daleCfg.reloadConfig();
 					}
-					/*
-					 * Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-					 * "ncp unexempt " + event.getPlayer().getDisplayName() +
-					 * " MOVING_SURVIVALFLY");
-					 */
+
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+							"ncp unexempt "
+									+ event.getPlayer().getDisplayName()
+									+ " MOVING_SURVIVALFLY");
+
 					racers.remove(event.getPlayer().getDisplayName());
 					return;
 				}
@@ -2928,15 +2932,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}
-		
-		for(Player p: Bukkit.getServer().getOnlinePlayers()){
-			if(p.isSleeping()){
+
+		for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+			if (p.isSleeping()) {
 				double percentage = (double) sleepingIgnored / onlineCount;
 				percentage *= 100.0;
 
-				String result = new DecimalFormat("##.##")
-						.format(percentage);
-				p.sendMessage("§4Waiting for majority to agree. Current: §6" + result + "%");
+				String msg = "§4Waiting for majority to agree. Current: §6";
+				String result = new DecimalFormat("##.##").format(percentage);
+				if(percentage < 25){
+					result = "§c" + result;
+				}else if(percentage < 50){
+					result = "§e" + result;
+				}else if(percentage < 100){
+					result = "§a" + result;
+				}else{
+					result = "§2§l" + result;
+				}
+				p.sendMessage(msg
+						+ result + "%");
 			}
 		}
 
@@ -3581,6 +3595,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean globalChat(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
+
+			if (mutedNames.contains(p.getDisplayName())) {
+				return true;
+			}
+
 			String txt = "";
 
 			for (int i = 1; i < arg3.length; i++) {
@@ -3633,17 +3652,24 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void celebrate(CommandSender sender) {
 
-		Date min = new Date();
-		Date max = new Date();
+		Date anniversaryMin = new Date();
+		Date anniversaryMax = new Date();
+		Date canadaDayMin = new Date();
+		Date independenceDayMin = new Date();
 		try {
-			min = psdf.parse("06/14");
-			max = psdf.parse("06/22");
+			anniversaryMin = psdf.parse("06/14");
+			anniversaryMax = psdf.parse("06/22");
+			canadaDayMin = psdf.parse("07/01");
+			independenceDayMin = psdf.parse("07/04");
 		} catch (ParseException e) {
 		}
 
-		min.setYear(new Date().getYear());
-		max.setYear(new Date().getYear());
-		if (isDateBetween(new Date(), min, max)) {
+		Date now = new Date();
+		anniversaryMin.setYear(now.getYear());
+		anniversaryMax.setYear(now.getYear());
+		canadaDayMin.setYear(now.getYear());
+		independenceDayMin.setYear(now.getYear());
+		if (isDateBetween(now, anniversaryMin, anniversaryMax)) {
 			if (sender instanceof Player) {
 				Player p = (Player) sender;
 				if (celebrators.keySet().contains(p.getName())) {
@@ -3651,15 +3677,38 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					p.sendMessage("§6You are no longer celebrating");
 					return;
 				}
-				celebrators.put(p.getName(), (short) 0);
+				celebrators.put(p.getName(), (short) 11);
 				p.sendMessage("§bHappy Anniversary to §3Serenity!\n§7(Right and left click while holding a §edandelion§7)");
 				return;
 			}
+		}else if(isDateBetween(now, canadaDayMin, canadaDayMin)){
+			if (sender instanceof Player) {
+				Player p = (Player) sender;
+				if (celebrators.keySet().contains(p.getName())) {
+					celebrators.remove(p.getName());
+					p.sendMessage("§6You are no longer celebrating");
+					return;
+				}
+				celebrators.put(p.getName(), (short) 11);
+				p.sendMessage("§4Happy §fCanada §4Day!\n§7(Right and left click while holding a §edandelion§7)");
+				return;
+			}			
+		}else if(isDateBetween(now, independenceDayMin, independenceDayMin)){
+			if (sender instanceof Player) {
+				Player p = (Player) sender;
+				if (celebrators.keySet().contains(p.getName())) {
+					celebrators.remove(p.getName());
+					p.sendMessage("§6You are no longer celebrating");
+					return;
+				}
+				celebrators.put(p.getName(), (short) 11);
+				p.sendMessage("§4Happy §fUS §fIndependence §9Day!\n§7(Right and left click while holding a §edandelion§7)");
+				return;
+			}			
 		} else {
 			sender.sendMessage("§cIt's not time to celebrate yet...");
 			return;
 		}
-
 	}
 
 	private void doRandomTeleport(CommandSender sender) {
@@ -4382,7 +4431,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 								String msg = getTranslationLanguage(p,
 										stringKeys.PROTINTERSECT.toString());
-								msg = String.format(msg, "§6X: " + (int)pa.location1.getX() + " Z: " + (int)pa.location1.getZ());
+								msg = String.format(msg, "§6X: "
+										+ (int) pa.location1.getX() + " Z: "
+										+ (int) pa.location1.getZ());
 								p.sendMessage(msg);
 
 								// p.sendMessage("§cThat area intersects with another area!");*/
@@ -5459,6 +5510,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					 * a.setValue(8);
 					 */
 				}
+				
+				if (arg3[0].equals("mule")) {
+					Player p = (Player) sender;
+					Horse horse = (Horse) p.getLocation().getWorld()
+							.spawnEntity(p.getLocation(), EntityType.HORSE);
+					horse.setDomestication(1);
+					horse.setStyle(Style.NONE);
+					horse.setVariant(Horse.Variant.MULE);
+					horse.setCarryingChest(true);
+					horse.setTamed(true);
+					horse.setAdult();
+					horse.setCustomName(Secret.secretName);
+					/*
+					 * CraftLivingEntity h = (CraftLivingEntity)horse;
+					 * AttributeInstance a =
+					 * h.getHandle().getAttributeInstance(GenericAttributes.d);
+					 * a.setValue(8);
+					 */
+				}
 
 				if (arg3[0].equals("secretcat")) {
 					if (sender instanceof Player) {
@@ -6404,8 +6474,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						+ "§3dark aqua, §4dark red, §5dark purple, \n"
 						+ "§6gold, §7gray, §8dark gray, \n"
 						+ "§9blue, §agreen, §baqua, \n"
-						+ "§cred, §dlight purple, §eyellow, \n"
-						+ "§fwhite");
+						+ "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
 				return true;
 			}
 
@@ -6487,8 +6556,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						+ "§3dark aqua, §4dark red, §5dark purple, \n"
 						+ "§6gold, §7gray, §8dark gray, \n"
 						+ "§9blue, §agreen, §baqua, \n"
-						+ "§cred, §dlight purple, §eyellow, \n"
-						+ "§fwhite");
+						+ "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
 				return true;
 				/*
 				 * sender.sendMessage("§4Invalid color!  Here are your options:\n§a"
@@ -6518,28 +6586,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			// sender.sendMessage("§2You can't set your chatcolor yet... Stick around and eventually you will!");
 			return true;
 		}
-	}
-
-	private boolean lctoggle(CommandSender sender, String[] arg3) {
-		Player p = Bukkit.getPlayer(sender.getName());
-		if (localChatters.contains(p)) {
-			localChatters.remove(p);
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.CHATPUBLICNOW.toString());
-			sender.sendMessage(msg);
-
-			// p.sendMessage("§2You are now chatting publicly!");
-			return true;
-		}
-		localChatters.add(p);
-
-		String msg = getTranslationLanguage(sender,
-				stringKeys.CHATLOCALNOW.toString());
-		sender.sendMessage(msg);
-
-		// p.sendMessage("§2You are now chatting locally (100 blocks or closer)!");
-		return true;
 	}
 
 	private boolean lag(CommandSender sender) {
@@ -7334,6 +7380,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	static boolean isDateBetween(Date check, Date min, Date max) {
+		SimpleDateFormat fmt = new SimpleDateFormat("MMdd");
+		if(fmt.format(check).equals(fmt.format(min))){
+			return true;
+		}
 		return check.after(min) && check.before(max);
 	}
 
@@ -8633,9 +8683,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (e instanceof Creature) {
 					Creature enemy = (Creature) e;
 					enemy.addPotionEffect(pe);
-					if (enemy instanceof LivingEntity) {
-						LivingEntity le = (LivingEntity) enemy;
-					}
 				}
 			}
 		});
