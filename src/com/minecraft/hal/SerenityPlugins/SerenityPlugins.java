@@ -146,7 +146,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public boolean isAprilFoolsDay = false;
 
 	public HashMap<String, Location> playerLocations;
-	public List<Player> afkPlayers;
+	public HashMap<Player, Boolean> afkPlayers;
 	public List<Mailbox> mailBoxes;
 	public List<String> mailablePlayers;
 	public List<Player> preppedToUnProtectChunk;
@@ -373,7 +373,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		teleportClickers = new ArrayList<TeleportClicker>();
 		areas = new ArrayList<ProtectedArea>();
 		votingForDay = false;
-		afkPlayers = new ArrayList<Player>();
+		afkPlayers = new HashMap<Player, Boolean>();
 		mutedNames = new ArrayList<String>();
 		attachments = new HashMap<UUID, PermissionAttachment>();
 		everyOtherMinute = false;
@@ -692,7 +692,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					if (minute % 5 == 0) {
 						for (Player p : Bukkit.getOnlinePlayers()) {
-							if (afkPlayers.contains(p)) {
+							if (afkPlayers.containsKey(p)) {
 								if (playerLocations.containsKey(p
 										.getDisplayName())) {
 									if (!playerLocations
@@ -1321,7 +1321,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (playerLocations.containsKey(p.getDisplayName())) {
 					if (playerLocations.get(p.getDisplayName()).getDirection()
 							.equals(p.getLocation().getDirection())) {
-						setAfk(p);
+						setAfk(p, true);
 					}
 				}
 			}
@@ -1334,14 +1334,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean isAfk(Player player) {
-		for (Player p : afkPlayers) {
+		for (Player p : afkPlayers.keySet()) {
 			if (p.equals(player))
 				return true;
 		}
 		return false;
 	}
 
-	private void setAfk(Player player) {
+	private void setAfk(Player player, boolean wasAuto) {
 
 		if (isAfk(player)) {
 			return;
@@ -1349,23 +1349,44 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		playerLocations.put(player.getDisplayName(), player.getLocation());
 
-		afkPlayers.add(player);
+		afkPlayers.put(player, wasAuto);
 		player.setSleepingIgnored(true);
-		Bukkit.getServer().broadcastMessage(
-				"§2" + player.getDisplayName() + "§3 is AFK!");
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (p != player) {
+				p.sendMessage("§8" + player.getDisplayName() + "§7 is AFK");
+			}
+		}
+
+		if (!wasAuto) {
+			player.sendMessage("§8" + player.getDisplayName() + "§7 is AFK");
+		}
+		
+		getLogger().info(player.getDisplayName() + "§7 is AFK");
 
 		if (player.getItemInHand() != null
 				&& (player.getItemInHand().getType() == Material.BOOK_AND_QUILL || player
-						.getItemInHand().getType() == Material.WRITTEN_BOOK))
+						.getItemInHand().getType() == Material.WRITTEN_BOOK)) {
 			return;
-		player.openInventory(AFKInv);
+		}
+		if (!wasAuto) {
+			player.openInventory(AFKInv);
+		}
 	}
 
 	private void unAfk(Player player) {
-		if (afkPlayers.contains(player))
-			Bukkit.broadcastMessage("§2" + player.getDisplayName()
-					+ "§3 is back!");
-
+		if (afkPlayers.containsKey(player)) {
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				if (p != player) {
+					p.sendMessage("§8" + player.getDisplayName() + "§7 is back");
+				}
+			}
+			getLogger().info(player.getDisplayName() + "§7 is back");
+		}
+		
+		if(!afkPlayers.get(player)){
+			player.sendMessage("§8" + player.getDisplayName() + "§7 is back");
+		}
+		
 		afkPlayers.remove(player);
 		playerLocations.remove(player.getDisplayName());
 		player.setSleepingIgnored(false);
@@ -2121,8 +2142,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onSecretVillagerDamage(EntityDamageEvent event) {
 		if (event.getEntity().getCustomName() != null) {
 			if (event.getEntity().getCustomName().contains("§6")
-					|| event.getEntity().getCustomName().contains("§d") ||
-					(event.getEntity().getCustomName().contains(Secret.secretName) && event.getEntityType().equals(EntityType.HORSE))) {
+					|| event.getEntity().getCustomName().contains("§d")
+					|| (event.getEntity().getCustomName()
+							.contains(Secret.secretName) && event
+							.getEntityType().equals(EntityType.HORSE))) {
 				event.setCancelled(true);
 			}
 		}
@@ -2844,7 +2867,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				p.setSleepingIgnored(p.isOp());
 			}
 
-			for (Player ap : afkPlayers) {
+			for (Player ap : afkPlayers.keySet()) {
 				ap.setSleepingIgnored(true);
 			}
 			return;
@@ -2864,7 +2887,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				p.setSleepingIgnored(p.isOp());
 			}
 
-			for (Player ap : afkPlayers) {
+			for (Player ap : afkPlayers.keySet()) {
 				ap.setSleepingIgnored(true);
 			}
 
@@ -2940,17 +2963,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				String msg = "§4Waiting for majority to agree. Current: §6";
 				String result = new DecimalFormat("##.##").format(percentage);
-				if(percentage < 25){
+				if (percentage < 25) {
 					result = "§c" + result;
-				}else if(percentage < 50){
+				} else if (percentage < 50) {
 					result = "§e" + result;
-				}else if(percentage < 100){
+				} else if (percentage < 100) {
 					result = "§a" + result;
-				}else{
+				} else {
 					result = "§2§l" + result;
 				}
-				p.sendMessage(msg
-						+ result + "%");
+				p.sendMessage(msg + result + "%");
 			}
 		}
 
@@ -3681,7 +3703,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				p.sendMessage("§bHappy Anniversary to §3Serenity!\n§7(Right and left click while holding a §edandelion§7)");
 				return;
 			}
-		}else if(isDateBetween(now, canadaDayMin, canadaDayMin)){
+		} else if (isDateBetween(now, canadaDayMin, canadaDayMin)) {
 			if (sender instanceof Player) {
 				Player p = (Player) sender;
 				if (celebrators.keySet().contains(p.getName())) {
@@ -3692,8 +3714,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				celebrators.put(p.getName(), (short) 11);
 				p.sendMessage("§4Happy §fCanada §4Day!\n§7(Right and left click while holding a §edandelion§7)");
 				return;
-			}			
-		}else if(isDateBetween(now, independenceDayMin, independenceDayMin)){
+			}
+		} else if (isDateBetween(now, independenceDayMin, independenceDayMin)) {
 			if (sender instanceof Player) {
 				Player p = (Player) sender;
 				if (celebrators.keySet().contains(p.getName())) {
@@ -3704,7 +3726,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				celebrators.put(p.getName(), (short) 11);
 				p.sendMessage("§4Happy §fUS §fIndependence §9Day!\n§7(Right and left click while holding a §edandelion§7)");
 				return;
-			}			
+			}
 		} else {
 			sender.sendMessage("§cIt's not time to celebrate yet...");
 			return;
@@ -4442,7 +4464,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							}
 						}
 
-						if (blocksAllowed(event.getPlayer().getDisplayName()) <= blocksClaimed(event
+						if (blocksAllowed(event.getPlayer().getDisplayName()) < blocksClaimed(event
 								.getPlayer().getDisplayName())
 								+ newProtArea.area()) {
 							if (blocksAllowed(event.getPlayer()
@@ -5259,6 +5281,39 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return true;
 				}
 
+				if (arg3[0].equals("cleanwhitelist")) {
+					final OfflinePlayer[] ofp = Bukkit.getOfflinePlayers();
+
+					final CommandSender senderF = sender;
+					Bukkit.getScheduler().runTaskAsynchronously(this,
+							new Runnable() {
+								@Override
+								public void run() {
+									for (OfflinePlayer op : ofp) {
+										if (op.isWhitelisted()) {
+											if (!op.isOp()) {
+												if (getPlayerMinutes(op
+														.getName()) < 120) {
+													senderF.sendMessage(op
+															.getName()
+															+ " is inactive!");
+													if ((System
+															.currentTimeMillis() - op
+															.getLastPlayed()) > 1209600000) {
+														op.setWhitelisted(false);
+														senderF.sendMessage(op
+																.getName()
+																+ " is UNWHITELISTED");
+													}
+												}
+											}
+										}
+									}
+								}
+							});
+					return true;
+				}
+
 				if (arg3[0].equals("eff")) {
 					opParticles = !opParticles;
 					sender.sendMessage("Particles on = " + opParticles);
@@ -5510,7 +5565,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					 * a.setValue(8);
 					 */
 				}
-				
+
 				if (arg3[0].equals("mule")) {
 					Player p = (Player) sender;
 					Horse horse = (Horse) p.getLocation().getWorld()
@@ -6089,7 +6144,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				return true;
 			}
 
-			setAfk(player);
+			setAfk(player, false);
 
 			return true;
 		} else {
@@ -7381,7 +7436,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	static boolean isDateBetween(Date check, Date min, Date max) {
 		SimpleDateFormat fmt = new SimpleDateFormat("MMdd");
-		if(fmt.format(check).equals(fmt.format(min))){
+		if (fmt.format(check).equals(fmt.format(min))) {
 			return true;
 		}
 		return check.after(min) && check.before(max);
