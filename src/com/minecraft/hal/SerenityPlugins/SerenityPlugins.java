@@ -19,6 +19,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import net.minecraft.server.v1_8_R3.PistonExtendsChecker;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -93,6 +95,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -235,7 +238,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public Random rand = new Random();
 	public List<String> mutedNames;
 	public HashMap<UUID, PermissionAttachment> attachments;
-	public boolean everyOtherMinute;
 	public boolean wasLagging = false;
 	public boolean thisHour = false;
 	public Location TELEPORTDESTINATIONFORSOMETHING;
@@ -376,7 +378,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		afkPlayers = new HashMap<Player, Boolean>();
 		mutedNames = new ArrayList<String>();
 		attachments = new HashMap<UUID, PermissionAttachment>();
-		everyOtherMinute = false;
 		playerRecentMessages = new HashMap<String, String>();
 		teamList = new HashMap<String, String>();
 		textCooldown = new HashMap<String, Long>();
@@ -611,6 +612,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */
 
 		runEverySecond();
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (!p.isOp()) {
+				p.setPlayerListName(getChatColor(p) + p.getDisplayName());
+			}
+		}
 		getLogger().info("Serenity Plugins enabled");
 	}
 
@@ -683,11 +689,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 						printDebugTimings("Time to check for times", now);
 						minute = 0;
-						if (everyOtherMinute) {
-							afkTest();
-							printDebugTimings("Time to AFK test", now);
-						}
-						everyOtherMinute = !everyOtherMinute;
+
+						afkTest();
+						printDebugTimings("Time to AFK test", now);
 					}
 
 					if (minute % 5 == 0) {
@@ -890,6 +894,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
+	
+	@EventHandler
+	public void dragonEggPickup(PlayerPickupItemEvent event) {
+		if(event.getItem().getItemStack().getType().equals(Material.DRAGON_EGG)){
+			getLogger().info("§c" + event.getPlayer().getName() + " §6 picked up a dragon egg at \n" + event.getPlayer().getLocation());
+		}
+	}
+	
+	@EventHandler
+	public void dragonEggClick(PlayerInteractEvent event) {
+		if(event.getAction()==Action.RIGHT_CLICK_BLOCK){
+			if(event.getClickedBlock().getType().equals(Material.DRAGON_EGG)){
+				getLogger().info("§c" + event.getPlayer().getName()+ "§2 clicked a dragon egg at\n"+event.getClickedBlock().getLocation());
+			}
+		}
+	}
+
 
 	protected void printDebugTimings(String string, long debugtime) {
 		if (debugTickTimings) {
@@ -1351,17 +1372,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		afkPlayers.put(player, wasAuto);
 		player.setSleepingIgnored(true);
-		for (Player p : Bukkit.getOnlinePlayers()) {
-			if (p != player) {
-				p.sendMessage("§8" + player.getDisplayName() + "§7 is AFK");
-			}
-		}
+		/*
+		 * for (Player p : Bukkit.getOnlinePlayers()) { if (p != player) {
+		 * p.sendMessage("§8" + player.getDisplayName() + "§7 is AFK"); } }
+		 */
+		/*
+		 * if (!wasAuto) { player.sendMessage("§8" + player.getDisplayName() +
+		 * "§7 is AFK"); }
+		 */
 
-		if (!wasAuto) {
-			player.sendMessage("§8" + player.getDisplayName() + "§7 is AFK");
-		}
-		
 		getLogger().info(player.getDisplayName() + "§7 is AFK");
+		player.setPlayerListName(getChatColor(player) + player.getDisplayName()
+				+ " §8(AFK)");
 
 		if (player.getItemInHand() != null
 				&& (player.getItemInHand().getType() == Material.BOOK_AND_QUILL || player
@@ -1374,19 +1396,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void unAfk(Player player) {
-		if (afkPlayers.containsKey(player)) {
-			for (Player p : Bukkit.getOnlinePlayers()) {
-				if (p != player) {
-					p.sendMessage("§8" + player.getDisplayName() + "§7 is back");
-				}
-			}
+		if (afkPlayers.containsKey(player)) {/*
+											 * for (Player p :
+											 * Bukkit.getOnlinePlayers()) { if
+											 * (p != player) {
+											 * p.sendMessage("§8" +
+											 * player.getDisplayName() +
+											 * "§7 is back"); } }
+											 */
 			getLogger().info(player.getDisplayName() + "§7 is back");
+			player.setPlayerListName(getChatColor(player)
+					+ player.getDisplayName());
 		}
-		
-		if(!afkPlayers.get(player)){
-			player.sendMessage("§8" + player.getDisplayName() + "§7 is back");
-		}
-		
+		/*
+		 * if (!afkPlayers.get(player)) { player.sendMessage("§8" +
+		 * player.getDisplayName() + "§7 is back"); }
+		 */
+
 		afkPlayers.remove(player);
 		playerLocations.remove(player.getDisplayName());
 		player.setSleepingIgnored(false);
@@ -1727,6 +1753,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
+		final Player p = event.getPlayer();
+		if (!p.isOp()) {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+				@Override
+				public void run() {
+					p.setPlayerListName(getChatColor(p) + p.getDisplayName());
+				}
+			}, 5L);
+		}
+
 		for (Mailbox mb : mailBoxes) {
 			if (mb.getName().equals(event.getPlayer().getDisplayName())) {
 				if (mb.hasMail()) {
@@ -1748,7 +1784,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (!event.getPlayer().isOp()) {
 			String date = sdtf.format(new Date());
-			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
+			whoIsOnline.getConfig().set(event.getPlayer().getName(),
 					date);
 			whoIsOnline.saveConfig();
 			whoIsOnline.reloadConfig();
@@ -1831,6 +1867,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 			}
+			if (event.getRecipients().size() == 1) {
+				event.getPlayer().sendMessage(
+						"§cNobody is in local chat range!");
+				event.setCancelled(true);
+			}
+			String periods = "";
+			for (int i = 0; i < event.getRecipients().size() - 1; i++) {
+				periods += ".";
+			}
+			event.setFormat(periods + event.getFormat());
 		}
 
 		for (int i = 0; i < ignorers.size(); i++) {
@@ -1992,6 +2038,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		podrickCfg.reloadConfig();
 
 	}
+	
 
 	protected void putJournal1InPlayerInventory(Player p) {
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
@@ -6205,12 +6252,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 			String mailto = arg3[0];
 
-			if (mailto.equals("EVERYBODY18104")) {
-				for (Mailbox mb : mailBoxes) {
-					mailItemsTo(sender, mb.name, true);
-				}
-				return true;
-			}
+			/*
+			 * if (mailto.equals("EVERYBODY18104")) { for (Mailbox mb :
+			 * mailBoxes) { mailItemsTo(sender, mb.name, true); } return true; }
+			 */
 
 			return mailItemsTo(sender, mailto, false);
 		} else {
