@@ -612,12 +612,30 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */
 
 		runEverySecond();
-		for (Player p : Bukkit.getOnlinePlayers()) {
-			if (!p.isOp()) {
-				p.setPlayerListName(getChatColor(p) + p.getDisplayName());
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+
+			@Override
+			public void run() {
+				setListNames();
 			}
-		}
+		}, 10L);
 		getLogger().info("Serenity Plugins enabled");
+	}
+
+	protected void setListNames() {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					if (!p.isOp()) {
+						p.setPlayerListName(getChatColor(p)
+								+ p.getDisplayName()
+								+ (isAfk(p) ? "§8 (AFK)" : ""));
+					}
+				}
+			}
+		}, 5L);
 	}
 
 	private void runEverySecond() {
@@ -894,23 +912,29 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-	
+
 	@EventHandler
 	public void dragonEggPickup(PlayerPickupItemEvent event) {
-		if(event.getItem().getItemStack().getType().equals(Material.DRAGON_EGG)){
-			getLogger().info("§c" + event.getPlayer().getName() + " §6 picked up a dragon egg at \n" + event.getPlayer().getLocation());
-		}
-	}
-	
-	@EventHandler
-	public void dragonEggClick(PlayerInteractEvent event) {
-		if(event.getAction()==Action.RIGHT_CLICK_BLOCK){
-			if(event.getClickedBlock().getType().equals(Material.DRAGON_EGG)){
-				getLogger().info("§c" + event.getPlayer().getName()+ "§2 clicked a dragon egg at\n"+event.getClickedBlock().getLocation());
-			}
+		if (event.getItem().getItemStack().getType()
+				.equals(Material.DRAGON_EGG)) {
+			getLogger().info(
+					"§c" + event.getPlayer().getName()
+							+ " §6 picked up a dragon egg at \n"
+							+ event.getPlayer().getLocation());
 		}
 	}
 
+	@EventHandler
+	public void dragonEggClick(PlayerInteractEvent event) {
+		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+			if (event.getClickedBlock().getType().equals(Material.DRAGON_EGG)) {
+				getLogger().info(
+						"§c" + event.getPlayer().getName()
+								+ "§2 clicked a dragon egg at\n"
+								+ event.getClickedBlock().getLocation());
+			}
+		}
+	}
 
 	protected void printDebugTimings(String string, long debugtime) {
 		if (debugTickTimings) {
@@ -1382,8 +1406,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */
 
 		getLogger().info(player.getDisplayName() + "§7 is AFK");
-		player.setPlayerListName(getChatColor(player) + player.getDisplayName()
-				+ " §8(AFK)");
+		setListNames();
 
 		if (player.getItemInHand() != null
 				&& (player.getItemInHand().getType() == Material.BOOK_AND_QUILL || player
@@ -1405,8 +1428,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 											 * "§7 is back"); } }
 											 */
 			getLogger().info(player.getDisplayName() + "§7 is back");
-			player.setPlayerListName(getChatColor(player)
-					+ player.getDisplayName());
 		}
 		/*
 		 * if (!afkPlayers.get(player)) { player.sendMessage("§8" +
@@ -1416,7 +1437,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		afkPlayers.remove(player);
 		playerLocations.remove(player.getDisplayName());
 		player.setSleepingIgnored(false);
-
+		setListNames();
 	}
 
 	protected void updateFireworksBlocks() {
@@ -1630,6 +1651,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPortal(PlayerPortalEvent evt) {
+		getLogger().info("§d" + evt.getPlayer().getName() + " §5used a portal");
 
 		if (evt.getTo().getWorld().getName().equals("world_nether")) {
 			int currentCount = portalAnalytics.getConfig().getInt(
@@ -1753,15 +1775,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
-		final Player p = event.getPlayer();
-		if (!p.isOp()) {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-				@Override
-				public void run() {
-					p.setPlayerListName(getChatColor(p) + p.getDisplayName());
-				}
-			}, 5L);
-		}
+		setListNames();
 
 		for (Mailbox mb : mailBoxes) {
 			if (mb.getName().equals(event.getPlayer().getDisplayName())) {
@@ -1784,8 +1798,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (!event.getPlayer().isOp()) {
 			String date = sdtf.format(new Date());
-			whoIsOnline.getConfig().set(event.getPlayer().getName(),
-					date);
+			whoIsOnline.getConfig().set(event.getPlayer().getName(), date);
 			whoIsOnline.saveConfig();
 			whoIsOnline.reloadConfig();
 		}
@@ -2038,7 +2051,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		podrickCfg.reloadConfig();
 
 	}
-	
 
 	protected void putJournal1InPlayerInventory(Player p) {
 		ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
@@ -5405,6 +5417,46 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
+				if (arg3[0].equals("cte")) {
+					TreeMap<Integer, String> chunks = new TreeMap<Integer, String>();
+					for (World w : Bukkit.getWorlds()) {
+						for (Chunk c : w.getLoadedChunks()) {
+							chunks.put(c.getTileEntities().length, "§a"
+									+ c.getWorld().getName() + ": " + c.getX()
+									* 16 + ", " + c.getZ() * 16);
+						}
+					}
+					sender.sendMessage("§cTile Entities:");
+					if (chunks.size() >= 10) {
+						for (int i = 0; i < 10; i++) {
+							sender.sendMessage(chunks.lastEntry().getValue()
+									+ ": §6" + chunks.lastEntry().getKey());
+							chunks.remove(chunks.lastKey());
+						}
+					}
+					return true;
+				}
+
+				if (arg3[0].equals("ce")) {
+					TreeMap<Integer, String> chunks = new TreeMap<Integer, String>();
+					for (World w : Bukkit.getWorlds()) {
+						for (Chunk c : w.getLoadedChunks()) {
+							chunks.put(c.getEntities().length, "§a"
+									+ c.getWorld().getName() + ": " + c.getX()
+									* 16 + ", " + c.getZ() * 16);
+						}
+					}
+					sender.sendMessage("§cEntities:");
+					if (chunks.size() >= 10) {
+						for (int i = 0; i < 10; i++) {
+							sender.sendMessage(chunks.lastEntry().getValue()
+									+ ": §6" + chunks.lastEntry().getKey());
+							chunks.remove(chunks.lastKey());
+						}
+					}
+					return true;
+				}
+
 				if (arg3[0].equals("online")) {
 					String s = "";
 					if (Bukkit.getOnlinePlayers().size() > 0) {
@@ -6671,6 +6723,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (sender instanceof Player) {
 				Player play = (Player) sender;
 				play.sendMessage(getChatColor(play) + "Chat color set!");
+				setListNames();
 			}
 
 			chatcolorCfg.saveConfig();
