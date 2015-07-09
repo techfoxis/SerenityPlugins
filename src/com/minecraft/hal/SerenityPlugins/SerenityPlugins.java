@@ -19,8 +19,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import net.minecraft.server.v1_8_R3.PistonExtendsChecker;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -139,6 +137,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor leaderboardCfg;
 	public ConfigAccessor portalAnalytics;
 	public ConfigAccessor whoIsOnline;
+	public ConfigAccessor itCfg;
 	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
@@ -358,8 +357,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		leaderboardCfg = new ConfigAccessor(this, "leaderboard.yml");
 		portalAnalytics = new ConfigAccessor(this, "portals.yml");
 		whoIsOnline = new ConfigAccessor(this, "whoIsOnline.yml");
-		whoIsOnline.saveDefaultConfig();
-		portalAnalytics.saveDefaultConfig();
+		itCfg = new ConfigAccessor(this, "it.yml");
+		itCfg.saveDefaultConfig();
 
 		mailablePlayers = new ArrayList<String>();
 		mailBoxes = new ArrayList<Mailbox>();
@@ -747,6 +746,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					printDebugTimings("Time to check party sticks", now);
 
 					printDebugTimings("*****TICK TIME:  ", now);
+					
+					String it = itCfg.getConfig().getString("It");
+					for(Player p: Bukkit.getOnlinePlayers()){
+						if(p.getDisplayName().equals(it)){
+							Location l = p.getLocation();
+							l.setY(l.getY() + 2.5);
+							ParticleEffect.CLOUD.display(0, 0, 0, 0, 10, l, 20);
+						}
+					}
 				}
 			}
 
@@ -896,6 +904,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 															.toString()));
 						}
 					}
+				}
+			}
+		}
+	}
+	
+	@EventHandler
+	public void PlayerClickOtherPlayer(PlayerInteractEntityEvent event) {
+		if(event.getPlayer().getDisplayName().equals(itCfg.getConfig().getString("It"))){
+			if(event.getRightClicked().getType().equals(EntityType.PLAYER)){
+				Player p = (Player)event.getRightClicked();
+				if(p.getDisplayName().equals(itCfg.getConfig().getString("Last"))){
+					event.getPlayer().sendMessage("§cNo tag-backs!  You must tag a different player");
+				}else{
+					event.getPlayer().sendMessage("§2You tagged §a"+p.getDisplayName());
+					p.sendMessage("§b§lTag!§r§b You're it! §7(Right click another player to tag them)");
+					itCfg.getConfig().set("It", p.getDisplayName());
+					itCfg.getConfig().set("Last", event.getPlayer().getDisplayName());
+					itCfg.saveConfig();
+					itCfg.reloadConfig();
 				}
 			}
 		}
@@ -5474,10 +5501,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				if (arg3[0].equals("reloadcfg")) {
 					podrickCfg.reloadConfig();
-					// teamsCfg.reloadConfig();
 					emailCfg.reloadConfig();
 					bookCfg.reloadConfig();
 					linksCfg.reloadConfig();
+					itCfg.reloadConfig();
+					daleCfg.reloadConfig();
+					mailboxCfg.reloadConfig();
+					whoIsOnline.reloadConfig();
+					
 					sender.sendMessage("Reloaded pod, teams, email, book, and links");
 				}
 
@@ -5605,6 +5636,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								}
 							}, 20L * Integer.parseInt(arg3[1]));
 					return true;
+				}
+				
+				if (arg3[0].equals("setit")) {
+					itCfg.getConfig().set("It", arg3[1]);
+					itCfg.saveConfig();
+					itCfg.reloadConfig();
 				}
 
 				if (arg3[0].equals("secret")) {
