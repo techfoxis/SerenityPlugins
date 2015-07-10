@@ -1,5 +1,6 @@
 package com.minecraft.hal.SerenityPlugins;
 
+import java.awt.DisplayMode;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -138,6 +139,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor portalAnalytics;
 	public ConfigAccessor whoIsOnline;
 	public ConfigAccessor itCfg;
+	public ConfigAccessor diamondFoundCfg;
 	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
@@ -358,7 +360,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		portalAnalytics = new ConfigAccessor(this, "portals.yml");
 		whoIsOnline = new ConfigAccessor(this, "whoIsOnline.yml");
 		itCfg = new ConfigAccessor(this, "it.yml");
-		itCfg.saveDefaultConfig();
+		diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
+		diamondFoundCfg.saveDefaultConfig();
 
 		mailablePlayers = new ArrayList<String>();
 		mailBoxes = new ArrayList<Mailbox>();
@@ -746,10 +749,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					printDebugTimings("Time to check party sticks", now);
 
 					printDebugTimings("*****TICK TIME:  ", now);
-					
+
 					String it = itCfg.getConfig().getString("It");
-					for(Player p: Bukkit.getOnlinePlayers()){
-						if(p.getDisplayName().equals(it)){
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (p.getDisplayName().equals(it)) {
 							Location l = p.getLocation();
 							l.setY(l.getY() + 2.5);
 							ParticleEffect.CLOUD.display(0, 0, 0, 0, 10, l, 20);
@@ -816,8 +819,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public void run() {
 				leaderboardCfg.saveConfig();
+				diamondFoundCfg.saveConfig();
 			}
 		});
+	}
+
+	private void addScoreToCfg(ConfigAccessor config, String name) {
+		int currentScore = config.getConfig().getInt(name, 0);
+		currentScore++;
+		config.getConfig().set(name, currentScore);
 	}
 
 	@EventHandler
@@ -908,19 +918,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-	
+
 	@EventHandler
 	public void PlayerClickOtherPlayer(PlayerInteractEntityEvent event) {
-		if(event.getPlayer().getDisplayName().equals(itCfg.getConfig().getString("It"))){
-			if(event.getRightClicked().getType().equals(EntityType.PLAYER)){
-				Player p = (Player)event.getRightClicked();
-				if(p.getDisplayName().equals(itCfg.getConfig().getString("Last"))){
-					event.getPlayer().sendMessage("§cNo tag-backs!  You must tag a different player");
-				}else{
-					event.getPlayer().sendMessage("§2You tagged §a"+p.getDisplayName());
+		if (event.getPlayer().getDisplayName()
+				.equals(itCfg.getConfig().getString("It"))) {
+			if (event.getRightClicked().getType().equals(EntityType.PLAYER)) {
+				Player p = (Player) event.getRightClicked();
+				if (p.getDisplayName().equals(
+						itCfg.getConfig().getString("Last"))) {
+					event.getPlayer().sendMessage(
+							"§cNo tag-backs!  You must tag a different player");
+				} else {
+					event.getPlayer().sendMessage(
+							"§2You tagged §a" + p.getDisplayName());
 					p.sendMessage("§b§lTag!§r§b You're it! §7(Right click another player to tag them)");
+					getLogger().info(
+							"§c" + event.getPlayer().getDisplayName()
+									+ " §2tagged §6" + p.getDisplayName());
 					itCfg.getConfig().set("It", p.getDisplayName());
-					itCfg.getConfig().set("Last", event.getPlayer().getDisplayName());
+					itCfg.getConfig().set("Last",
+							event.getPlayer().getDisplayName());
 					itCfg.saveConfig();
 					itCfg.reloadConfig();
 				}
@@ -1822,13 +1840,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@EventHandler
 	public void onPlayerLeave(PlayerQuitEvent event) {
 		attachments.remove(event.getPlayer().getUniqueId());
-
-		if (!event.getPlayer().isOp()) {
-			String date = sdtf.format(new Date());
-			whoIsOnline.getConfig().set(event.getPlayer().getName(), date);
-			whoIsOnline.saveConfig();
-			whoIsOnline.reloadConfig();
-		}
 
 		if (event.getPlayer().isOp()) {
 			event.setQuitMessage(null);
@@ -2884,6 +2895,44 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 												+ " " + y + " " + z);
 							}
 						}, 0L);
+			}
+		}
+
+		if (event.getBlock().getType().equals(Material.DIAMOND_ORE)) {
+			if (!event.getPlayer().isOp()) {
+				if (!event.getPlayer().getItemInHand().getEnchantments()
+						.containsKey(Enchantment.SILK_TOUCH)) {
+
+					final Player p = event.getPlayer();
+					Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+							new Runnable() {
+								@Override
+								public void run() {
+									getLogger().info("§2It counts for score!");
+									int currentDay = new Date().getDay();
+
+									for (int i = 0; i < 7; i++) {
+										if (i != currentDay) {
+											diamondFoundCfg
+													.getConfig()
+													.set(p.getDisplayName() + ".Day"
+															+ i,
+															diamondFoundCfg
+																	.getConfig()
+																	.get(p.getDisplayName()
+																			+ ".Day"
+																			+ i,
+																			0));
+										}
+									}
+
+									addScoreToCfg(diamondFoundCfg,
+											p.getDisplayName() + ".Day"
+													+ currentDay);
+									diamondFoundCfg.saveConfig();
+								}
+							}, 0L);
+				}
 			}
 		}
 	}
@@ -5274,9 +5323,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 												leaderboardCfg.getConfig().set(
 														p.getName() + ".Day"
 																+ today, 0);
+
+											}
+
+											currentScore = diamondFoundCfg
+													.getConfig()
+													.getInt(p.getName()
+															+ ".Day" + today,
+															-1);
+											if (currentScore != -1) {
+												diamondFoundCfg.getConfig()
+														.set(p.getName()
+																+ ".Day"
+																+ today, 0);
 											}
 										}
-
 									}
 
 									leaderboardCfg.saveConfig();
@@ -5508,8 +5569,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					daleCfg.reloadConfig();
 					mailboxCfg.reloadConfig();
 					whoIsOnline.reloadConfig();
-					
-					sender.sendMessage("Reloaded pod, teams, email, book, and links");
+					leaderboardCfg.reloadConfig();
+					diamondFoundCfg.reloadConfig();
+					sender.sendMessage("Reloaded pod, email, books, links, it, dale, mailbox, who is onilne, diamond, leaderboard");
+					return true;
 				}
 
 				if (arg3[0].equals("sleepers")) {
@@ -5520,6 +5583,39 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						sender.sendMessage(p.getDisplayName() + " sleeping = "
 								+ p.isSleeping());
 					}
+				}
+
+				if (arg3[0].equals("cleanleaderboard")) {
+					Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+							new Runnable() {
+								@Override
+								public void run() {
+									for (OfflinePlayer op : Bukkit
+											.getOfflinePlayers()) {
+										if (!op.isOp()) {
+
+											if (!leaderboardCfg
+													.getConfig()
+													.getString(
+															op.getName()
+																	+ ".Day1",
+															"no").equals("no")) {
+												if (getLastSeen(op.getName()) > 7200) {
+													leaderboardCfg.getConfig()
+															.set(op.getName(),
+																	null);
+													getLogger()
+															.info("§cCleaned §2"
+																	+ op.getName());
+												}
+											}
+										}
+									}
+									leaderboardCfg.saveConfig();
+									leaderboardCfg.reloadConfig();
+								}
+							}, 1L);
+					return true;
 				}
 
 				if (arg3[0].equals("clear")) {
@@ -5637,11 +5733,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							}, 20L * Integer.parseInt(arg3[1]));
 					return true;
 				}
-				
+
 				if (arg3[0].equals("setit")) {
 					itCfg.getConfig().set("It", arg3[1]);
 					itCfg.saveConfig();
 					itCfg.reloadConfig();
+				}
+
+				if (arg3[0].equals("cleanonline")) {
+					whoIsOnline.getConfig().set(arg3[1], null);
+					whoIsOnline.saveConfig();
+					whoIsOnline.reloadConfig();
+					return true;
+				}
+
+				if (arg3[0].equals("cleanleaderboard")) {
+					leaderboardCfg.getConfig().set(arg3[1], null);
+					leaderboardCfg.saveConfig();
+					leaderboardCfg.reloadConfig();
+					return true;
 				}
 
 				if (arg3[0].equals("secret")) {
