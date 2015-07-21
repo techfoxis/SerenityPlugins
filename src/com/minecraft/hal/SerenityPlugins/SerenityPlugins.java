@@ -753,15 +753,41 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					String it = itCfg.getConfig().getString("It");
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						if (p.getDisplayName().equals(it)) {
-							Location l = p.getLocation();
-							l.setY(l.getY() + 2.5);
-							ParticleEffect.CLOUD.display(0, 0, 0, 0, 10, l, 20);
+							doSerenitySpook(p);
 						}
 					}
 				}
 			}
 
 		}, 0L, 20L);
+	}
+
+	protected void doSerenitySpook(Player p) {
+
+		final Player pf = p;
+
+		for (int i = 0; i < 10; i++) {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+					new Runnable() {
+						@Override
+						public void run() {
+
+							List<Player> players = new ArrayList<Player>();
+							for (Player p : Bukkit.getOnlinePlayers()) {
+								if (!p.equals(pf)) {
+									players.add(p);
+								}
+							}
+
+							if (!players.isEmpty()) {
+								Location loc = pf.getLocation();
+								loc.setY(loc.getY() + 1);
+								ParticleEffect.EXPLOSION_NORMAL.display(.125F,
+										.5F, .125F, 0, 50, loc, players);
+							}
+						}
+					}, i * 2L);
+		}
 	}
 
 	protected void unloadChunks() {
@@ -927,12 +953,30 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				Player p = (Player) event.getRightClicked();
 				if (p.getDisplayName().equals(
 						itCfg.getConfig().getString("Last"))) {
-					event.getPlayer().sendMessage(
-							"§cNo tag-backs!  You must tag a different player");
+					event.getPlayer()
+							.sendMessage(
+									"§cNo tag-backs!  You must spook a different player");
 				} else {
 					event.getPlayer().sendMessage(
-							"§2You tagged §a" + p.getDisplayName());
-					p.sendMessage("§b§lTag!§r§b You're it! §7(Right click another player to tag them)");
+							"§7You spooked §8" + p.getDisplayName());
+					String spookyMsg = "Serenity Spook";
+					String result = "";
+					for (int i = 0; i < spookyMsg.length(); i++) {
+						int x = i % 3;
+						switch (x) {
+						case 0:
+							result += "§f§l" + spookyMsg.charAt(i);
+							break;
+						case 1:
+							result += "§7§l" + spookyMsg.charAt(i);
+							break;
+						case 2:
+							result += "§8§l" + spookyMsg.charAt(i);
+							break;
+						}
+					}
+					p.sendMessage("§dYou've been spooked by the " + result);
+					p.sendMessage("§7(Right click another player to spook them.  No tag-backs!)");
 					getLogger().info(
 							"§c" + event.getPlayer().getDisplayName()
 									+ " §2tagged §6" + p.getDisplayName());
@@ -1461,6 +1505,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (!wasAuto) {
 			player.openInventory(AFKInv);
 		}
+
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (p.isSleeping()) {
+				checkHalfIgnored();
+				return;
+			}
+		}
+
 	}
 
 	private void unAfk(Player player) {
@@ -1813,14 +1865,37 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		World world = event.getPlayer().getWorld();
 		Location location = event.getPlayer().getLocation();
-
-		if (!event.getPlayer().isOp()) {
-			for (int i = 0; i < 5; i++) {
-				doRandomFirework(world, location);
-			}
-		}
+		/*
+		 * if (!event.getPlayer().isOp()) { for (int i = 0; i < 5; i++) {
+		 * doRandomFirework(world, location); } }
+		 */
 
 		setListNames();
+
+		if (event.getPlayer().getDisplayName()
+				.equals(itCfg.getConfig().getString("It"))) {
+
+			String spookyMsg = "Serenity Spook";
+			String result = "";
+			for (int i = 0; i < spookyMsg.length(); i++) {
+				int x = i % 3;
+				switch (x) {
+				case 0:
+					result += "§f§l" + spookyMsg.charAt(i);
+					break;
+				case 1:
+					result += "§7§l" + spookyMsg.charAt(i);
+					break;
+				case 2:
+					result += "§8§l" + spookyMsg.charAt(i);
+					break;
+				}
+			}
+
+			event.getPlayer().sendMessage(
+					"§6§lYou're still the " + result
+							+ "\n§7(Right click another player to tag them)");
+		}
 
 		for (Mailbox mb : mailBoxes) {
 			if (mb.getName().equals(event.getPlayer().getDisplayName())) {
@@ -1914,7 +1989,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (w.equals(p.getWorld())) {
 					if (p.getLocation().distance(
 							event.getPlayer().getLocation()) <= 100) {
-						event.getRecipients().add(p);
+						if (p.isOp()) {
+							if (opParticles) {
+								event.getRecipients().add(p);
+							}
+						} else {
+							event.getRecipients().add(p);
+						}
 					}
 				}
 			}
@@ -2915,8 +2996,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										if (i != currentDay) {
 											diamondFoundCfg
 													.getConfig()
-													.set(p.getDisplayName() + ".Day"
-															+ i,
+													.set(p.getDisplayName()
+															+ ".Day" + i,
 															diamondFoundCfg
 																	.getConfig()
 																	.get(p.getDisplayName()
@@ -3098,9 +3179,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				String msg = "§4Waiting for majority to agree. Current: §6";
 				String result = new DecimalFormat("##.##").format(percentage);
-				if (percentage < 25) {
+				if (percentage <= 25) {
 					result = "§c" + result;
-				} else if (percentage < 50) {
+				} else if (percentage <= 50) {
 					result = "§e" + result;
 				} else if (percentage < 100) {
 					result = "§a" + result;
@@ -7162,8 +7243,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			int y = (int) event.getBlock().getLocation().getY();
 			int z = (int) event.getBlock().getLocation().getZ();
 			getLogger().info(
-					"§4" + event.getPlayer() + " §cplaced TNT at §6" + x + " "
-							+ y + " " + z);
+					"§4" + event.getPlayer().getName() + " §cplaced TNT at §6"
+							+ x + " " + y + " " + z);
 
 		}
 	}
