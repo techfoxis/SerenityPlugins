@@ -45,6 +45,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.AnimalTamer;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
@@ -86,6 +87,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -5294,6 +5296,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 				return MsgViaText(rec, msg);
 			}
+			
+			if (arg3[0].equalsIgnoreCase("title")) {
+				String rec = arg3[1];
+				String msg = "";
+				for (int i = 2; i < arg3.length; i++) {
+					msg += arg3[i] + " ";
+				}
+				
+				Bukkit.getPlayer(rec).sendTitle(msg, msg);
+				return true;
+			}
 
 			if (arg3.length == 1) {
 
@@ -8039,6 +8052,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				event.setCancelled(true);
 			}
 
+		}
+	}
+	
+	@EventHandler
+	public void onArmorStandInteractEvent(PlayerArmorStandManipulateEvent event) {
+		for (ProtectedArea pa : areas) {
+			if(pa.equals(event.getRightClicked().getLocation())){
+				if(!pa.hasPermission(event.getPlayer().getDisplayName())){
+					event.setCancelled(true);
+					return;
+				}
+			}
 		}
 	}
 
