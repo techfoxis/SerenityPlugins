@@ -1,6 +1,5 @@
 package com.minecraft.hal.SerenityPlugins;
 
-import java.awt.DisplayMode;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -45,7 +44,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.AnimalTamer;
-import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
@@ -85,7 +83,6 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
@@ -102,7 +99,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.vehicle.VehicleExitEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.BookMeta;
@@ -280,7 +276,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public Secrets Secret;
 
-	public Inventory AFKInv;
+//	public Inventory AFKInv;
 
 	public boolean opParticles = false;
 	public boolean opParticlesDeb = false;
@@ -296,9 +292,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
 
-		AFKInv = Bukkit.createInventory(null, 9, "AFK INVENTORY");
+		//AFKInv = Bukkit.createInventory(null, 9, "AFK INVENTORY");
 
-		AFKInv.setMaxStackSize(0);
+		//AFKInv.setMaxStackSize(0);
 
 		try {
 			AprilFoolsday = psdf.parse("04/01");
@@ -697,6 +693,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 
 					minute++;
+					
+					if(minute % 10 == 0){
+						afkTest();
+					}
 
 					if (minute >= 60) {
 						addAMinuteToEachPlayer();
@@ -712,7 +712,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						printDebugTimings("Time to check for times", now);
 						minute = 0;
 
-						afkTest();
+						
 						printDebugTimings("Time to AFK test", now);
 					}
 
@@ -1504,9 +1504,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						.getItemInHand().getType() == Material.WRITTEN_BOOK)) {
 			return;
 		}
+		/*
 		if (!wasAuto) {
 			player.openInventory(AFKInv);
-		}
+		}*/
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (p.isSleeping()) {
@@ -7765,14 +7766,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-
+/*
 	@EventHandler
 	private void AFKInvEvent(InventoryClickEvent event) {
 		if (event.getInventory().getName().contains("AFK INVENTORY")) {
 			event.setCancelled(true);
 		}
 	}
-
+*/
 	static boolean isDateBetween(Date check, Date min, Date max) {
 		SimpleDateFormat fmt = new SimpleDateFormat("MMdd");
 		if (fmt.format(check).equals(fmt.format(min))) {
