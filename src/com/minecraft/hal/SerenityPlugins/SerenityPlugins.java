@@ -872,6 +872,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getPlayer().getLocation().getWorld().getName()
 				.equals("world")) {
 			if (event.getPlayer().getLocation().distance(l) < 3) {
+				event.getPlayer().sendTitle("§d-WARNING-", "§cDo NOT get crumbs on my desk!");
 				Location dest = Secret.SECRETDESTINATION;
 				event.setCancelled(true);
 				event.getPlayer().teleport(dest);
@@ -977,7 +978,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							break;
 						}
 					}
-					p.sendMessage("§dYou've been spooked by the " + result);
 					p.sendMessage("§7(Right click another player to spook them.  No tag-backs!)");
 					getLogger().info(
 							"§c" + event.getPlayer().getDisplayName()
@@ -3073,7 +3073,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			votingForDay = false;
 			return;
 		}
-
+		
 		if (event.getBed().getLocation().getWorld().getTime() >= 23000
 				|| event.getBed().getLocation().getWorld().getTime() < 500) {
 			votingForDay = false;
@@ -3175,18 +3175,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				double percentage = (double) sleepingIgnored / onlineCount;
 				percentage *= 100.0;
 
-				String msg = "§4Waiting for majority to agree. Current: §6";
 				String result = new DecimalFormat("##.##").format(percentage);
 				if (percentage <= 25) {
 					result = "§c" + result;
+					p.sendTitle("§4Voting for §eDay!", result);
 				} else if (percentage <= 50) {
 					result = "§e" + result;
+					p.sendTitle("§4§4Voting for §eDay!", result);
 				} else if (percentage < 100) {
 					result = "§a" + result;
+					p.sendTitle("§4Vote passed!", result);
 				} else {
 					result = "§2§l" + result;
+					p.sendTitle("§4Vote passed!", result);
 				}
-				p.sendMessage(msg + result + "%");
 			}
 		}
 
