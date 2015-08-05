@@ -694,7 +694,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					minute++;
 					
-					if(minute % 10 == 0){
+					if(minute % 20 == 0){
 						afkTest();
 					}
 
@@ -1487,6 +1487,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		afkPlayers.put(player, wasAuto);
 		player.setSleepingIgnored(true);
+		if(!wasAuto){
+				player.sendMessage("§7You have been set §8AFK");
+		}
 		/*
 		 * for (Player p : Bukkit.getOnlinePlayers()) { if (p != player) {
 		 * p.sendMessage("§8" + player.getDisplayName() + "§7 is AFK"); } }
@@ -1496,18 +1499,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 * "§7 is AFK"); }
 		 */
 
-		getLogger().info(player.getDisplayName() + "§7 is AFK");
+		//getLogger().info(player.getDisplayName() + "§7 is AFK");
 		setListNames();
-
-		if (player.getItemInHand() != null
-				&& (player.getItemInHand().getType() == Material.BOOK_AND_QUILL || player
-						.getItemInHand().getType() == Material.WRITTEN_BOOK)) {
-			return;
-		}
-		/*
-		if (!wasAuto) {
-			player.openInventory(AFKInv);
-		}*/
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (p.isSleeping()) {
@@ -1519,6 +1512,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void unAfk(Player player) {
+		/*
 		if (afkPlayers.containsKey(player)) {/*
 											 * for (Player p :
 											 * Bukkit.getOnlinePlayers()) { if
@@ -1527,8 +1521,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 											 * player.getDisplayName() +
 											 * "§7 is back"); } }
 											 */
-			getLogger().info(player.getDisplayName() + "§7 is back");
-		}
+			//getLogger().info(player.getDisplayName() + "§7 is back");
+		//}
 		/*
 		 * if (!afkPlayers.get(player)) { player.sendMessage("§8" +
 		 * player.getDisplayName() + "§7 is back"); }
@@ -1536,6 +1530,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		afkPlayers.remove(player);
 		playerLocations.remove(player.getDisplayName());
+		if(!votingForDay)
 		player.setSleepingIgnored(false);
 		setListNames();
 	}
