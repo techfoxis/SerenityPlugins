@@ -3176,6 +3176,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				percentage *= 100.0;
 
 				String result = new DecimalFormat("##.##").format(percentage);
+				result += "%";
 				if (percentage <= 25) {
 					result = "§c" + result;
 					p.sendTitle("§4Voting for §eDay!", result);
