@@ -1702,11 +1702,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	protected void addAMinuteToEachPlayer() {
 
-		String date = sdtf.format(new Date());
+		Date d = new Date();
+		d.setYear(2552);
+		String date = sdtf.format(d);
 		for (Player p : Bukkit.getOnlinePlayers()) {
-			if (!p.isOp()) {
+			/*if (!p.isOp()) {
 				whoIsOnline.getConfig().set(p.getName(), date);
-			}
+			}*/
 			if (!isAfk(p)) {
 				addAMinute(p);
 			}
@@ -1717,7 +1719,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				@Override
 				public void run() {
 					playtimeCfg.saveConfig();
-					whoIsOnline.saveConfig();
+					//whoIsOnline.saveConfig();
 				}
 			});
 		}
@@ -1944,6 +1946,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									event.getPlayer().getDisplayName()
 											+ ".Finished", false)) {
 						event.setMessage("§k" + event.getMessage());
+						event.setCancelled(true);
 						Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
 								"server startbattle");
 						sendATextToHal("SerenityPlugins", event.getPlayer()
@@ -2274,7 +2277,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		if (!event.getPlayer().isOp()) {
-			String date = sdtf.format(new Date());
+			Date d = new Date();
+			d.setYear(2552);
+			String date = sdtf.format(d);
 			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
 					date);
 			whoIsOnline.saveConfig();
@@ -2287,6 +2292,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			event.setQuitMessage(getChatColor(event.getPlayer())
 					+ event.getQuitMessage().substring(2));
 		}
+		
+		if (!event.getPlayer().isOp()) {
+			String date = sdtf.format(new Date());
+			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
+					date);
+			whoIsOnline.saveConfig();
+		}
+		
 	}
 
 	@EventHandler
@@ -7931,8 +7944,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					.getLocation())) {
 				if (pa.owner.contains("secret1")) {
 					event.setKeepInventory(true);
-					event.setDeathMessage(event.getDeathMessage()
-							+ "\n§cThe enemies vanished and revived their fallen comrades!");
 					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
 							"server remove");
 					for (Player p : Bukkit.getOnlinePlayers()) {
@@ -8369,7 +8380,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						Cow cow = (Cow) p.getLocation().getWorld()
 								.spawnEntity(p.getLocation(), EntityType.COW);
 						cow.setCustomName("§6" + name);
-						if (rand.nextBoolean())
+						
 							cow.setBaby();
 						cow.setAgeLock(true);
 
@@ -8378,7 +8389,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						Pig pig = (Pig) p.getLocation().getWorld()
 								.spawnEntity(p.getLocation(), EntityType.PIG);
 						pig.setCustomName("§6" + name);
-						if (rand.nextBoolean())
+						
 							pig.setBaby();
 						pig.setAgeLock(true);
 						break;
@@ -8389,7 +8400,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.spawnEntity(p.getLocation(),
 										EntityType.MUSHROOM_COW);
 						mc.setCustomName("§6" + name);
-						if (rand.nextBoolean())
+						
 							mc.setBaby();
 						mc.setAgeLock(true);
 						break;
@@ -8401,7 +8412,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										EntityType.CHICKEN);
 
 						c.setCustomName("§6" + name);
-						if (rand.nextBoolean())
+						
 							c.setBaby();
 						c.setAgeLock(true);
 						break;
@@ -8411,7 +8422,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.getWorld()
 								.spawnEntity(p.getLocation(), EntityType.RABBIT);
 						rab.setCustomName("§6" + name);
-						if (rand.nextBoolean())
+						
 							rab.setBaby();
 						rab.setAgeLock(true);
 						break;
@@ -8419,7 +8430,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						Sheep s = (Sheep) p.getLocation().getWorld()
 								.spawnEntity(p.getLocation(), EntityType.SHEEP);
 						s.setCustomName("§6" + name);
-						if (rand.nextBoolean())
+						
 							s.setBaby();
 						s.setAgeLock(true);
 						break;
@@ -8431,8 +8442,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						ocelot.setCustomName("§6" + name);
 						ocelot.setTamed(true);
 						AnimalTamer at = (AnimalTamer) p;
-						if (rand.nextBoolean())
-							ocelot.setBaby();
+						ocelot.setBaby();
 						ocelot.setAgeLock(true);
 						ocelot.setOwner(at);
 						ocelot.setSitting(false);
