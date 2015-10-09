@@ -19,6 +19,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.bukkit.Art;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -52,11 +53,13 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Firework;
+import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Horse.Style;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.MushroomCow;
 import org.bukkit.entity.Ocelot;
+import org.bukkit.entity.Painting;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Rabbit;
@@ -81,8 +84,11 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
@@ -276,7 +282,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public Secrets Secret;
 
-//	public Inventory AFKInv;
+	// public Inventory AFKInv;
 
 	public boolean opParticles = false;
 	public boolean opParticlesDeb = false;
@@ -292,9 +298,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
 
-		//AFKInv = Bukkit.createInventory(null, 9, "AFK INVENTORY");
+		// AFKInv = Bukkit.createInventory(null, 9, "AFK INVENTORY");
 
-		//AFKInv.setMaxStackSize(0);
+		// AFKInv.setMaxStackSize(0);
 
 		try {
 			AprilFoolsday = psdf.parse("04/01");
@@ -693,8 +699,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 
 					minute++;
-					
-					if(minute % 20 == 0){
+
+					if (minute % 20 == 0) {
 						afkTest();
 					}
 
@@ -712,7 +718,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						printDebugTimings("Time to check for times", now);
 						minute = 0;
 
-						
 						printDebugTimings("Time to AFK test", now);
 					}
 
@@ -872,7 +877,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getPlayer().getLocation().getWorld().getName()
 				.equals("world")) {
 			if (event.getPlayer().getLocation().distance(l) < 3) {
-				event.getPlayer().sendTitle("§d-WARNING-", "§cDo NOT get crumbs on my desk!");
+				event.getPlayer().sendTitle("§d-WARNING-",
+						"§cDo NOT get crumbs on my desk!");
 				Location dest = Secret.SECRETDESTINATION;
 				event.setCancelled(true);
 				event.getPlayer().teleport(dest);
@@ -1023,6 +1029,55 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						"§c" + event.getPlayer().getName()
 								+ "§2 clicked a dragon egg at\n"
 								+ event.getClickedBlock().getLocation());
+			}
+		}
+	}
+
+	@EventHandler
+	public void onHangingBreak(HangingBreakByEntityEvent event) {
+		if (event.getRemover() instanceof Player) {
+			Player p = (Player) event.getRemover();
+			for (ProtectedArea pa : areas) {
+				if (pa.equals(event.getEntity().getLocation())) {
+					if (!pa.hasPermission(p.getDisplayName())) {
+						event.setCancelled(true);
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void paintingClick(PlayerInteractEntityEvent event) {
+
+		for (ProtectedArea p : areas) {
+			if (p.equals(event.getRightClicked().getLocation())) {
+				if (!p.hasPermission(event.getPlayer().getDisplayName())) {
+					if (event.getRightClicked() instanceof Hanging)
+						event.setCancelled(true);
+					return;
+				}
+			}
+		}
+
+		if (event.getRightClicked() instanceof Hanging) {
+
+			Hanging h = (Hanging) event.getRightClicked();
+			if (h instanceof Painting) {
+				Painting p = (Painting) h;
+				int pid = p.getArt().getId();
+				pid += 1;
+				int newmaybe = pid;
+				if (pid > Art.values().length - 1)
+					pid = 0;
+				p.setArt(Art.getById(pid));
+
+				if (p.getArt().getId() != newmaybe) {
+					if (p.getArt().getId() != 0)
+						p.setArt(Art.getById(0));
+				}
+				// event.getPlayer().sendMessage("Painting ID = " + pid);
 			}
 		}
 	}
@@ -1487,8 +1542,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		afkPlayers.put(player, wasAuto);
 		player.setSleepingIgnored(true);
-		if(!wasAuto){
-				player.sendMessage("§7You have been set §8AFK");
+		if (!wasAuto) {
+			player.sendMessage("§7You have been set §8AFK");
 		}
 		/*
 		 * for (Player p : Bukkit.getOnlinePlayers()) { if (p != player) {
@@ -1499,7 +1554,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 * "§7 is AFK"); }
 		 */
 
-		//getLogger().info(player.getDisplayName() + "§7 is AFK");
+		// getLogger().info(player.getDisplayName() + "§7 is AFK");
 		setListNames();
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
@@ -1513,16 +1568,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void unAfk(Player player) {
 		/*
-		if (afkPlayers.containsKey(player)) {/*
-											 * for (Player p :
-											 * Bukkit.getOnlinePlayers()) { if
-											 * (p != player) {
-											 * p.sendMessage("§8" +
-											 * player.getDisplayName() +
-											 * "§7 is back"); } }
-											 */
-			//getLogger().info(player.getDisplayName() + "§7 is back");
-		//}
+		 * if (afkPlayers.containsKey(player)) {/* for (Player p :
+		 * Bukkit.getOnlinePlayers()) { if (p != player) { p.sendMessage("§8" +
+		 * player.getDisplayName() + "§7 is back"); } }
+		 */
+		// getLogger().info(player.getDisplayName() + "§7 is back");
+		// }
 		/*
 		 * if (!afkPlayers.get(player)) { player.sendMessage("§8" +
 		 * player.getDisplayName() + "§7 is back"); }
@@ -1530,8 +1581,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		afkPlayers.remove(player);
 		playerLocations.remove(player.getDisplayName());
-		if(!votingForDay)
-		player.setSleepingIgnored(false);
+		if (!votingForDay)
+			player.setSleepingIgnored(false);
 		setListNames();
 	}
 
@@ -1706,9 +1757,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		d.setYear(2552);
 		String date = sdtf.format(d);
 		for (Player p : Bukkit.getOnlinePlayers()) {
-			/*if (!p.isOp()) {
-				whoIsOnline.getConfig().set(p.getName(), date);
-			}*/
+			/*
+			 * if (!p.isOp()) { whoIsOnline.getConfig().set(p.getName(), date);
+			 * }
+			 */
 			if (!isAfk(p)) {
 				addAMinute(p);
 			}
@@ -1719,7 +1771,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				@Override
 				public void run() {
 					playtimeCfg.saveConfig();
-					//whoIsOnline.saveConfig();
+					// whoIsOnline.saveConfig();
 				}
 			});
 		}
@@ -2292,14 +2344,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			event.setQuitMessage(getChatColor(event.getPlayer())
 					+ event.getQuitMessage().substring(2));
 		}
-		
+
 		if (!event.getPlayer().isOp()) {
 			String date = sdtf.format(new Date());
 			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
 					date);
 			whoIsOnline.saveConfig();
 		}
-		
+
 	}
 
 	@EventHandler
@@ -3086,7 +3138,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			votingForDay = false;
 			return;
 		}
-		
+
 		if (event.getBed().getLocation().getWorld().getTime() >= 23000
 				|| event.getBed().getLocation().getWorld().getTime() < 500) {
 			votingForDay = false;
@@ -5308,14 +5360,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 				return MsgViaText(rec, msg);
 			}
-			
+
 			if (arg3[0].equalsIgnoreCase("title")) {
 				String rec = arg3[1];
 				String msg = "";
 				for (int i = 2; i < arg3.length; i++) {
 					msg += arg3[i] + " ";
 				}
-				
+
 				Bukkit.getPlayer(rec).sendTitle(msg, msg);
 				return true;
 			}
@@ -6027,6 +6079,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						sender.sendMessage("Something went wrong");
 					}
 				}
+
+				if (arg3[0].equals("exp")) {
+					try {
+						Location l = Bukkit.getPlayer(arg3[1]).getLocation();
+						if (sender instanceof Player) {
+							Player p = (Player) sender;
+							for (int i = 0; i < 70; i++) {
+								safelySpawnExperienceOrb(p, 10000, i);
+							}
+							return true;
+						}
+						return true;
+					} catch (Exception e) {
+						sender.sendMessage("Something went wrong");
+					}
+				}
+
 			}
 			if (arg3[0].equals("cmd")) {
 				if (arg3.length < 2) {
@@ -7777,14 +7846,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-/*
-	@EventHandler
-	private void AFKInvEvent(InventoryClickEvent event) {
-		if (event.getInventory().getName().contains("AFK INVENTORY")) {
-			event.setCancelled(true);
-		}
-	}
-*/
+
+	/*
+	 * @EventHandler private void AFKInvEvent(InventoryClickEvent event) { if
+	 * (event.getInventory().getName().contains("AFK INVENTORY")) {
+	 * event.setCancelled(true); } }
+	 */
 	static boolean isDateBetween(Date check, Date min, Date max) {
 		SimpleDateFormat fmt = new SimpleDateFormat("MMdd");
 		if (fmt.format(check).equals(fmt.format(min))) {
@@ -8064,12 +8131,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		}
 	}
-	
+
 	@EventHandler
 	public void onArmorStandInteractEvent(PlayerArmorStandManipulateEvent event) {
 		for (ProtectedArea pa : areas) {
-			if(pa.equals(event.getRightClicked().getLocation())){
-				if(!pa.hasPermission(event.getPlayer().getDisplayName())){
+			if (pa.equals(event.getRightClicked().getLocation())) {
+				if (!pa.hasPermission(event.getPlayer().getDisplayName())) {
 					event.setCancelled(true);
 					return;
 				}
@@ -8380,8 +8447,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						Cow cow = (Cow) p.getLocation().getWorld()
 								.spawnEntity(p.getLocation(), EntityType.COW);
 						cow.setCustomName("§6" + name);
-						
-							cow.setBaby();
+
+						cow.setBaby();
 						cow.setAgeLock(true);
 
 						break;
@@ -8389,8 +8456,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						Pig pig = (Pig) p.getLocation().getWorld()
 								.spawnEntity(p.getLocation(), EntityType.PIG);
 						pig.setCustomName("§6" + name);
-						
-							pig.setBaby();
+
+						pig.setBaby();
 						pig.setAgeLock(true);
 						break;
 					case 2:
@@ -8400,8 +8467,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.spawnEntity(p.getLocation(),
 										EntityType.MUSHROOM_COW);
 						mc.setCustomName("§6" + name);
-						
-							mc.setBaby();
+
+						mc.setBaby();
 						mc.setAgeLock(true);
 						break;
 					case 3:
@@ -8412,8 +8479,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										EntityType.CHICKEN);
 
 						c.setCustomName("§6" + name);
-						
-							c.setBaby();
+
+						c.setBaby();
 						c.setAgeLock(true);
 						break;
 					case 4:
@@ -8422,16 +8489,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.getWorld()
 								.spawnEntity(p.getLocation(), EntityType.RABBIT);
 						rab.setCustomName("§6" + name);
-						
-							rab.setBaby();
+
+						rab.setBaby();
 						rab.setAgeLock(true);
 						break;
 					case 5:
 						Sheep s = (Sheep) p.getLocation().getWorld()
 								.spawnEntity(p.getLocation(), EntityType.SHEEP);
 						s.setCustomName("§6" + name);
-						
-							s.setBaby();
+
+						s.setBaby();
 						s.setAgeLock(true);
 						break;
 					case 6:
@@ -9069,8 +9136,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 								podrickCfg.getConfig().set(
 										p.getDisplayName() + ".Finished", true);
+
 								for (int i = 0; i < 70; i++) {
 									safelySpawnExperienceOrb(p, 10000, i);
+								}
+
+								p.setHealth(p.getMaxHealth());
+								for (PotionEffect pe : p
+										.getActivePotionEffects()) {
+									p.removePotionEffect(pe.getType());
 								}
 							}
 						}
