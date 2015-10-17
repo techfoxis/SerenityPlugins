@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -84,11 +85,9 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
-import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
@@ -144,6 +143,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor whoIsOnline;
 	public ConfigAccessor itCfg;
 	public ConfigAccessor diamondFoundCfg;
+	public ConfigAccessor voteCfg;
+	public ConfigAccessor monsterCfg;
 	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
@@ -365,7 +366,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		whoIsOnline = new ConfigAccessor(this, "whoIsOnline.yml");
 		itCfg = new ConfigAccessor(this, "it.yml");
 		diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
-		diamondFoundCfg.saveDefaultConfig();
+		voteCfg = new ConfigAccessor(this, "vote.yml");
+		monsterCfg = new ConfigAccessor(this, "monster.yml");
+		monsterCfg.saveDefaultConfig();
 
 		mailablePlayers = new ArrayList<String>();
 		mailBoxes = new ArrayList<Mailbox>();
@@ -2514,6 +2517,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
+	/*
+	 * @EventHandler public void onClearWater(PlayerInteractEvent event) { if
+	 * (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) ||
+	 * event.getAction().equals(Action.RIGHT_CLICK_AIR)) { if
+	 * (event.getPlayer().getItemInHand().getType() == Material.GOLD_AXE) {
+	 * Block target = event.getPlayer().getTargetBlock( (Set<Material>) null,
+	 * MAX_DISTANCE); Location location = target.getLocation(); for (int i = -1;
+	 * i < 2; i++) { for (int j = -1; j < 2; j++) { for (int k = -1; k < 2; k++)
+	 * { Block l = location.getWorld().getBlockAt( (int) (location.getX() + i),
+	 * (int) (location.getY() + j), (int) (location.getZ() + k)); if
+	 * (l.getType() == Material.WATER || l.getType() ==
+	 * Material.STATIONARY_WATER) { l.setType(Material.AIR); } } } } } } }
+	 */
+
 	@EventHandler
 	public void onCelebrateFW(PlayerInteractEvent event) {
 		if (celebrators.keySet().contains(event.getPlayer().getName())) {
@@ -3079,6 +3096,74 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}
+	}
+
+	@EventHandler
+	public void onMonsterKill(EntityDeathEvent event) {
+		LivingEntity e = event.getEntity();
+		if (e.getKiller() != null) {
+			if (entityIsHostile(event.getEntity())) {
+				if (!e.getKiller().isOp()) {
+					addMonsterKill(e.getKiller().getDisplayName());
+				}
+			}
+		}
+	}
+
+	private boolean entityIsHostile(LivingEntity entity) {
+		if (entity.getType() == EntityType.ZOMBIE
+				|| entity.getType() == EntityType.BLAZE
+				|| entity.getType() == EntityType.CAVE_SPIDER
+				|| entity.getType() == EntityType.CREEPER
+				|| entity.getType() == EntityType.ENDER_DRAGON
+				|| entity.getType() == EntityType.ENDERMAN
+				|| entity.getType() == EntityType.ENDERMITE
+				|| entity.getType() == EntityType.GHAST
+				|| entity.getType() == EntityType.GUARDIAN
+				|| entity.getType() == EntityType.MAGMA_CUBE
+				|| entity.getType() == EntityType.PIG_ZOMBIE
+				|| entity.getType() == EntityType.SILVERFISH
+				|| entity.getType() == EntityType.SKELETON
+				|| entity.getType() == EntityType.SLIME
+				|| entity.getType() == EntityType.SPIDER
+				|| entity.getType() == EntityType.WITCH
+				|| entity.getType() == EntityType.WITHER) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private void addMonsterKill(String displayName) {
+
+		final String displayNameF = displayName;
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				int hour = Calendar.HOUR_OF_DAY;
+				for (int i = 0; i < 24; i++) {
+					if (i != hour) {
+						monsterCfg.getConfig().set(
+								displayNameF + ".Hour" + i,
+								monsterCfg.getConfig().get(
+										displayNameF + ".Hour" + i, 0));
+					}
+				}
+
+				int prevScore = monsterCfg.getConfig().getInt(
+						displayNameF + ".Hour" + hour);
+
+				monsterCfg.getConfig().set(displayNameF + ".Hour" + hour,
+						prevScore + 1);
+
+				monsterCfg.saveConfig();
+				monsterCfg.reloadConfig();
+			}
+		}, 0L);
+	}
+
+	private void resetCurrentHour() {
+
 	}
 
 	@EventHandler
@@ -3960,11 +4045,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		Date anniversaryMax = new Date();
 		Date canadaDayMin = new Date();
 		Date independenceDayMin = new Date();
+		Date halloweenMin = new Date();
+		Date halloweenMax = new Date();
 		try {
 			anniversaryMin = psdf.parse("06/14");
 			anniversaryMax = psdf.parse("06/22");
 			canadaDayMin = psdf.parse("07/01");
 			independenceDayMin = psdf.parse("07/04");
+			halloweenMin = psdf.parse("10/24");
+			halloweenMax = psdf.parse("11/01");
 		} catch (ParseException e) {
 		}
 
@@ -4007,6 +4096,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 				celebrators.put(p.getName(), (short) 11);
 				p.sendMessage("§4Happy §fUS §fIndependence §9Day!\n§7(Right and left click while holding a §edandelion§7)");
+				return;
+			}
+		} else if (isDateBetween(now, halloweenMin, halloweenMax)) {
+			if (sender instanceof Player) {
+				Player p = (Player) sender;
+				if (celebrators.keySet().contains(p.getName())) {
+					celebrators.remove(p.getName());
+					p.sendMessage("§6You are no longer celebrating");
+					return;
+				}
+				celebrators.put(p.getName(), (short) 11);
+				p.sendMessage("§6Happy §4Halloween!\n§7(Right and left click while holding a §edandelion§7)");
 				return;
 			}
 		} else {
@@ -5505,6 +5606,41 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							});
 				}
 
+				if (arg3[0].equals("resethourlyscore")) {
+					final int thisHour = Calendar.getInstance().HOUR_OF_DAY;
+					final OfflinePlayer[] pf = Bukkit.getOfflinePlayers();
+
+					Bukkit.getScheduler().runTaskAsynchronously(this,
+							new Runnable() {
+
+								@Override
+								public void run() {
+									for (OfflinePlayer p : pf) {
+										if (!p.isOp()) {
+											int currentScore = monsterCfg
+													.getConfig().getInt(
+															p.getName()
+																	+ ".Hour"
+																	+ thisHour,
+															-1);
+											if (currentScore != -1) {
+												monsterCfg.getConfig().set(
+														p.getName() + ".Hour"
+																+ thisHour, 0);
+
+											}
+
+										}
+									}
+
+									monsterCfg.saveConfig();
+									monsterCfg.reloadConfig();
+
+								}
+							});
+					return true;
+				}
+
 				if (arg3[0].equals("kill")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						if (p.getLocation().getWorld().getName()
@@ -5962,6 +6098,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					horse.setTamed(true);
 					horse.setAdult();
 					horse.setCustomName("§d" + arg3[1]);
+
 					/*
 					 * CraftLivingEntity h = (CraftLivingEntity)horse;
 					 * AttributeInstance a =
@@ -7202,47 +7339,77 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean vote(CommandSender sender, String[] arg3) {
 
 		if (sender.hasPermission("SerenityPlugins.vote")) {
-			sender.sendMessage("No current vote");
-			return true;
-		}/*
-		 * if (arg3.length == 0) { sender.sendMessage(
-		 * "§3Do you want protected areas to still let players press buttons/levers/pressure plates?\n"
-		 * + "§3Type §f/vote YES or\n" + "Type §f/vote NO"); return true; }
-		 * 
-		 * if (arg3.length > 0) { if (arg3[0].equalsIgnoreCase("yes")) {
-		 * sender.sendMessage
-		 * ("§aYour vote was cast!  Type §f/vote results §ato see current results"
-		 * ); getConfig().set("VoteProt." + sender.getName(), "yes");
-		 * saveConfig(); reloadConfig(); return true; } if
-		 * (arg3[0].equalsIgnoreCase("no")) { sender.sendMessage(
-		 * "§aYour vote was cast!  Type §f/vote results §ato see current results"
-		 * ); getConfig().set("VoteProt." + sender.getName(), "no");
-		 * saveConfig(); reloadConfig(); return true; } if
-		 * (arg3[0].equalsIgnoreCase("results")) { ConfigurationSection
-		 * votesFromConfig = this.getConfig()
-		 * .getConfigurationSection("VoteProt");
-		 * 
-		 * ArrayList<String> votes = new ArrayList<String>(); for (String key :
-		 * votesFromConfig.getKeys(false)) {
-		 * votes.add(votesFromConfig.getString(key)); }
-		 * 
-		 * int votesToReset = 0; int votesToKeep = 0; for (int i = 0; i <
-		 * votes.size(); i++) { if (votes.get(i).equalsIgnoreCase("yes")) {
-		 * votesToReset++; } if (votes.get(i).equalsIgnoreCase("no")) {
-		 * votesToKeep++; } }
-		 * 
-		 * sender.sendMessage("§3Total votes: §b" + (votesToReset + votesToKeep)
-		 * + "\n§5YES: §2" + new DecimalFormat("##.##") .format((double)
-		 * ((double) votesToReset / (double) (votesToKeep + votesToReset) *
-		 * 100.00)) + "%" + "\n§5NO:  §2" + new DecimalFormat("##.##")
-		 * .format((double) ((double) votesToKeep / (double) (votesToKeep +
-		 * votesToReset) * 100.00)) + "%"); return true; }
-		 * 
-		 * return true; } }
-		 */else {
+			// sender.sendMessage("No current vote");
+			// return true;
+			// }
+			if (arg3.length == 0) {
+				sender.sendMessage("§3Do you want the end to continue being reset on Fridays?\n"
+						+ "§3Type §f/vote YES §3to keep resetting or\n"
+						+ "Type §f/vote NO §3to have a permanent End world");
+				return true;
+			}
+
+			if (arg3.length > 0) {
+				if (arg3[0].equalsIgnoreCase("yes")) {
+					sender.sendMessage("§aYour vote was cast!  Type §f/vote results §ato see current results");
+
+					voteCfg.getConfig().set("VoteEnd." + sender.getName(),
+							"yes");
+					voteCfg.saveConfig();
+					voteCfg.reloadConfig();
+					return true;
+				}
+				if (arg3[0].equalsIgnoreCase("no")) {
+					sender.sendMessage("§aYour vote was cast!  Type §f/vote results §ato see current results");
+					voteCfg.getConfig()
+							.set("VoteEnd." + sender.getName(), "no");
+					voteCfg.saveConfig();
+					voteCfg.reloadConfig();
+					return true;
+				}
+				if (arg3[0].equalsIgnoreCase("results")) {
+					ConfigurationSection votesFromConfig = voteCfg.getConfig()
+							.getConfigurationSection("VoteEnd");
+
+					ArrayList<String> votes = new ArrayList<String>();
+					for (String key : votesFromConfig.getKeys(false)) {
+						votes.add(votesFromConfig.getString(key));
+					}
+
+					int votesToReset = 0;
+					int votesToKeep = 0;
+					for (int i = 0; i < votes.size(); i++) {
+						if (votes.get(i).equalsIgnoreCase("yes")) {
+							votesToReset++;
+						}
+						if (votes.get(i).equalsIgnoreCase("no")) {
+							votesToKeep++;
+						}
+					}
+
+					sender.sendMessage("§3Total votes: §b"
+							+ (votesToReset + votesToKeep)
+							+ "\n§5Reset: §2"
+							+ new DecimalFormat("##.##")
+									.format((double) ((double) votesToReset
+											/ (double) (votesToKeep + votesToReset) * 100.00))
+							+ "%"
+							+ "\n§5Permanent:  §2"
+							+ new DecimalFormat("##.##")
+									.format((double) ((double) votesToKeep
+											/ (double) (votesToKeep + votesToReset) * 100.00))
+							+ "%");
+					return true;
+				}
+
+				return true;
+			}
+		} else {
 			noPerms(sender);
 			return true;
 		}
+
+		return true;
 	}
 
 	private void addPlayerStatus(PlayerStatus ps) {
@@ -7271,7 +7438,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	public void noPerms(CommandSender p) {
-
 		String msg = getTranslationLanguage(p, stringKeys.NOPERMS.toString());
 		p.sendMessage(msg);
 	}
