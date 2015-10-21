@@ -28,6 +28,7 @@ import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Effect;
 import org.bukkit.FireworkEffect;
+import org.bukkit.SkullType;
 import org.bukkit.FireworkEffect.Type;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -109,6 +110,7 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.material.Dispenser;
 import org.bukkit.material.Wool;
 import org.bukkit.permissions.PermissionAttachment;
@@ -120,6 +122,8 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
+
+import com.avaje.ebean.meta.MetaAutoFetchStatistic;
 
 public final class SerenityPlugins extends JavaPlugin implements Listener,
 		CommandExecutor {
@@ -289,6 +293,31 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public boolean opParticlesDeb = false;
 
 	public boolean debugTickTimings = false;
+
+	public static List<String> allHalloweenSkulls = new ArrayList<String>() {
+		{
+			add("skull 1 3 {display:{Name:\"Spider\"},SkullOwner:{Id:\"8bdb71d0-4724-48b2-9344-e79480424798\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q1NDE1NDFkYWFmZjUwODk2Y2QyNThiZGJkZDRjZjgwYzNiYTgxNjczNTcyNjA3OGJmZTM5MzkyN2U1N2YxIn19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Herobrine\"},SkullOwner:{Id:\"d0b15454-36fa-43e4-a247-f882bb9fe288\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOThiN2NhM2M3ZDMxNGE2MWFiZWQ4ZmMxOGQ3OTdmYzMwYjZlZmM4NDQ1NDI1YzRlMjUwOTk3ZTUyZTZjYiJ9fX0=\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Mummy\"},SkullOwner:{Id:\"8f7c0c5b-720f-4944-8481-b0f7931f303f\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2U5MWU5NTgyMmZlOThjYzVhNTY1OGU4MjRiMWI4Y2YxNGQ0ZGU5MmYwZTFhZjI0ODE1MzcyNDM1YzllYWI2In19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"BlackCat\"},SkullOwner:{Id:\"6dbe3930-9e7c-426a-a7aa-4a48e93078a8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q4Y2RjYTg3Mjk2Njc5Y2EyNmFhZDY3MDQzYmYxZDQ0Yjk4MjYyMTljY2E5ZjRjNDlhNDExM2IxNzZlNGMifX19\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Pumpkin\"},SkullOwner:{Id:\"c168fbe4-4ec1-4e45-b9bc-6ff5b0f0bf32\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjQxYWQxNDhlMzNjODFkY2EzZjFhNmNlMTNhYTcwZTRmZTZiYzJjNzllODcxODVkOGQxNzZiZGRhMWM5OGEzIn19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Devil\"},SkullOwner:{Id:\"c3c88c33-f305-4c10-9303-ce658b2fbde7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOWRhMzkyNjllZjQ1ZjgyNWVjNjFiYjRmOGFhMDliZDNjZjA3OTk2ZmI2ZmFjMzM4YTZlOTFkNjY5OWFlNDI1In19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Skeleton Miner\"},SkullOwner:{Id:\"fc0cbbe8-e2e2-4118-99a4-e4f811e75511\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTM3ZjhmOTVjMTI1NzU3Y2JmNzY3YTExZjUyYTRlNjY5MWNlMThhMjU5NzhjNjhjZmEzOTEwMzYwZmUifX19\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Cauldron\"},SkullOwner:{Id:\"d5a8d4a1-a76d-46f3-8e20-0ce2dc10583a\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjk1NWJkNTExNjM1YTc3ZTYxNmEyNDExMmM5ZmM0NTdiMjdjOGExNDZhNWU2ZGU3MjdmMTdlOTg5ODgyIn19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Skeleton with Hat\"},SkullOwner:{Id:\"73cf74c8-d2e2-432b-9157-a93ed1e4f09c\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZGQ1MDI2MzkyMzNkOGFlZWRjM2Y0NzNmYTlmODhlM2ZkMjZiNmVkYWFjMjlhODM4ZWI4ZDllMDI2NDc1YWIifX19\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Witch\"},SkullOwner:{Id:\"6c151ba9-2a10-4762-bd82-d0fa41abfb21\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWE2NDEwMzc4OTMwZDhiMTQxMjdkNDM4OGRlNzQ2MzZkMzRlZTI1MTdmM2IxZjJjYjZjZTYyYTFlNzIxNTMifX19\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Evil Bunny\"},SkullOwner:{Id:\"e4f254ad-1413-4853-8736-10c7aa53fbaf\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q0ZmRhZDVhNjEwNGFhNTQ5ZDFlNzZkNzNhM2M2ZmUzYzY3MjRiZjA5ZjdmZmNjMDJmMzNmOWVkZTdmYWRlIn19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Ghost\"},SkullOwner:{Id:\"31152fb2-cb1e-45c3-86dd-b23f7a20a6f8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjhkMjE4MzY0MDIxOGFiMzMwYWM1NmQyYWFiN2UyOWE5NzkwYTU0NWY2OTE2MTllMzg1NzhlYTRhNjlhZTBiNiJ9fX0=\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Scary Clown\"},SkullOwner:{Id:\"d1956517-9a4d-421d-8647-2d940dc64518\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODZkYmMxZGViYzU3NDM4YTVkZTRiYTkxNTE1MTM4MmFiYzNkOGYxMzE4ZTJhMzVlNzhkZmIzMGYwNGJjNDY3In19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Frankenstein\"},SkullOwner:{Id:\"aec7b0b6-7bf8-46a6-b873-feb3d6277af8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDdjYmUwNjFiNDQ1Yjg4Y2IyZGY1OWFjY2M4ZDJjMWMxMjExOGZlMGIyMTI3ZTZlNzU4MTM1NTBhZGFjNjdjZiJ9fX0=\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Scarecrow\"},SkullOwner:{Id:\"3ee188a6-2c6a-4c26-98a5-d655d4eed50f\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTE3MWJhYTVhZDE2N2JkMzNlNDE5ZmU3NDVmN2IwMTg0MGNiNmQ3ZThkN2FlYzZjZGEzMWNlMmQ1Y2Y2MSJ9fX0=\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Skull\"},SkullOwner:{Id:\"72e89a28-49fa-45af-93dc-567597f950af\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTFmNTRmZjliYjQyODUxOTEyYWE4N2ExYmRhNWI3Y2Q5ODE0Y2NjY2ZiZTIyNWZkZGE4ODdhZDYxODBkOSJ9fX0=\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Ogre\"},SkullOwner:{Id:\"579a7117-023d-4183-80d1-f33ab649f7ff\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNhNDc5NDZkNzI4NTgzNGVmMWUxNzYyOWY3MjgyYjY1ZTkxNDM1OTdmZTdiZjJiZTFkZTI0M2YxYzYzIn19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Werewolf\"},SkullOwner:{Id:\"fdc7eb2a-0bec-408d-8f16-f8494d3960d7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTFjOTkzNGNkZDU1YTllNjMzNTk2MmE4Nzc2MjYwZDc5MTYxNTA4MTM0ODNlOTU2YzI4NjFiMTFhOGEyNjdmNyJ9fX0=\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Enderdragon\"},SkullOwner:{Id:\"433562fa-9e23-443e-93b0-d67228435e77\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzRlY2MwNDA3ODVlNTQ2NjNlODU1ZWYwNDg2ZGE3MjE1NGQ2OWJiNGI3NDI0YjczODFjY2Y5NWIwOTVhIn19fQ==\"}]}}}");
+			add("skull 1 3 {display:{Name:\"Zombie\"},SkullOwner:{Id:\"96cbfca7-5729-47f1-bc3e-4788bc6b06fc\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2ZkMmRkMWQ1YzkzZTU5NWU3OWJmMWRkYTMzMmJiODJkMjNlYzk2M2U3YTMwNGZjMjFjMjM0ZGY0NWE2ZWYifX19\"}]}}}");
+		}
+	};
 
 	// public String[] betters;
 	// public String[] horses;
@@ -3140,7 +3169,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
 			@Override
 			public void run() {
-				int hour = Calendar.HOUR_OF_DAY;
+				Calendar now = Calendar.getInstance();
+				int hour = now.get(Calendar.HOUR_OF_DAY);
 				for (int i = 0; i < 24; i++) {
 					if (i != hour) {
 						monsterCfg.getConfig().set(
@@ -3895,6 +3925,67 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		return true;
+	}
+
+	private void givePlayerARandomSkull(Player p) {
+		Random r = new Random();
+		int rand = r.nextInt(allHalloweenSkulls.size());
+		Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + p.getName()
+				+ " " + allHalloweenSkulls.get(rand));
+		p.sendMessage("§6§lHappy Halloween!");
+	}
+
+	public void putBoneInMailbox(String name) {
+		for (Mailbox mb : mailBoxes) {
+			if (mb.name.equals(name)) {
+				Chest receivingChest = (Chest) mb.getLocation().getBlock()
+						.getState();
+
+				ItemStack bone = new ItemStack(Material.BONE, 1);
+				ItemMeta boneMeta = bone.getItemMeta();
+				boneMeta.setDisplayName("§dSpooky Bone");
+				boneMeta.addEnchant(Enchantment.DAMAGE_UNDEAD, 0, true);
+				bone.setItemMeta(boneMeta);
+				receivingChest.getInventory().addItem(bone);
+				doRandomFirework(receivingChest.getWorld(),
+						receivingChest.getLocation());
+			}
+		}
+	}
+
+	@EventHandler
+	public void onPlayerRedeemBone(PlayerInteractEvent event) {
+		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
+				|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
+			if (event.getPlayer().getItemInHand().getType() == Material.BONE) {
+				if (event.getPlayer().getItemInHand().hasItemMeta()) {
+					if (event.getPlayer().getItemInHand().getItemMeta()
+							.hasDisplayName()) {
+						if (event.getPlayer().getItemInHand().getItemMeta()
+								.getDisplayName().equals("§dSpooky Bone")) {
+							
+							Player player = event.getPlayer();
+							if(Math.abs(player.getLocation().getX()) < 150 &&
+									Math.abs(player.getLocation().getZ()) < 150){
+								
+							
+							if (player.getItemInHand().getAmount() != 1) {
+								player.getItemInHand().setAmount(
+										player.getItemInHand().getAmount() - 1);
+							} else {
+								player.setItemInHand(null);
+							}
+							givePlayerARandomSkull(player);
+							player.getWorld().playSound(player.getLocation(), Sound.LEVEL_UP, 10F, .025F);
+							ParticleEffect.SPELL_MOB.display(.5f, .5f, .5f, 50, 60, player.getLocation(), 25);
+							}else{
+								player.sendMessage("§cYou can only redeem a §dSpooky Bone §cat spawn!");
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	/*
@@ -5607,7 +5698,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				if (arg3[0].equals("resethourlyscore")) {
-					final int thisHour = Calendar.getInstance().HOUR_OF_DAY;
+					Calendar now = Calendar.getInstance();
+					final int thisHour = now.get(Calendar.HOUR_OF_DAY);
+
 					final OfflinePlayer[] pf = Bukkit.getOfflinePlayers();
 
 					Bukkit.getScheduler().runTaskAsynchronously(this,
@@ -5673,6 +5766,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage(s);
 
 				}
+
+				if (arg3[0].equals("give")) {
+
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						givePlayerARandomSkull(p);
+					}
+
+				}
+
+				if (arg3[0].equals("givebone")) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (!p.isOp()) {
+							if (!isAfk(p)) {
+								putBoneInMailbox(p.getDisplayName());
+							}
+						}
+					}
+					return true;
+				}
+
 				if (arg3[0].equals("unload")) {
 					unloadChunks();
 					return true;
