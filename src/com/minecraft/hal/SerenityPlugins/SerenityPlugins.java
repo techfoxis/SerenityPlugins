@@ -37,6 +37,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.block.Banner;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -106,9 +107,11 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -151,6 +154,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor diamondFoundCfg;
 	public ConfigAccessor voteCfg;
 	public ConfigAccessor monsterCfg;
+	public ConfigAccessor motdsCfg;
 	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
@@ -169,6 +173,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public List<Player> localChatters;
 	public Set<PlayerStatus> playerStatuses;
 	public List<FireWorkShow> fireworkShowLocations;
+	public boolean randomMotd = true;
+	public boolean pingers = false;
+	public String mainMotd = "";
 
 	public short specEff = 0;
 
@@ -239,6 +246,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			add(ChatColor.WHITE);
 		}
 	};
+
+	public List<String> allMotds = new ArrayList<String>();
 
 	public boolean serverChatting;
 	public List<Ignoring> ignorers;
@@ -327,10 +336,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@Override
 	public void onEnable() {
 		sdtf.setTimeZone(TimeZone.getTimeZone("UTC"));
-		//WorldCreator wc = new WorldCreator("world_old");
-		//Bukkit.createWorld(wc);
-		
-		
+		// WorldCreator wc = new WorldCreator("world_old");
+		// Bukkit.createWorld(wc);
+
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
 
@@ -402,7 +410,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
 		voteCfg = new ConfigAccessor(this, "vote.yml");
 		monsterCfg = new ConfigAccessor(this, "monster.yml");
-		monsterCfg.saveDefaultConfig();
+		motdsCfg = new ConfigAccessor(this, "motds.yml");
+		motdsCfg.saveDefaultConfig();
 
 		mailablePlayers = new ArrayList<String>();
 		mailBoxes = new ArrayList<Mailbox>();
@@ -615,6 +624,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		} catch (Exception e) {
 			getLogger().info(
 					"Exception thrown while trying to english translations");
+		}
+
+		try {
+			ConfigurationSection motds = motdsCfg.getConfig()
+					.getConfigurationSection("MOTDS");
+			for (String s : motds.getStringList("MOTD")) {
+				allMotds.add(s);
+			}
+		} catch (Exception e) {
+			getLogger().info("Exception thrown while trying to add MOTDs");
+		}
+
+		try {
+			ConfigurationSection motds = motdsCfg.getConfig()
+					.getConfigurationSection("Main");
+			for (String s : motds.getStringList("MOTD")) {
+				mainMotd = s;
+			}
+		} catch (Exception e) {
+			getLogger().info("Exception thrown while trying to add MOTD main");
 		}
 		/*
 		 * dutchStrings = new HashMap<String, String>();
@@ -1836,6 +1865,33 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	@EventHandler
+	public void onPing(ServerListPingEvent e) {
+		if(pingers){
+			getLogger().info("Pinged by " + e.getAddress().getHostAddress());
+		}
+		if (randomMotd) {
+			String newMotd = getRandomNonBlackColor() + "§lSerenity";
+			if (mainMotd != "") {
+				newMotd += ": §r" + getRandomNonBlackColor() + mainMotd + "\n" + getRandomNonBlackColor();
+			}
+
+			newMotd += allMotds.get(rand.nextInt(allMotds.size()));
+			e.setMotd(newMotd);
+			
+		}
+	}
+	
+	public ChatColor getRandomNonBlackColor(){
+		while(true){
+			ChatColor c = allChatColors.get(rand.nextInt(allChatColors
+					.size()));
+			if(c!=ChatColor.BLACK){
+				return c;
+			}
+		}
+	}
+
+	@EventHandler
 	public void onPortal(PlayerPortalEvent evt) {
 		getLogger().info("§d" + evt.getPlayer().getName() + " §5used a portal");
 
@@ -2389,16 +2445,19 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 	}
-	
+
 	@EventHandler
-	public void onBoneAttack(EntityDamageByEntityEvent event){
-		if(event.getCause().equals(DamageCause.ENTITY_ATTACK)){
-			if(event.getDamager() instanceof Player){
+	public void onBoneAttack(EntityDamageByEntityEvent event) {
+		if (event.getCause().equals(DamageCause.ENTITY_ATTACK)) {
+			if (event.getDamager() instanceof Player) {
 				Player p = (Player) event.getDamager();
-				if(p.getItemInHand()!=null){
-					if(p.getItemInHand().getType() == Material.BONE){
-						if(p.getItemInHand().hasItemMeta() && p.getItemInHand().getItemMeta().hasDisplayName()){
-							if(p.getItemInHand().getItemMeta().getDisplayName().equals("§dSpooky Bone")){
+				if (p.getItemInHand() != null) {
+					if (p.getItemInHand().getType() == Material.BONE) {
+						if (p.getItemInHand().hasItemMeta()
+								&& p.getItemInHand().getItemMeta()
+										.hasDisplayName()) {
+							if (p.getItemInHand().getItemMeta()
+									.getDisplayName().equals("§dSpooky Bone")) {
 								p.sendMessage("§cNice try!  I fixed this :)");
 								event.setDamage(0);
 							}
@@ -2939,15 +2998,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
 
-			if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
-				if (event.getClickedBlock().getX() == -1314
-						&& event.getClickedBlock().getY() == 64
-						&& event.getClickedBlock().getZ() == -650) {
-					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-							"ncp exempt " + event.getPlayer().getDisplayName()
-									+ " MOVING_SURVIVALFLY");
-				}
-			}
+			/*
+			 * if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
+			 * if (event.getClickedBlock().getX() == -1314 &&
+			 * event.getClickedBlock().getY() == 64 &&
+			 * event.getClickedBlock().getZ() == -650) {
+			 * Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ncp exempt " +
+			 * event.getPlayer().getDisplayName() + " MOVING_SURVIVALFLY"); } }
+			 */
 
 			if (event.getClickedBlock().getType() == Material.GOLD_BLOCK) {
 				if (event.getClickedBlock().getX() == -1403
@@ -2998,12 +3056,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						daleCfg.reloadConfig();
 					}
 
-					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-							"ncp unexempt "
-									+ event.getPlayer().getDisplayName()
-									+ " MOVING_SURVIVALFLY");
+					/*
+					 * Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+					 * "ncp unexempt " + event.getPlayer().getDisplayName() +
+					 * " MOVING_SURVIVALFLY");
+					 */
 
 					racers.remove(event.getPlayer().getDisplayName());
+
 					return;
 				}
 			}
@@ -3188,6 +3248,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void addMonsterKill(String displayName) {
 
+		Random rand = new Random();
 		final String displayNameF = displayName;
 		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
 			@Override
@@ -3210,9 +3271,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						prevScore + 1);
 
 				monsterCfg.saveConfig();
-				monsterCfg.reloadConfig();
 			}
-		}, 0L);
+		}, rand.nextInt(60) * 10L);
 	}
 
 	private void resetCurrentHour() {
@@ -4182,7 +4242,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		independenceDayMin.setYear(now.getYear());
 		halloweenMin.setYear(now.getYear());
 		halloweenMax.setYear(now.getYear());
-		
+
 		if (isDateBetween(now, anniversaryMin, anniversaryMax)) {
 			if (sender instanceof Player) {
 				Player p = (Player) sender;
@@ -4531,7 +4591,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (pa.equals(l)) {
 						if (pa.owner.contains("secret1")) {
 							if (p.getLocation().getY() < 25) {
-								sender.sendMessage("§cNice try");
+								if (aBattleIsRaging) {
+									sender.sendMessage("§cNice try");
+								} else {
+
+								}
 								return true;
 							}
 						}
@@ -5651,6 +5715,19 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
+				if (arg3[0].equals("baby")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+							if (e instanceof Sheep) {
+								Sheep sh = (Sheep) e;
+								sh.setBaby();
+								sh.setAgeLock(true);
+							}
+						}
+					}
+				}
+
 				if (arg3[0].equals("remove")) {
 					finalDungeonKillCount = 0;
 					aBattleIsRaging = false;
@@ -5796,39 +5873,53 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage(s);
 
 				}
+
+				if (arg3[0].equals("motd")) {
+					randomMotd = !randomMotd;
+					sender.sendMessage("Random MOTD = " + randomMotd);
+				}
 				
+				if (arg3[0].equals("pingers")) {
+					pingers = !pingers;
+					sender.sendMessage("Pingers = " + pingers);
+				}
+
 				if (arg3[0].equals("go_old")) {
 
-					if(sender instanceof Player){
-						Player p = (Player)sender;
-						Location l = new Location(Bukkit.getWorld("world_old"), -6484, 68, -5944);
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						Location l = new Location(Bukkit.getWorld("world_old"),
+								-6484, 68, -5944);
 						p.teleport(l);
 					}
 				}
-				
+
 				if (arg3[0].equals("send_old")) {
-					if(sender instanceof Player){
-						Player p = (Player)sender;
-						Location l = new Location(Bukkit.getWorld("world_old"), -6484, 68, -5944);
-						for(Entity e: p.getNearbyEntities(5, 5, 5)){
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						Location l = new Location(Bukkit.getWorld("world_old"),
+								-6484, 68, -5944);
+						for (Entity e : p.getNearbyEntities(5, 5, 5)) {
 
 							CraftEntity ce = (CraftEntity) e;
 							ce.getHandle().teleportTo(l, true);
 						}
-						//p.teleport(l);
+						// p.teleport(l);
 					}
 				}
-				
+
 				if (arg3[0].equals("send_new")) {
-					if(sender instanceof Player){
-						Player p = (Player)sender;
-						Location l = new Location(Bukkit.getWorld("world"), -6484, 68, -5944);
-						for(Entity e: p.getNearbyEntities(5, 5, 5)){
-							if(e instanceof Horse){
-								Horse h = (Horse)e;
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						Location l = new Location(Bukkit.getWorld("world"),
+								-6484, 68, -5944);
+						for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+							if (e instanceof Horse) {
+								Horse h = (Horse) e;
 								p.teleport(l);
 								Horse horseNew = (Horse) p.getWorld()
-										.spawnEntity(p.getLocation(), EntityType.HORSE);
+										.spawnEntity(p.getLocation(),
+												EntityType.HORSE);
 								horseNew.setAdult();
 								horseNew.setAge(h.getAge());
 								horseNew.setColor(h.getColor());
@@ -5836,25 +5927,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								horseNew.setCustomName(h.getCustomName());
 								horseNew.setDomestication(h.getDomestication());
 								horseNew.setJumpStrength(h.getJumpStrength());
-								horseNew.setMaxDomestication(h.getMaxDomestication());
+								horseNew.setMaxDomestication(h
+										.getMaxDomestication());
 								horseNew.setMaxHealth(h.getMaxHealth());
 								horseNew.setOwner(h.getOwner());
 								horseNew.setStyle(h.getStyle());
 								horseNew.setVariant(h.getVariant());
 							}
 						}
-						//p.teleport(l);
+						// p.teleport(l);
 					}
 				}
-				
+
 				if (arg3[0].equals("go_new")) {
 
-					if(sender instanceof Player){
-						Player p = (Player)sender;
-						Location l = new Location(Bukkit.getWorld("world"), -6484, 68, -5944);
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						Location l = new Location(Bukkit.getWorld("world"),
+								-6484, 68, -5944);
 						p.teleport(l);
-						
-						
+
 					}
 				}
 
@@ -6069,7 +6161,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					whoIsOnline.reloadConfig();
 					leaderboardCfg.reloadConfig();
 					diamondFoundCfg.reloadConfig();
+					motdsCfg.reloadConfig();
 					sender.sendMessage("Reloaded pod, email, books, links, it, dale, mailbox, who is onilne, diamond, leaderboard");
+					updateRandomMotds();
 					return true;
 				}
 
@@ -6455,6 +6549,31 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return true;
 		}
 		return false;
+	}
+
+	private void updateRandomMotds() {
+		allMotds.clear();
+
+		try {
+			ConfigurationSection motds = motdsCfg.getConfig()
+					.getConfigurationSection("MOTDS");
+			for (String s : motds.getStringList("MOTD")) {
+				allMotds.add(s);
+			}
+		} catch (Exception e) {
+			getLogger().info("Exception thrown while trying to add MOTDs");
+		}
+
+		try {
+			ConfigurationSection motds = motdsCfg.getConfig()
+					.getConfigurationSection("Main");
+			for (String s : motds.getStringList("MOTD")) {
+				mainMotd = s;
+			}
+		} catch (Exception e) {
+			getLogger().info("Exception thrown while trying to add MOTD main");
+		}
+		
 	}
 
 	private void safelyDropItemStack(Location location,
@@ -6917,27 +7036,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean getTime(CommandSender sender, String[] arg3) {
 		if (sender.hasPermission("SerenityPlugins.gettime")) {
-
 			Long time = Bukkit.getWorld("world").getTime();
+			String msg = "§7Minecraft time: §e" + time + " §7(";
 
-			String msg = getTranslationLanguage(sender,
-					stringKeys.GETTIMETICKS.toString());
-			sender.sendMessage(String.format(msg, time));
-
-			// sender.sendMessage("§7Time in ticks: " + time);
-			String s = "§9It is ";
+			String s = "";
 			if (time < 800) {
-				s += "§emorning.";
+				s += "§emorning§7)";
 			} else if (time < 10000) {
-				s += "§6daytime.";
+				s += "§6day§7)";
 			} else if (time < 12500) {
-				s += "§7dusk.";
+				s += "§7dusk§7)";
 			} else if (time < 22500) {
-				s += "§8night.";
+				s += "§8night§7)";
 			} else {
-				s += "§7almost morning.";
+				s += "§7pre-morning§7)";
 			}
-			sender.sendMessage(s);
+			sender.sendMessage(msg + s);
+			String timeStamp = new SimpleDateFormat("HH:mm MMM dd, YYYY")
+					.format(Calendar.getInstance().getTime());
+			sender.sendMessage("§7Server time: §e" + timeStamp);
 			return true;
 		} else {
 			noPerms(sender);
@@ -6966,13 +7083,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				return false;
 			}
 			String mailto = arg3[0];
-/*
-			if (mailto.equals("EVERYBODY18104")) {
-				for (Mailbox mb : mailBoxes) {
-					mailItemsTo(sender, mb.name, true);
-				}
-				return true;
-			}*/
+			/*
+			 * if (mailto.equals("EVERYBODY18104")) { for (Mailbox mb :
+			 * mailBoxes) { mailItemsTo(sender, mb.name, true); } return true; }
+			 */
 
 			return mailItemsTo(sender, mailto, false);
 		} else {
