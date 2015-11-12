@@ -102,6 +102,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -155,6 +156,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor voteCfg;
 	public ConfigAccessor monsterCfg;
 	public ConfigAccessor motdsCfg;
+	public ConfigAccessor ipCfg;
 	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
@@ -247,6 +249,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	};
 
+	public static final List<String> motdGreetings = new ArrayList<String>() {
+		{
+			add("Hello %s");
+			add("Hey %s!");
+			add("Welcome back %s");
+			add("Glad to see you %s");
+			add("How are you, %s ?");
+			add("Howdy, %s");
+			add("Welcome, %s");
+			add("%s is here!");
+			add("%s!!!!");
+			add("OMG it's %s!");
+			add("%s is cool");
+		}
+	};
+
 	public List<String> allMotds = new ArrayList<String>();
 
 	public boolean serverChatting;
@@ -297,6 +315,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public short partyOffset = 0;
 
 	public Secrets Secret;
+	public List<String> knownIps;
 
 	// public Inventory AFKInv;
 
@@ -329,6 +348,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			add("skull 1 3 {display:{Name:\"Zombie\"},SkullOwner:{Id:\"96cbfca7-5729-47f1-bc3e-4788bc6b06fc\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2ZkMmRkMWQ1YzkzZTU5NWU3OWJmMWRkYTMzMmJiODJkMjNlYzk2M2U3YTMwNGZjMjFjMjM0ZGY0NWE2ZWYifX19\"}]}}}");
 		}
 	};
+
+	public boolean pluginReady = false;
 
 	// public String[] betters;
 	// public String[] horses;
@@ -411,7 +432,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		voteCfg = new ConfigAccessor(this, "vote.yml");
 		monsterCfg = new ConfigAccessor(this, "monster.yml");
 		motdsCfg = new ConfigAccessor(this, "motds.yml");
-		motdsCfg.saveDefaultConfig();
+		ipCfg = new ConfigAccessor(this, "ip.yml");
+		ipCfg.saveDefaultConfig();
 
 		mailablePlayers = new ArrayList<String>();
 		mailBoxes = new ArrayList<Mailbox>();
@@ -645,6 +667,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		} catch (Exception e) {
 			getLogger().info("Exception thrown while trying to add MOTD main");
 		}
+
+		knownIps = new ArrayList<String>();
+		try {
+			for (String key : ipCfg.getConfig().getKeys(true)) {
+				knownIps.add(key);
+			}
+
+		} catch (Exception e) {
+			getLogger().info("Exception thrown while trying to add IPs");
+		}
+
+		try {
+			pingers = motdsCfg.getConfig().getBoolean("Pingers", false);
+		} catch (Exception e) {
+			getLogger().info("Exception thrown while trying to get pingers");
+		}
+
 		/*
 		 * dutchStrings = new HashMap<String, String>();
 		 * 
@@ -684,6 +723,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */
 
 		runEverySecond();
+		pluginReady = true;
 
 		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 
@@ -919,6 +959,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			public void run() {
 				leaderboardCfg.saveConfig();
 				diamondFoundCfg.saveConfig();
+				monsterCfg.saveConfig();
 			}
 		});
 	}
@@ -1849,12 +1890,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		final int playTime = playtimeCfg.getConfig().getInt(
 				"Playtime." + player.getUniqueId().toString()) + 1;
 
-		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-			@Override
-			public void run() {
-				playtimeCfg.getConfig().set("Playtime." + uid, playTime);
-			}
-		});
+		playtimeCfg.getConfig().set("Playtime." + uid, playTime);
 	}
 
 	@Override
@@ -1866,26 +1902,47 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPing(ServerListPingEvent e) {
-		if(pingers){
-			getLogger().info("Pinged by " + e.getAddress().getHostAddress());
+		if (!pluginReady)
+			return;
+		String ip = e.getAddress().getHostAddress();
+		ip = ip.replace('.', '_');
+		if (pingers) {
+			if (knownIp(ip)) {
+				getLogger()
+						.info("Pinged by " + ipCfg.getConfig().getString(ip));
+			} else {
+				getLogger()
+						.info("Pinged by " + e.getAddress().getHostAddress());
+			}
 		}
 		if (randomMotd) {
 			String newMotd = getRandomNonBlackColor() + "§lSerenity";
-			if (mainMotd != "") {
-				newMotd += ": §r" + getRandomNonBlackColor() + mainMotd + "\n" + getRandomNonBlackColor();
-			}
+			if (knownIp(ip)) {
+				newMotd += ":§r " + getRandomNonBlackColor();
+				newMotd += String.format(
+						motdGreetings.get(rand.nextInt(motdGreetings.size())),
+						ipCfg.getConfig().getString(ip));
 
+			}
+			newMotd += "\n";
+
+			/*
+			 * if (mainMotd != "") { newMotd += ": §r" +
+			 * getRandomNonBlackColor() + mainMotd + "\n" +
+			 * getRandomNonBlackColor(); }
+			 */
+
+			newMotd += getRandomNonBlackColor();
 			newMotd += allMotds.get(rand.nextInt(allMotds.size()));
 			e.setMotd(newMotd);
-			
+
 		}
 	}
-	
-	public ChatColor getRandomNonBlackColor(){
-		while(true){
-			ChatColor c = allChatColors.get(rand.nextInt(allChatColors
-					.size()));
-			if(c!=ChatColor.BLACK){
+
+	public ChatColor getRandomNonBlackColor() {
+		while (true) {
+			ChatColor c = allChatColors.get(rand.nextInt(allChatColors.size()));
+			if (c != ChatColor.BLACK) {
 				return c;
 			}
 		}
@@ -1982,6 +2039,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	@EventHandler
+	public void PlayerLoginEvent(PlayerLoginEvent event) {
+		if (!pluginReady)
+			event.disallow(PlayerLoginEvent.Result.KICK_OTHER,
+					"Bad timing!  The Plugins are loading.. try again in a few seconds!");
+	}
+
+	@EventHandler
 	public void onPLayerJoin(PlayerJoinEvent event) {
 		if (event.getPlayer().isOp()) {
 			event.getPlayer().setSleepingIgnored(true);
@@ -2007,8 +2071,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
-		World world = event.getPlayer().getWorld();
-		Location location = event.getPlayer().getLocation();
+		// World world = event.getPlayer().getWorld();
+		// Location location = event.getPlayer().getLocation();
 		/*
 		 * if (!event.getPlayer().isOp()) { for (int i = 0; i < 5; i++) {
 		 * doRandomFirework(world, location); } }
@@ -2041,6 +2105,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							+ "\n§7(Right click another player to tag them)");
 		}
 
+		if (!knownIp(event.getPlayer().getAddress().getAddress()
+				.getHostAddress()))
+			storeIp(event.getPlayer().getAddress().getAddress()
+					.getHostAddress(), event.getPlayer().getName());
+
 		for (Mailbox mb : mailBoxes) {
 			if (mb.getName().equals(event.getPlayer().getDisplayName())) {
 				if (mb.hasMail()) {
@@ -2054,6 +2123,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		return;
+	}
+
+	private boolean knownIp(String hostAddress) {
+		hostAddress = hostAddress.replace('.', '_');
+		if (knownIps.contains(hostAddress))
+			return true;
+		return false;
+	}
+
+	private void storeIp(String hostAddress, String name) {
+		hostAddress = hostAddress.replace('.', '_');
+		ipCfg.getConfig().set(hostAddress, name);
+		ipCfg.saveConfig();
+		knownIps.add(hostAddress);
+		getLogger().info("Stored " + hostAddress + " as " + name);
 	}
 
 	@EventHandler
@@ -2422,7 +2506,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (!event.getPlayer().isOp()) {
 			Date d = new Date();
-			d.setYear(2552);
+			d.setDate(d.getDate() + 1);
 			String date = sdtf.format(d);
 			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
 					date);
@@ -3250,29 +3334,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		Random rand = new Random();
 		final String displayNameF = displayName;
-		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
-			@Override
-			public void run() {
-				Calendar now = Calendar.getInstance();
-				int hour = now.get(Calendar.HOUR_OF_DAY);
-				for (int i = 0; i < 24; i++) {
-					if (i != hour) {
-						monsterCfg.getConfig().set(
-								displayNameF + ".Hour" + i,
-								monsterCfg.getConfig().get(
-										displayNameF + ".Hour" + i, 0));
-					}
-				}
 
-				int prevScore = monsterCfg.getConfig().getInt(
-						displayNameF + ".Hour" + hour);
-
-				monsterCfg.getConfig().set(displayNameF + ".Hour" + hour,
-						prevScore + 1);
-
-				monsterCfg.saveConfig();
+		Calendar now = Calendar.getInstance();
+		int hour = now.get(Calendar.HOUR_OF_DAY);
+		for (int i = 0; i < 24; i++) {
+			if (i != hour) {
+				monsterCfg.getConfig().set(
+						displayNameF + ".Hour" + i,
+						monsterCfg.getConfig().get(displayNameF + ".Hour" + i,
+								0));
 			}
-		}, rand.nextInt(60) * 10L);
+		}
+
+		int prevScore = monsterCfg.getConfig().getInt(
+				displayNameF + ".Hour" + hour);
+
+		monsterCfg.getConfig()
+				.set(displayNameF + ".Hour" + hour, prevScore + 1);
+		
+
 	}
 
 	private void resetCurrentHour() {
@@ -5878,10 +5958,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					randomMotd = !randomMotd;
 					sender.sendMessage("Random MOTD = " + randomMotd);
 				}
-				
+
 				if (arg3[0].equals("pingers")) {
+					motdsCfg.getConfig().set("Pingers", !pingers);
 					pingers = !pingers;
 					sender.sendMessage("Pingers = " + pingers);
+					motdsCfg.saveConfig();
 				}
 
 				if (arg3[0].equals("go_old")) {
@@ -6573,7 +6655,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		} catch (Exception e) {
 			getLogger().info("Exception thrown while trying to add MOTD main");
 		}
-		
+
+		knownIps = new ArrayList<String>();
+		try {
+			for (String key : ipCfg.getConfig().getKeys(true)) {
+				knownIps.add(key);
+			}
+
+		} catch (Exception e) {
+			getLogger().info("Exception thrown while trying to add IPs");
+		}
+
 	}
 
 	private void safelyDropItemStack(Location location,
