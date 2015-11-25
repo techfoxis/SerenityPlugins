@@ -146,38 +146,6 @@ public class ProtectedArea {
 					(float) 1, .0001F, 5, l, 50);
 		}
 	}
-	
-	public void highlightAreaKayla() {
-		int x = Math.min((int) location1.getX(), (int) location2.getX());
-		int z = Math.min((int) location1.getZ(), (int) location2.getZ());
-		int xMax = Math.max((int) location1.getX(), (int) location2.getX());
-		int zMax = Math.max((int) location1.getZ(), (int) location2.getZ());
-
-		World w = location1.getWorld();
-		for (int i = x; i < x + xDiff(); i++) {
-			Location l = new Location(w, i + .5, 1, z + .5);
-			l.setY(w.getHighestBlockYAt(l));
-			ParticleEffect.SPELL_MOB.display((float) 1, (float) 1,
-					(float) .005, 1, 5, l, 50);
-			l = new Location(w, i + .5, 1, zMax + .5);
-			l.setY(w.getHighestBlockYAt(l));
-
-			ParticleEffect.SPELL_MOB.display((float) 1, (float) 1,
-					(float) .005, 1, 5, l, 50);
-		}
-
-		for (int i = z; i < z + zDiff(); i++) {
-			Location l = new Location(w, x + .5, 1, i + .5);
-			l.setY(w.getHighestBlockYAt(l));
-			ParticleEffect.SPELL_MOB.display((float) .005, (float) 1,
-					(float) 1, 1, 5, l, 50);
-
-			l = new Location(w, xMax + .5, 1, i + .5);
-			l.setY(w.getHighestBlockYAt(l));
-			ParticleEffect.SPELL_MOB.display((float) .005, (float) 1,
-					(float) 1, 1, 5, l, 50);
-		}
-	}
 
 	public boolean intersects(ProtectedArea pa) {
 		World w = location1.getWorld();

@@ -28,7 +28,6 @@ import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Effect;
 import org.bukkit.FireworkEffect;
-import org.bukkit.SkullType;
 import org.bukkit.FireworkEffect.Type;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -36,8 +35,6 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
-import org.bukkit.block.Banner;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -45,6 +42,7 @@ import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.defaults.PluginsCommand;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
@@ -110,13 +108,13 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
-import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.material.Dispenser;
 import org.bukkit.material.Wool;
 import org.bukkit.permissions.PermissionAttachment;
@@ -128,8 +126,6 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
-
-import com.avaje.ebean.meta.MetaAutoFetchStatistic;
 
 public final class SerenityPlugins extends JavaPlugin implements Listener,
 		CommandExecutor {
@@ -157,6 +153,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor monsterCfg;
 	public ConfigAccessor motdsCfg;
 	public ConfigAccessor ipCfg;
+	public boolean opParticles;
+	public boolean opParticlesDeb;
 	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
@@ -175,8 +173,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public List<Player> localChatters;
 	public Set<PlayerStatus> playerStatuses;
 	public List<FireWorkShow> fireworkShowLocations;
-	public boolean randomMotd = true;
-	public boolean pingers = false;
 	public String mainMotd = "";
 
 	public short specEff = 0;
@@ -211,6 +207,28 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			add(DyeColor.GRAY);
 			add(DyeColor.SILVER);
 			add(DyeColor.WHITE);
+		}
+	};
+
+	public static final List<Color> allColors = new ArrayList<Color>() {
+		{
+			add(Color.AQUA);
+			add(Color.BLACK);
+			add(Color.BLUE);
+			add(Color.FUCHSIA);
+			add(Color.GRAY);
+			add(Color.GREEN);
+			add(Color.LIME);
+			add(Color.MAROON);
+			add(Color.NAVY);
+			add(Color.OLIVE);
+			add(Color.ORANGE);
+			add(Color.PURPLE);
+			add(Color.RED);
+			add(Color.SILVER);
+			add(Color.TEAL);
+			add(Color.WHITE);
+			add(Color.YELLOW);
 		}
 	};
 
@@ -267,7 +285,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public List<String> allMotds = new ArrayList<String>();
 
-	public boolean serverChatting;
 	public List<Ignoring> ignorers;
 	public List<Long> lags;
 	public List<TeleportClicker> teleportClickers;
@@ -290,6 +307,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public boolean aBattleIsRaging = false;
 	public Location DOORWAYTOFINALDUNGEON;
 	public HashMap<String, Short> celebrators;
+	public HashMap<String, Short> afkTime;
 
 	public int finalDungeonKillCount;
 
@@ -316,13 +334,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public Secrets Secret;
 	public List<String> knownIps;
-
-	// public Inventory AFKInv;
-
-	public boolean opParticles = false;
-	public boolean opParticlesDeb = false;
-
-	public boolean debugTickTimings = false;
 
 	public static List<String> allHalloweenSkulls = new ArrayList<String>() {
 		{
@@ -442,7 +453,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		localChatters = new ArrayList<Player>();
 		playerStatuses = new TreeSet<PlayerStatus>();
 		fireworkShowLocations = new ArrayList<FireWorkShow>();
-		serverChatting = false;
 		ignorers = new ArrayList<Ignoring>();
 		lags = new ArrayList<Long>();
 		playerLocations = new HashMap<String, Location>();
@@ -455,7 +465,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		playerRecentMessages = new HashMap<String, String>();
 		teamList = new HashMap<String, String>();
 		textCooldown = new HashMap<String, Long>();
-
+		afkTime = new HashMap<String, Short>();
 		ItemStack stick = Secret.SECRETITEMSTACK1;
 		ItemMeta item = stick.getItemMeta();
 		item.setDisplayName(Secret.SECRETITEM1NAME);
@@ -678,12 +688,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			getLogger().info("Exception thrown while trying to add IPs");
 		}
 
-		try {
-			pingers = motdsCfg.getConfig().getBoolean("Pingers", false);
-		} catch (Exception e) {
-			getLogger().info("Exception thrown while trying to get pingers");
-		}
-
 		/*
 		 * dutchStrings = new HashMap<String, String>();
 		 * 
@@ -767,7 +771,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					lags.remove(0);
 				}
 				lags.add(now);
-				if (Bukkit.getOnlinePlayers().size() > 0 || debugTickTimings) {
+				if (Bukkit.getOnlinePlayers().size() > 0 /* || debugTickTimings */) {
+					PartyLeather();
 					printDebugTimings("Time to manipulate lag", now);
 					for (String p : celebrators.keySet()) {
 						celebrate(p);
@@ -780,6 +785,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							}
 						}
 					}
+
 					printDebugTimings("Time to op particles", now);
 
 					if (!b) {
@@ -806,7 +812,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					minute++;
 
-					if (minute % 60 == 0) {
+					if (minute % 30 == 0) {
 						afkTest();
 					}
 
@@ -875,6 +881,90 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}, 0L, 20L);
 	}
 
+	private void PartyLeather() {
+		for (int i = 0; i < 10; i++) {
+			Bukkit.getServer().getScheduler()
+					.runTaskLaterAsynchronously(this, new Runnable() {
+						@Override
+						public void run() {
+							for (Player p : Bukkit.getOnlinePlayers()) {
+								tryToParty(p);
+							}
+
+						}
+					}, i * 2L);
+		}
+	}
+
+	private void tryToParty(Player p) {
+		if (isPartyItemStack(p.getInventory().getHelmet(), p)) {
+			p.getInventory().setHelmet(
+					getPartyEquipment(Material.LEATHER_HELMET, p.getDisplayName()));
+		}
+		if (isPartyItemStack(p.getInventory().getChestplate(), p)) {
+			p.getInventory().setChestplate(
+					getPartyEquipment(Material.LEATHER_CHESTPLATE, p.getDisplayName()));
+		}
+		if (isPartyItemStack(p.getInventory().getLeggings(), p)) {
+			p.getInventory().setLeggings(
+					getPartyEquipment(Material.LEATHER_LEGGINGS, p.getDisplayName()));
+		}
+		if (isPartyItemStack(p.getInventory().getBoots(), p)) {
+			p.getInventory()
+					.setBoots(getPartyEquipment(Material.LEATHER_BOOTS, p.getDisplayName()));
+		}
+	}
+
+	private ItemStack getPartyEquipment(Material mat, String owner) {
+		ItemStack is = new ItemStack(mat);
+		LeatherArmorMeta meta = (LeatherArmorMeta) is.getItemMeta();
+		float prog = (Bukkit.getWorld("world").getTime() % 100);
+		prog /= 100;
+		Color c = Rainbow(prog);
+		meta.setColor(c);
+		meta.setDisplayName("§dParty Armor");
+		List<String> lore = new ArrayList<String>();
+		lore.add("May only be worn by");
+		lore.add(owner);
+		meta.setLore(lore);
+		is.setItemMeta(meta);
+		return is;
+	}
+
+	public static Color Rainbow(float progress) {
+		float div = (Math.abs(progress % 1) * 6);
+		int ascending = (int) ((div % 1) * 255);
+		int descending = 255 - ascending;
+
+		switch ((int) div) {
+		case 0:
+			return Color.fromRGB(255, ascending, 0);
+		case 1:
+			return Color.fromRGB(descending, 255, 0);
+		case 2:
+			return Color.fromRGB(0, 255, ascending);
+		case 3:
+			return Color.fromRGB(0, descending, 255);
+		case 4:
+			return Color.fromRGB(ascending, 0, 255);
+		default: // case 5:
+			return Color.fromRGB(255, 0, descending);
+		}
+	}
+
+	private boolean isPartyItemStack(ItemStack item, Player wearer) {
+		if (item != null && item.hasItemMeta()
+				&& item.getItemMeta().hasDisplayName()
+				&& item.getItemMeta().getDisplayName().equals("§dParty Armor")) {
+			if (item.getItemMeta().getLore().get(1).equals(wearer.getDisplayName())){
+				return true;
+			}else{
+				wearer.damage(0);
+			}
+		}
+		return false;
+	}
+
 	protected void doSerenitySpook(Player p) {
 
 		final Player pf = p;
@@ -923,14 +1013,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					count++;
 				// }
 			}
-		}
-		if (debugTickTimings) {
-			Bukkit.getLogger().info(
-					"§6" + count + " chunks were unloaded! §d(of " + totalCount
-							+ ")");
-			long time = System.currentTimeMillis() - now;
-			Bukkit.getLogger().info("§6It took " + time + "ms");
-		}
+		}/*
+		 * if (debugTickTimings) { Bukkit.getLogger().info( "§6" + count +
+		 * " chunks were unloaded! §d(of " + totalCount + ")"); long time =
+		 * System.currentTimeMillis() - now;
+		 * Bukkit.getLogger().info("§6It took " + time + "ms"); }
+		 */
 
 	}
 
@@ -1190,7 +1278,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void printDebugTimings(String string, long debugtime) {
-		if (debugTickTimings) {
+		if (false) {
 			long time = (System.currentTimeMillis() - debugtime);
 			if (time < 5) {
 				return;
@@ -1243,13 +1331,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										SerenityPlugins.this, new Runnable() {
 											@Override
 											public void run() {
-												if (paf.owner.equals("Kaymaki")
-														|| paf.owner
-																.equals("Insurmountable")) {
-													paf.highlightAreaKayla();
-												} else {
-													paf.highlightArea();
-												}
+
+												paf.highlightArea();
+
 											}
 										});
 
@@ -1257,11 +1341,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										SerenityPlugins.this, new Runnable() {
 											@Override
 											public void run() {
-												if (paf.owner.equals("Kaymaki")) {
-													paf.highlightAreaKayla();
-												} else {
-													paf.highlightArea();
-												}
+												paf.highlightArea();
 											}
 										}, 10L);
 							}
@@ -1687,6 +1767,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */
 
 		afkPlayers.remove(player);
+		afkTime.remove(player.getName());
 		playerLocations.remove(player.getDisplayName());
 		if (!votingForDay)
 			player.setSleepingIgnored(false);
@@ -1870,6 +1951,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			 */
 			if (!isAfk(p)) {
 				addAMinute(p);
+			} else {
+				short t = afkTime.getOrDefault(p.getName(), (short) 1);
+				t++;
+				afkTime.put(p.getName(), t);
+				if (t > 45) {
+					afkTime.remove(p.getName());
+					p.kickPlayer("You have been idle for too long!");
+				}
 			}
 		}
 
@@ -1906,16 +1995,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return;
 		String ip = e.getAddress().getHostAddress();
 		ip = ip.replace('.', '_');
-		if (pingers) {
+		if (motdsCfg.getConfig().getBoolean("Pingers", false)) {
 			if (knownIp(ip)) {
-				getLogger()
-						.info("Pinged by " + ipCfg.getConfig().getString(ip));
+				if (!ipCfg.getConfig().getString(ip).equals("MaybeBot")) {
+					getLogger().info(
+							"Pinged by " + ipCfg.getConfig().getString(ip));
+				}
 			} else {
 				getLogger()
 						.info("Pinged by " + e.getAddress().getHostAddress());
 			}
 		}
-		if (randomMotd) {
+
+		if (motdsCfg.getConfig().getBoolean("Bots", false)) {
+			if (ipCfg.getConfig().getString(ip).equals("MaybeBot")) {
+				getLogger().info("Pinged by known Bot: " + ip);
+			}
+		}
+
+		if (motdsCfg.getConfig().getBoolean("randomMotd", false)) {
 			String newMotd = getRandomNonBlackColor() + "§lSerenity";
 			if (knownIp(ip)) {
 				newMotd += ":§r " + getRandomNonBlackColor();
@@ -2056,8 +2154,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 			specEff = 0;
-			opParticlesDeb = false;
-			opParticles = false;
+			// opParticlesDeb = false;
+			// opParticles = false;
 
 			event.getPlayer().setGameMode(GameMode.CREATIVE);
 			event.getPlayer().setDisplayName("[Server]");
@@ -2219,7 +2317,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (p.getLocation().distance(
 							event.getPlayer().getLocation()) <= 100) {
 						if (p.isOp()) {
-							if (opParticles) {
+							if (getConfig().getBoolean("opParticles", false)) {
 								event.getRecipients().add(p);
 							}
 						} else {
@@ -3351,7 +3449,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		monsterCfg.getConfig()
 				.set(displayNameF + ".Hour" + hour, prevScore + 1);
-		
 
 	}
 
@@ -5701,12 +5798,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean server(CommandSender sender, String[] arg3) {
 
 		if (sender.hasPermission("SerenityPlugins.server")) {
-			if (arg3.length == 0) {
-				serverChatting = !serverChatting;
-				sender.sendMessage("Serverchatting = " + serverChatting);
-				return true;
-			}
-
 			if (arg3[0].equalsIgnoreCase("say")) {
 				String s = "§d[Server] ";
 				for (int i = 1; i < arg3.length; i++) {
@@ -5954,15 +6045,74 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
+				if (arg3[0].equals("partytest")) {
+
+					if (sender instanceof Player) {
+
+						Player p = (Player) sender;
+						String owner = p.getDisplayName();
+						ItemStack is = new ItemStack(Material.LEATHER_HELMET);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						List<String> lore = new ArrayList<String>();
+						lore.add("May only be worn by");
+						lore.add(owner);
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getInventory().addItem(is);
+
+						is = new ItemStack(Material.LEATHER_CHESTPLATE);
+						im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getInventory().addItem(is);
+
+						is = new ItemStack(Material.LEATHER_LEGGINGS);
+						im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getInventory().addItem(is);
+
+						is = new ItemStack(Material.LEATHER_BOOTS);
+						im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getInventory().addItem(is);
+
+					}
+				}
+
+				if (arg3[0].equals("afktimes")) {
+					for (String s : afkTime.keySet()) {
+						sender.sendMessage(s + ": "
+								+ afkTime.getOrDefault(s, (short) -1)
+								+ " minutes");
+					}
+				}
+
 				if (arg3[0].equals("motd")) {
-					randomMotd = !randomMotd;
-					sender.sendMessage("Random MOTD = " + randomMotd);
+					boolean mo = motdsCfg.getConfig().getBoolean("randomMotd",
+							true);
+					motdsCfg.getConfig().set("randomMotd", !mo);
+					sender.sendMessage("Random MOTD = " + !mo);
 				}
 
 				if (arg3[0].equals("pingers")) {
-					motdsCfg.getConfig().set("Pingers", !pingers);
-					pingers = !pingers;
-					sender.sendMessage("Pingers = " + pingers);
+					motdsCfg.getConfig().set("Pingers",
+							!motdsCfg.getConfig().getBoolean("Pingers", true));
+					sender.sendMessage("Pingers = "
+							+ motdsCfg.getConfig().getBoolean("Pingers"));
+					motdsCfg.saveConfig();
+				}
+
+				if (arg3[0].equals("bots")) {
+					motdsCfg.getConfig().set("Bots",
+							!motdsCfg.getConfig().getBoolean("Bots", false));
+					sender.sendMessage("Bots = "
+							+ motdsCfg.getConfig().getBoolean("Bots"));
 					motdsCfg.saveConfig();
 				}
 
@@ -6138,12 +6288,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage("Particles on = " + opParticles);
 					return true;
 				}
-
-				if (arg3[0].equals("timings")) {
-					debugTickTimings = !debugTickTimings;
-					sender.sendMessage("Timings = " + debugTickTimings);
-					return true;
-				}
+				/*
+				 * if (arg3[0].equals("timings")) { debugTickTimings =
+				 * !debugTickTimings; sender.sendMessage("Timings = " +
+				 * debugTickTimings); return true; }
+				 */
 
 				if (arg3[0].equals("deb")) {
 					opParticlesDeb = !opParticlesDeb;
@@ -7158,19 +7307,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (sender.hasPermission("SerenityPlugins.mailto")) {
 			if (arg3.length < 1) {
 				String s = "";
-				s += "\n§cType a mailbox name!  \nHere are all of the currently active mailboxes\n§2A '#' means it's a public mailbox:\n";
-				for (int i = 0; i < mailBoxes.size(); i++) {
-					if (mailBoxes.get(i).name.startsWith("#")) {
-						s += "§2" + mailBoxes.get(i).name + ", ";
-					} else {
-						s += "§3" + mailBoxes.get(i).name + ", ";
-					}
-					if (i % 3 == 0 && i != 0) {
-						s += "\n";
-					}
-				}
-				s = s.substring(0, s.length() - 2);
-
+				s += "\n§cType a mailbox name!";
 				sender.sendMessage(s);
 				return false;
 			}
@@ -7217,27 +7354,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return true;
 		}
 		if (!receivingMailBoxExists) {
-
-			String s = getTranslationLanguage(sender,
-					stringKeys.MAILCOULDNOTFINDBOX.toString());
-
-			// String s = "§cI couldn't find that mailbox!";
-			s += "\n§cHere are all of the currently active mailboxes\n§2A '#' means it's a public mailbox:\n";
-
-			for (int i = 0; i < mailBoxes.size(); i++) {
-				if (mailBoxes.get(i).name.startsWith("#")) {
-					s += "§2" + mailBoxes.get(i).name + ", ";
-				} else {
-					s += "§3" + mailBoxes.get(i).name + ", ";
-				}
-				if (i % 3 == 0) {
-					s += "\n";
-				}
-			}
-			s = s.substring(0, s.length() - 2);
-
-			sender.sendMessage(s);
-			return false;
+			sender.sendMessage("§cThere is no mailbox with §6\"" + mailto
+					+ "\"§c in it.  Check your spelling!");
+			return true;
 		}
 
 		if (sendingMailbox.getName().equals(receivingMailbox.getName())) {
