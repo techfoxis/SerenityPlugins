@@ -1,33 +1,29 @@
 package com.minecraft.hal.SerenityPlugins;
 
-import org.bukkit.Bukkit;
+import java.util.UUID;
+
 import org.bukkit.Location;
 import org.bukkit.block.Chest;
 
 public class Mailbox {
-	public String name;
+	public UUID uuid;
 	public Location location;
+	public boolean isPublic;
+	public String actualName;
 	
-	public Mailbox(String name, Location l) {
-		this.name = name;
+	public Mailbox(UUID name, String actualName, Location l) {
+		this.uuid = name;
+		this.actualName = actualName;
 		this.location = l;
 	}
 	
 	public Mailbox() {
-		this.name = "I haven't been initialized";
+		this.uuid = null;
 		this.location = null;
 	}
 	
-	public Location getLocation() {
-		return location;
-	}
-
-	public String getName() {
-		return name;
-	}
-
 	public String toString() {
-		String s = this.name + "'s mailbox is in: "
+		String s = this.uuid + "'s mailbox is in: "
 				+ this.location.getWorld().getName() + "\nAt:" + "\nX: "
 				+ this.location.getX() + "\nY " + this.location.getY() + "\nZ "
 				+ this.location.getZ();
@@ -35,26 +31,16 @@ public class Mailbox {
 	}
 	
 	public boolean equals(Mailbox mb){
-		if(this.name.equals(mb.name)){
+		if(this.uuid.equals(mb.uuid)){
 			if(this.location.equals(mb.location)){
+				if(this.uuid!=null)
 				return true;
 			}
 		}
 		return false;
 	}
 	
-	public void setLocation(Location l){
-		this.location = l;
-	}
-	
-	public void setName(String s){
-		this.name = s;
-	}
-	
 	public boolean hasMail(){
-		
-		return ((Chest) this.getLocation().getBlock().getState()).getInventory().getContents()[0] !=null;
+		return ((Chest) this.location.getBlock().getState()).getInventory().getContents()[0] !=null;
 	}
-	
-	
 }

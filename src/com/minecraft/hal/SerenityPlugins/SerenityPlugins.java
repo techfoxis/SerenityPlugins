@@ -1,5 +1,9 @@
 package com.minecraft.hal.SerenityPlugins;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -42,7 +46,6 @@ import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.defaults.PluginsCommand;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
@@ -108,7 +111,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
-import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.BookMeta;
@@ -167,7 +169,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public HashMap<String, Location> playerLocations;
 	public HashMap<Player, Boolean> afkPlayers;
 	public List<Mailbox> mailBoxes;
-	public List<String> mailablePlayers;
 	public List<Player> preppedToUnProtectChunk;
 	public List<PlayerProtect> preppedToProtectArea;
 	public List<Player> localChatters;
@@ -176,17 +177,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public String mainMotd = "";
 
 	public short specEff = 0;
-
-	public final List<String> PUBLIC_MAILBOXES = new ArrayList<String>() {
-		{
-			// todo: make mailboxes automatically public if they begin with #...
-			add("#Spawn");
-			add("#Library");
-			add("#Nether_Hub");
-			add("#Exchange");
-			add("#PotatoChips");
-		}
-	};
 
 	public static final List<DyeColor> allDyes = new ArrayList<DyeColor>() {
 		{
@@ -334,6 +324,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public Secrets Secret;
 	public List<String> knownIps;
+	public List<Material> possiblePartyArmors;
 
 	public static List<String> allHalloweenSkulls = new ArrayList<String>() {
 		{
@@ -361,6 +352,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	};
 
 	public boolean pluginReady = false;
+	public SQLite db = new SQLite(this);
+	public Connection conn = db.getConnection();
 
 	// public String[] betters;
 	// public String[] horses;
@@ -368,8 +361,28 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@Override
 	public void onEnable() {
 		sdtf.setTimeZone(TimeZone.getTimeZone("UTC"));
-		// WorldCreator wc = new WorldCreator("world_old");
-		// Bukkit.createWorld(wc);
+
+		// create tables if they don't exist
+		try {
+			Statement statement = conn.createStatement();
+			String sql = "create table if not exists Mailboxes (Player TEXT PRIMARY KEY, World TEXT, X INTEGER, Y INTEGER, Z INTEGER, Public BOOLEAN)";
+			statement.executeUpdate(sql);
+			sql = "create table if not exists ChatColor (Player TEXT PRIMARY KEY, Color TEXT)";
+			statement.executeUpdate(sql);
+			sql = "create table if not exists Fireworks (Player TEXT PRIMARY KEY, World TEXT, X INTEGER, Y INTEGER, Z INTEGER)";
+			statement.executeUpdate(sql);
+			sql = "create table if not exists IP (IP TEXT, Player TEXT)";
+			statement.executeUpdate(sql);
+			sql = "create table if not exists Playtime (Player TEXT PRIMARY KEY, Time INTEGER)";
+			statement.executeUpdate(sql);
+			sql = "create table if not exists ProtectedAreasLocations (Player TEXT, World TEXT, X1 INTEGER, Z1 INTEGER, X2 INTEGER, Z2 INTEGER)";
+			statement.executeUpdate(sql);
+			sql = "create table if not exists ProtectedAreasTrust (Player TEXT PRIMARY KEY, Friend TEXT)";
+			statement.executeUpdate(sql);
+			statement.close();
+		} catch (SQLException e2) {
+			e2.printStackTrace();
+		}
 
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
@@ -408,6 +421,48 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 		};
+
+		possiblePartyArmors = new ArrayList<Material>() {
+			{
+				add(Material.APPLE);
+				add(Material.ARROW);
+				add(Material.BAKED_POTATO);
+				add(Material.BED);
+				add(Material.BOAT);
+				add(Material.BREAD);
+				add(Material.CACTUS);
+				add(Material.CARROT_ITEM);
+				add(Material.COOKIE);
+				add(Material.DIRT);
+				add(Material.EGG);
+				add(Material.FEATHER);
+				add(Material.GRAVEL);
+				add(Material.POTATO_ITEM);
+				add(Material.PUMPKIN);
+				add(Material.PUMPKIN_SEEDS);
+				add(Material.SOUL_SAND);
+				add(Material.YELLOW_FLOWER);
+				add(Material.RED_ROSE);
+				add(Material.BONE);
+				add(Material.CARPET);
+				add(Material.STONE_HOE);
+				add(Material.STONE_AXE);
+				add(Material.STONE_PICKAXE);
+				add(Material.STONE_SWORD);
+				add(Material.STONE_SPADE);
+				add(Material.LADDER);
+				add(Material.COBBLE_WALL);
+				add(Material.GLASS_BOTTLE);
+				add(Material.MELON_SEEDS);
+				add(Material.FLINT);
+				add(Material.SIGN);
+				add(Material.SNOW_BLOCK);
+				add(Material.LEVER);
+				add(Material.STONE_BUTTON);
+				add(Material.WOOD_BUTTON);
+			}
+		};
+
 		// betters = new String[3];
 		// horses = new String[3];
 		TELEPORTDESTINATIONFORSOMETHING = Secret.TELEPORTDESTINATIONFORSOMETHING;
@@ -446,7 +501,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ipCfg = new ConfigAccessor(this, "ip.yml");
 		ipCfg.saveDefaultConfig();
 
-		mailablePlayers = new ArrayList<String>();
 		mailBoxes = new ArrayList<Mailbox>();
 		preppedToProtectArea = new ArrayList<PlayerProtect>();
 		preppedToUnProtectChunk = new ArrayList<Player>();
@@ -491,38 +545,86 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		spookyFruitRecipe.setIngredient('B', secretItemSpookyOne.getType());
 		this.getServer().addRecipe(spookyFruitRecipe);
 
+		ItemStack pHelm = new ItemStack(Material.LEATHER_HELMET);
+		ItemMeta pHMeta = pHelm.getItemMeta();
+		pHMeta.setDisplayName("§dParty Armor");
+		pHelm.setItemMeta(pHMeta);
+
+		ItemStack pChest = new ItemStack(Material.LEATHER_CHESTPLATE);
+		ItemMeta pCMeta = pChest.getItemMeta();
+		pCMeta.setDisplayName("§dParty Armor");
+		pChest.setItemMeta(pCMeta);
+
+		ItemStack pLegs = new ItemStack(Material.LEATHER_LEGGINGS);
+		ItemMeta pLMeta = pLegs.getItemMeta();
+		pLMeta.setDisplayName("§dParty Armor");
+		pLegs.setItemMeta(pLMeta);
+
+		ItemStack pBoots = new ItemStack(Material.LEATHER_BOOTS);
+		ItemMeta pBMeta = pBoots.getItemMeta();
+		pBMeta.setDisplayName("§dParty Armor");
+		pBoots.setItemMeta(pBMeta);
+
+		for (Material m : possiblePartyArmors) {
+			ShapedRecipe helmRecipe = new ShapedRecipe(new ItemStack(pHelm));
+			helmRecipe.shape("AAA", "A A", "   ");
+			helmRecipe.setIngredient('A', m);
+			this.getServer().addRecipe(helmRecipe);
+
+			ShapedRecipe chestRecipe = new ShapedRecipe(new ItemStack(pChest));
+			chestRecipe.shape("A A", "AAA", "AAA");
+			chestRecipe.setIngredient('A', m);
+			this.getServer().addRecipe(chestRecipe);
+
+			ShapedRecipe legRecipe = new ShapedRecipe(new ItemStack(pLegs));
+			legRecipe.shape("AAA", "A A", "A A");
+			legRecipe.setIngredient('A', m);
+			this.getServer().addRecipe(legRecipe);
+
+			ShapedRecipe bootRecipe = new ShapedRecipe(new ItemStack(pBoots));
+			bootRecipe.shape("   ", "A A", "A A");
+			bootRecipe.setIngredient('A', m);
+			this.getServer().addRecipe(bootRecipe);
+
+		}
+
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			addAndAttachAppropraitePermissionToPlayer(p);
 		}
 
-		ConfigurationSection mailBoxesFromConfig = mailboxCfg.getConfig()
-				.getConfigurationSection("Mailboxes");
-
 		try {
-			for (String key : mailBoxesFromConfig.getKeys(false)) {
-
-				ArrayList<String> coords = new ArrayList<String>();
-				for (Object object : mailBoxesFromConfig.getList(key)) {
-					coords.add(object.toString());
+			Statement stm = conn.createStatement();
+			ResultSet boxes = stm.executeQuery("SELECT * FROM Mailboxes");
+			while (boxes.next()) {
+				Mailbox mb = new Mailbox();
+				OfflinePlayer p = null;
+				try {
+					p = Bukkit.getServer().getOfflinePlayer(
+							UUID.fromString(boxes.getString("Player")));
+				} catch (Exception e) {
+					p = Bukkit.getServer().getOfflinePlayer(
+							boxes.getString("Player"));
 				}
 
-				int x = Integer.parseInt(coords.get(1));
-				int y = Integer.parseInt(coords.get(2));
-				int z = Integer.parseInt(coords.get(3));
-				String s = coords.get(0);
-				Location l = new Location(Bukkit.getWorld(s), x, y, z);
-				Mailbox mb = new Mailbox(key, l);
-				mailablePlayers.add(key);
+				mb.isPublic = boxes.getBoolean("Public");
+				mb.uuid = p.getUniqueId();
+				mb.location = new Location(Bukkit.getWorld(boxes
+						.getString("World")), (double) boxes.getInt("X"),
+						(double) boxes.getInt("Y"), (double) boxes.getInt("Z"));
+				mb.actualName = p.getName();
+
+				if (p.isOp()) {
+					mb.actualName = "[Server]";
+				}
 				mailBoxes.add(mb);
 
 			}
-		} catch (Exception e) {
-			getLogger().info("Exception thrown while trying to add mailboxes!");
-
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 
-		getLogger().info("Added " + mailBoxes.size() + " mailboxes");
-
+		
 		ConfigurationSection statusesFromConfig = statusCfg.getConfig()
 				.getConfigurationSection("Status");
 
@@ -739,6 +841,59 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		getLogger().info("Serenity Plugins enabled");
 	}
 
+	@EventHandler
+	public void CraftItemEvent(org.bukkit.event.inventory.CraftItemEvent event) {
+		if (event.getRecipe().getResult().hasItemMeta()
+				&& event.getRecipe().getResult().getItemMeta().hasDisplayName()
+				&& event.getRecipe().getResult().getItemMeta().getDisplayName()
+						.contains("§dParty Armor")) {
+			if (event.getWhoClicked() instanceof Player) {
+				Player p = (Player) event.getWhoClicked();
+				if (getPlayerMinutes(p.getDisplayName()) < 2880) {
+					event.setCancelled(true);
+					p.sendMessage("§cYou need more than 48 hours on the server to party");
+					return;
+				}
+				int hash = getArmorHash(p.getDisplayName());
+				Material m = possiblePartyArmors.get(hash);
+
+				for (int i = 0; i < event.getInventory().getContents().length; i++) {
+					if (i > 0) {
+						ItemStack is = event.getInventory().getItem(i);
+						if (is != null && is.getType() != m) {
+							p.damage(0);
+							event.setCancelled(true);
+							return;
+						}
+					}
+				}
+
+				String owner = p.getDisplayName();
+				ItemStack is = event.getInventory().getItem(0);
+				ItemMeta im = is.getItemMeta();
+				im.setDisplayName("§dParty Armor");
+				List<String> lore = new ArrayList<String>();
+				lore.add("May only be worn by");
+				lore.add(owner);
+				im.setLore(lore);
+				is.setItemMeta(im);
+				event.getInventory().setItem(0, is);
+				getLogger().info(
+						"§c" + p.getDisplayName()
+								+ " crafted some party armor!");
+			}
+		}
+	}
+
+	private int getArmorHash(String displayName) {
+		int hash = 0;
+		for (int i = 0; i < displayName.length(); i++) {
+			hash += displayName.charAt(i);
+		}
+
+		return hash % possiblePartyArmors.size();
+	}
+
 	protected void setListNames() {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 			@Override
@@ -899,19 +1054,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private void tryToParty(Player p) {
 		if (isPartyItemStack(p.getInventory().getHelmet(), p)) {
 			p.getInventory().setHelmet(
-					getPartyEquipment(Material.LEATHER_HELMET, p.getDisplayName()));
+					getPartyEquipment(Material.LEATHER_HELMET,
+							p.getDisplayName()));
 		}
 		if (isPartyItemStack(p.getInventory().getChestplate(), p)) {
 			p.getInventory().setChestplate(
-					getPartyEquipment(Material.LEATHER_CHESTPLATE, p.getDisplayName()));
+					getPartyEquipment(Material.LEATHER_CHESTPLATE,
+							p.getDisplayName()));
 		}
 		if (isPartyItemStack(p.getInventory().getLeggings(), p)) {
 			p.getInventory().setLeggings(
-					getPartyEquipment(Material.LEATHER_LEGGINGS, p.getDisplayName()));
+					getPartyEquipment(Material.LEATHER_LEGGINGS,
+							p.getDisplayName()));
 		}
 		if (isPartyItemStack(p.getInventory().getBoots(), p)) {
-			p.getInventory()
-					.setBoots(getPartyEquipment(Material.LEATHER_BOOTS, p.getDisplayName()));
+			p.getInventory().setBoots(
+					getPartyEquipment(Material.LEATHER_BOOTS,
+							p.getDisplayName()));
 		}
 	}
 
@@ -956,9 +1115,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (item != null && item.hasItemMeta()
 				&& item.getItemMeta().hasDisplayName()
 				&& item.getItemMeta().getDisplayName().equals("§dParty Armor")) {
-			if (item.getItemMeta().getLore().get(1).equals(wearer.getDisplayName())){
+			if (item.getItemMeta().getLore().get(1)
+					.equals(wearer.getDisplayName())) {
 				return true;
-			}else{
+			} else {
 				wearer.damage(0);
 			}
 		}
@@ -1801,11 +1961,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									public void run() {
 										if (mbf.hasMail()) {
 											final Location l = new Location(
-													mbf.getLocation()
-															.getWorld(),
-													mbf.getLocation().getX() + .5,
-													mbf.getLocation().getY() + 1.25,
-													mbf.getLocation().getZ() + .5);
+													mbf.location.getWorld(),
+													mbf.location.getX() + .5,
+													mbf.location.getY() + 1.25,
+													mbf.location.getZ() + .5);
 											Bukkit.getScheduler()
 													.scheduleSyncDelayedTask(
 															global,
@@ -1984,6 +2143,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@Override
 	public void onDisable() {
+
+		try {
+			conn.close();
+			db.closeConnection(db.getConnection());
+			conn = null;
+			db = null;
+
+		} catch (SQLException e) { // TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		attachments.clear();
 		getLogger().info("Serenity Plugins disabled");
@@ -2209,7 +2378,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					.getHostAddress(), event.getPlayer().getName());
 
 		for (Mailbox mb : mailBoxes) {
-			if (mb.getName().equals(event.getPlayer().getDisplayName())) {
+			if (mb.uuid.equals(event.getPlayer().getUniqueId())) {
 				if (mb.hasMail()) {
 					String msg = getTranslationLanguage(event.getPlayer(),
 							stringKeys.MAILHASMAIL.toString());
@@ -2731,44 +2900,49 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return;
 				}
 
-				if (!mailablePlayers.contains(event.getPlayer()
-						.getDisplayName())) {
-					String path = "Mailboxes."
-							+ event.getPlayer().getDisplayName();
-					int x = (int) chestLoc.getX();
-					int y = (int) chestLoc.getY();
-					int z = (int) chestLoc.getZ();
-					String[] loc = { chestLoc.getWorld().getName(), "" + x,
-							"" + y, "" + z };
-
-					mailboxCfg.getConfig().set(path, loc);
-					mailboxCfg.saveConfig();
-					mailboxCfg.reloadConfig();
-
-					mailablePlayers.add(event.getPlayer().getDisplayName());
-					mailBoxes.add(new Mailbox(event.getPlayer()
-							.getDisplayName(), chestLoc));
+				if (!hasAMailbox(event.getPlayer().getUniqueId())) {
+					Mailbox mb = new Mailbox();
+					mb.actualName = event.getPlayer().getDisplayName();
+					mb.uuid = event.getPlayer().getUniqueId();
+					mb.location = chestLoc;
+					mb.isPublic = mb.actualName.charAt(0) == '#';
+					mailBoxes.add(mb);
+					String sql = "INSERT INTO Mailboxes (Player, World, X, Y, Z, Public) VALUES ('"
+							+ (event.getPlayer().isOp() ? event.getPlayer()
+									.getDisplayName() : mb.uuid)
+							+ "','"
+							+ mb.location.getWorld().getName()
+							+ "','"
+							+ mb.location.getBlockX()
+							+ "','"
+							+ mb.location.getBlockY()
+							+ "','"
+							+ mb.location.getBlockZ()
+							+ "','"
+							+ ((mb.isPublic) ? 1 : 0) + "');";
 					event.getPlayer().sendMessage(
 							getTranslationLanguage(event.getPlayer(),
 									stringKeys.MAILCREATEDAMAILBOX.toString()));
+					executeSQLAsync(sql);
+
 					// event.getPlayer().sendMessage("§2You made a mailbox!");
 				} else {
-					Mailbox mb = new Mailbox("Something went terribly wrong",
-							chestLoc);
+					Mailbox mb = new Mailbox(null, "AHHHH", chestLoc);
 					for (int i = 0; i < mailBoxes.size(); i++) {
-						if (mailBoxes.get(i).name.equals(event.getPlayer()
-								.getDisplayName())) {
+						if (mailBoxes.get(i).uuid.equals(event.getPlayer()
+								.getUniqueId())) {
 							mb = mailBoxes.get(i);
 						}
 					}
-					Location l = mb.getLocation();
+					Location l = mb.location;
 
 					String msg = getTranslationLanguage(event.getPlayer(),
 							stringKeys.MAILALREADYHASAMAILBOX.toString());
 
 					event.getPlayer().sendMessage(
-							String.format(msg, mb.getLocation().getWorld()
-									.getName(), (int) l.getX(), (int) l.getY(),
+							String.format(msg,
+									mb.location.getWorld().getName(),
+									(int) l.getX(), (int) l.getY(),
 									(int) l.getZ()));
 					/*
 					 * event.getPlayer().sendMessage(
@@ -2782,6 +2956,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}
+	}
+
+	private boolean hasAMailbox(UUID uniqueId) {
+		for (Mailbox mb : mailBoxes) {
+			if (mb.uuid.equals(uniqueId)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@EventHandler
@@ -2861,40 +3044,34 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onMailboxOpen(PlayerInteractEvent event) {
-
 		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 			if (event.getClickedBlock().getType().equals(Material.CHEST)
 					|| event.getClickedBlock().getType()
 							.equals(Material.TRAPPED_CHEST)) {
-				Mailbox mb = new Mailbox(event.getPlayer().getDisplayName(),
-						event.getClickedBlock().getLocation());
-				for (int i = 0; i < mailBoxes.size(); i++) {
-					if (mb.getLocation().equals(mailBoxes.get(i).location)) {
-						if (PUBLIC_MAILBOXES.contains(mailBoxes.get(i)
-								.getName())) {
-
+				for (Mailbox mb : mailBoxes) {
+					if (mb.location.equals(event.getClickedBlock()
+							.getLocation())) {
+						if (mb.isPublic) {
 							String msg = getTranslationLanguage(
 									event.getPlayer(),
 									stringKeys.MAILOPENEDAPUBLICMAILBOX
 											.toString());
 							event.getPlayer().sendMessage(
-									String.format(msg, mailBoxes.get(i)
-											.getName()));
+									String.format(msg, mb.actualName));
 
 							return;
 						}
-						if (!mailBoxes.get(i).getName()
-								.equals(event.getPlayer().getDisplayName())) {
+						if (!mb.uuid.equals(event.getPlayer().getUniqueId())) {
 
 							String msg = getTranslationLanguage(
 									event.getPlayer(),
 									stringKeys.MAILINTERRACTEDWITHAMAILBOX
 											.toString());
 							event.getPlayer().sendMessage(
-									String.format(msg, mailBoxes.get(i)
-											.getName()));
+									String.format(msg, mb.actualName));
 
 							event.setCancelled(true);
+							return;
 						}
 					}
 				}
@@ -3287,30 +3464,41 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getBlock().getType().equals(Material.CHEST)
 				|| event.getBlock().getType().equals(Material.TRAPPED_CHEST)) {
 			for (int i = 0; i < mailBoxes.size(); i++) {
-				if (mailBoxes.get(i).location.equals(event.getBlock()
-						.getLocation())) {
-					String path = "Mailboxes."
-							+ event.getPlayer().getDisplayName().toString();
-					mailboxCfg.getConfig().set(path, null);
-					// mailboxCfg.getConfig().options().copyDefaults();
-
-					mailablePlayers.remove(mailBoxes.get(i).name);
-
-					mailBoxes.remove(i);
-					mailboxCfg.saveConfig();
-					mailboxCfg.reloadConfig();
-					/*
-					 * event.getPlayer().sendMessage(
-					 * "§2You destroyed your mailbox!");
-					 */
-
+				Mailbox mb = mailBoxes.get(i);
+				if (mb.location.equals(event.getBlock().getLocation())
+						&& mb.uuid == event.getPlayer().getUniqueId()) {
+					String sql = "DELETE FROM Mailboxes where Player = '"
+							+ Bukkit.getOfflinePlayer(
+									event.getPlayer().getDisplayName())
+									.getUniqueId() + "'";
+					if (event.getPlayer().isOp()) {
+						sql = "DELETE FROM Mailboxes where Player = '[Server]'";
+					}
+					executeSQLAsync(sql);
 					String msg = getTranslationLanguage(event.getPlayer(),
 							stringKeys.MAILDESTROYEDMAILBOX.toString());
 					event.getPlayer().sendMessage(msg);
-
+					mailBoxes.remove(i);
 				}
 			}
 		}
+	}
+
+	private void executeSQLAsync(String sql) {
+		final String sqlf = sql;
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				try {
+					conn.createStatement().executeUpdate(sqlf);
+					getLogger().info(sqlf);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}, 0L);
+
 	}
 
 	@EventHandler
@@ -3452,53 +3640,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	}
 
-	private void resetCurrentHour() {
-
-	}
-
 	@EventHandler
 	public void onMailboxBreak(PlayerInteractEvent event) {
 		if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
 			if (event.getClickedBlock().getType().equals(Material.CHEST)
 					|| event.getClickedBlock().getType()
 							.equals(Material.TRAPPED_CHEST)) {
-				Mailbox mb = new Mailbox(event.getPlayer().getDisplayName(),
-						event.getClickedBlock().getLocation());
-				for (int i = 0; i < mailBoxes.size(); i++) {
-					if (mb.getLocation().equals(mailBoxes.get(i).location)) {
-						if (PUBLIC_MAILBOXES.contains(mailBoxes.get(i)
-								.getName())) {
-							/*
-							 * event.getPlayer() .sendMessage(
-							 * "§2Sorry, you cannot break a public mailbox!");
-							 */
-
-							String msg = getTranslationLanguage(
-									event.getPlayer(),
-									stringKeys.MAILTRIEDTOBREAKPUBLICMAILBOX
-											.toString());
-							event.getPlayer().sendMessage(msg);
-
+				for (Mailbox mb : mailBoxes) {
+					if (mb.location.equals(event.getClickedBlock()
+							.getLocation())) {
+						if (mb.isPublic) {
 							event.setCancelled(true);
 							return;
 						}
-						if (!mailBoxes.get(i).getName()
-								.equals(event.getPlayer().getDisplayName())) {
-
-							String msg = getTranslationLanguage(
-									event.getPlayer(),
-									stringKeys.MAILINTERRACTEDWITHAMAILBOX
-											.toString());
-							event.getPlayer().sendMessage(
-									String.format(msg, mailBoxes.get(i)
-											.getName()));
-							/*
-							 * event.getPlayer().sendMessage(
-							 * "§cSorry, that is §2" +
-							 * mailBoxes.get(i).getName() +
-							 * "§c's private mailbox!");
-							 */
+						if (!mb.uuid.equals(event.getPlayer().getUniqueId())) {
 							event.setCancelled(true);
+							return;
 						}
 					}
 				}
@@ -4197,8 +4354,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public void putBoneInMailbox(String name) {
 		for (Mailbox mb : mailBoxes) {
-			if (mb.name.equals(name)) {
-				Chest receivingChest = (Chest) mb.getLocation().getBlock()
+			if (mb.uuid.equals(name)) {
+				Chest receivingChest = (Chest) mb.location.getBlock()
 						.getState();
 
 				ItemStack bone = new ItemStack(Material.BONE, 1);
@@ -5775,6 +5932,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
+	@EventHandler
+	public void onPlayerFinalSecretEvent(PlayerInteractEvent event) {
+		if (event.getClickedBlock() != null) {
+			if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
+				if (event.getClickedBlock().getLocation().getX() == Secret.SECRETX
+						&& event.getClickedBlock().getLocation().getZ() == Secret.SECRETZ) {
+					event.getPlayer().sendMessage(
+							"§d"
+									+ possiblePartyArmors
+											.get(getArmorHash(event.getPlayer()
+													.getDisplayName())));
+				}
+			}
+		}
+	}
+
 	private boolean coords(CommandSender sender) {
 		if (sender.hasPermission("SerenityPlugins.coords")) {
 			Location l = Bukkit.getServer().getPlayer(sender.getName())
@@ -6045,6 +6218,94 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
+				if (arg3[0].equals("commit")) {
+
+					try {
+						conn.commit();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
+
+				if (arg3[0].equals("release")) {
+
+					try {
+						conn.close();
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
+
+				if (arg3[0].equals("mToSQL")) {
+
+					ConfigurationSection mailBoxesFromConfig = mailboxCfg.getConfig()
+							.getConfigurationSection("Mailboxes");
+
+					try {
+						for (String key : mailBoxesFromConfig.getKeys(false)) {
+
+							ArrayList<String> coords = new ArrayList<String>();
+							for (Object object : mailBoxesFromConfig.getList(key)) {
+								coords.add(object.toString());
+							}
+
+							int x = Integer.parseInt(coords.get(1));
+							int y = Integer.parseInt(coords.get(2));
+							int z = Integer.parseInt(coords.get(3));
+							String s = coords.get(0);
+							Location l = new Location(Bukkit.getWorld(s), x, y, z);
+							Mailbox mb = new Mailbox();
+							String origName = key;
+							mb.location = l;
+							String insName = "";
+							mb.isPublic = origName.charAt(0) == '#';
+							
+							if (!mb.isPublic) {
+								insName = Bukkit.getOfflinePlayer(key).getUniqueId().toString();
+							} else {
+								insName = key;
+							}
+							
+							String sql = "INSERT INTO Mailboxes (Player, World, X, Y, Z, Public) VALUES ('"
+									+ insName									+ "','"
+									+ mb.location.getWorld().getName()
+									+ "','"
+									+ mb.location.getBlockX()
+									+ "','"
+									+ mb.location.getBlockY()
+									+ "','"
+									+ mb.location.getBlockZ()
+									+ "','"
+									+ ((mb.isPublic) ? 1 : 0) + "');";
+						   executeSQLAsync(sql);
+
+						}
+					} catch (Exception e) {
+						getLogger().info("Exception thrown while trying to add mailboxes!");
+						e.printStackTrace();
+
+					}
+
+					getLogger().info("Added " + mailBoxes.size() + " mailboxes");
+
+				}
+
+				if (arg3[0].equals("testOfflinePlayer")) {
+
+					final CommandSender senderF = sender;
+					final String ins = "insert into Mailboxes (Player, World, X, Y, Z) VALUES";
+					sender.sendMessage(Bukkit.getOfflinePlayer("Notch")
+							.getUniqueId().toString());
+					sender.sendMessage(Bukkit.getOfflinePlayer("Sums")
+							.getUniqueId().toString());
+					sender.sendMessage(Bukkit.getOfflinePlayer("Dinnerbone")
+							.getUniqueId().toString());
+				}
+
 				if (arg3[0].equals("partytest")) {
 
 					if (sender instanceof Player) {
@@ -6081,6 +6342,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						im.setLore(lore);
 						is.setItemMeta(im);
 						p.getInventory().addItem(is);
+
+					}
+				}
+				if (arg3[0].equals("gethash")) {
+					if (sender instanceof Player) {
+
+						Player p = (Player) sender;
+						int hash = getArmorHash(p.getDisplayName());
+						Material mat = possiblePartyArmors.get(hash);
+						sender.sendMessage("Your int is " + hash);
+						sender.sendMessage("Your mat is " + mat.toString());
 
 					}
 				}
@@ -6388,7 +6660,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					linksCfg.reloadConfig();
 					itCfg.reloadConfig();
 					daleCfg.reloadConfig();
-					mailboxCfg.reloadConfig();
+					// mailboxCfg.reloadConfig();
 					whoIsOnline.reloadConfig();
 					leaderboardCfg.reloadConfig();
 					diamondFoundCfg.reloadConfig();
@@ -7317,143 +7589,146 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			 * mailBoxes) { mailItemsTo(sender, mb.name, true); } return true; }
 			 */
 
-			return mailItemsTo(sender, mailto, false);
+			return mailItemsTo(sender, mailto);
 		} else {
 			noPerms(sender);
 			return true;
 		}
 	}
 
-	private boolean mailItemsTo(CommandSender sender, String mailto, boolean op) {
-		boolean receivingMailBoxExists = false;
-		boolean sendingMailBoxExists = false;
-		Mailbox sendingMailbox = new Mailbox();
-		Mailbox receivingMailbox = new Mailbox();
-		for (int i = 0; i < mailBoxes.size(); i++) {
-			if (mailBoxes.get(i).name.toLowerCase().contains(
-					mailto.toLowerCase())) {
-				receivingMailBoxExists = true;
-				receivingMailbox.setName(mailBoxes.get(i).getName());
-				receivingMailbox.setLocation(mailBoxes.get(i).getLocation());
-			}
-			if (mailBoxes.get(i).name.equals(Bukkit.getServer()
-					.getPlayer(sender.getName()).getDisplayName())) {
-				sendingMailBoxExists = true;
-				sendingMailbox.setName(mailBoxes.get(i).getName());
-				sendingMailbox.setLocation(mailBoxes.get(i).getLocation());
-			}
-		}
-
-		if (!sendingMailBoxExists) {
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.MAILDOESNTHAVEMAILBOX.toString());
-			sender.sendMessage(msg);
-
-			// sender.sendMessage("§cYou don't have a mailbox!  Put a chest on top of a fence post!");
-			return true;
-		}
-		if (!receivingMailBoxExists) {
-			sender.sendMessage("§cThere is no mailbox with §6\"" + mailto
-					+ "\"§c in it.  Check your spelling!");
-			return true;
-		}
-
-		if (sendingMailbox.getName().equals(receivingMailbox.getName())) {
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.MAILTOSELF.toString());
-			sender.sendMessage(msg);
-
-			// sender.sendMessage("§cYou can't send mail to yourself!");
-			return true;
-		}
-
-		Chest sendingChest = (Chest) sendingMailbox.getLocation().getBlock()
-				.getState();
-		Chest receivingChest = (Chest) receivingMailbox.getLocation()
-				.getBlock().getState();
-
-		ItemStack[] sendingItems = sendingChest.getInventory().getContents();
-		ItemStack[] receivingItems = receivingChest.getInventory()
-				.getContents();
-
-		int sendingItemsCount = 0;
-		int receivingItemsCount = 0;
-
-		for (int i = 0; i < sendingItems.length; i++) {
-			if (sendingItems[i] != null) {
-				sendingItemsCount++;
-			}
-		}
-
-		for (int i = 0; i < receivingItems.length; i++) {
-			if (receivingItems[i] != null) {
-				receivingItemsCount++;
-			}
-		}
-
-		if (sendingItemsCount == 0) {
-			// sender.sendMessage("§cYou don't have any items in your mailbox!");
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.MAILEMPTY.toString());
-			sender.sendMessage(msg);
-
-			return true;
-		}
-
-		if (receivingItemsCount == receivingItems.length) {
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.MAILFULL.toString());
-			sender.sendMessage(String.format(msg, receivingMailbox.name));
-
-			/*
-			 * sender.sendMessage("§6" + receivingMailbox.name +
-			 * "§2's mailbox is full!");
-			 */
-			return true;
-		}
-
-		if (receivingItems.length - receivingItemsCount < sendingItemsCount) {
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.MAILNOTENOUGHSPACE.toString());
-			sender.sendMessage(String.format(msg, receivingMailbox.name,
-					((receivingItems.length - receivingItemsCount) - 1)));
-
-			/*
-			 * sender.sendMessage("§6" + receivingMailbox.name +
-			 * "§2's mailbox can only hold " + ((receivingItems.length -
-			 * receivingItemsCount) - 1) + " more slots!  Send less items!");
-			 */
-			return true;
-		}
-
-		for (int i = 0; i < sendingItems.length; i++) {
-			if (sendingItems[i] != null) {
-				receivingChest.getInventory().addItem(sendingItems[i]);
-				if (!op) {
-					sendingChest.getInventory().remove(sendingItems[i]);
+	private boolean mailItemsTo(CommandSender sender, String mailto) {
+		if (sender instanceof Player) {
+			Player p = (Player) sender;
+			boolean receivingMailBoxExists = false;
+			boolean sendingMailBoxExists = hasAMailbox(p.getUniqueId());
+			Mailbox sendingMailbox = new Mailbox();
+			Mailbox receivingMailbox = new Mailbox();
+			for (Mailbox mb : mailBoxes) {
+				if (mb.actualName.toLowerCase().contains(mailto.toLowerCase())) {
+					receivingMailBoxExists = true;
+					receivingMailbox.uuid = mb.uuid;
+					receivingMailbox.location = mb.location;
+					receivingMailbox.actualName = mb.actualName;
 				}
-				receivingChest.update();
-				sendingChest.update();
-
+				if (mb.uuid.equals(p.getUniqueId())) {
+					sendingMailbox.uuid = mb.uuid;
+					sendingMailbox.location = mb.location;
+				}
 			}
+
+			if (!sendingMailBoxExists) {
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.MAILDOESNTHAVEMAILBOX.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§cYou don't have a mailbox!  Put a chest on top of a fence post!");
+				return true;
+			}
+			if (!receivingMailBoxExists) {
+				sender.sendMessage("§cThere is no mailbox with §6\"" + mailto
+						+ "\"§c in it.  Check your spelling!");
+				return true;
+			}
+
+			if (sendingMailbox.uuid.equals(receivingMailbox.uuid)) {
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.MAILTOSELF.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§cYou can't send mail to yourself!");
+				return true;
+			}
+
+			Chest sendingChest = (Chest) sendingMailbox.location.getBlock()
+					.getState();
+			Chest receivingChest = (Chest) receivingMailbox.location.getBlock()
+					.getState();
+
+			ItemStack[] sendingItems = sendingChest.getInventory()
+					.getContents();
+			ItemStack[] receivingItems = receivingChest.getInventory()
+					.getContents();
+
+			int sendingItemsCount = 0;
+			int receivingItemsCount = 0;
+
+			for (int i = 0; i < sendingItems.length; i++) {
+				if (sendingItems[i] != null) {
+					sendingItemsCount++;
+				}
+			}
+
+			for (int i = 0; i < receivingItems.length; i++) {
+				if (receivingItems[i] != null) {
+					receivingItemsCount++;
+				}
+			}
+
+			if (sendingItemsCount == 0) {
+				// sender.sendMessage("§cYou don't have any items in your mailbox!");
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.MAILEMPTY.toString());
+				sender.sendMessage(msg);
+
+				return true;
+			}
+
+			if (receivingItemsCount == receivingItems.length) {
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.MAILFULL.toString());
+				sender.sendMessage(String.format(msg,
+						receivingMailbox.actualName));
+
+				/*
+				 * sender.sendMessage("§6" + receivingMailbox.name +
+				 * "§2's mailbox is full!");
+				 */
+				return true;
+			}
+
+			if (receivingItems.length - receivingItemsCount < sendingItemsCount) {
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.MAILNOTENOUGHSPACE.toString());
+				sender.sendMessage(String.format(msg,
+						receivingMailbox.actualName,
+						((receivingItems.length - receivingItemsCount) - 1)));
+
+				/*
+				 * sender.sendMessage("§6" + receivingMailbox.name +
+				 * "§2's mailbox can only hold " + ((receivingItems.length -
+				 * receivingItemsCount) - 1) +
+				 * " more slots!  Send less items!");
+				 */
+				return true;
+			}
+
+			for (int i = 0; i < sendingItems.length; i++) {
+				if (sendingItems[i] != null) {
+					receivingChest.getInventory().addItem(sendingItems[i]);
+					sendingChest.getInventory().remove(sendingItems[i]);
+					receivingChest.update();
+					sendingChest.update();
+				}
+			}
+
+			String msg = getTranslationLanguage(sender,
+					stringKeys.MAILSUCCESS.toString());
+			sender.sendMessage(String.format(msg, receivingMailbox.actualName));
+			/*
+			 * sender.sendMessage("§2Your items were sent to §6" +
+			 * receivingMailbox.name + "§2's mailbox!\n");
+			 */
+			doRandomFirework(receivingMailbox.location.getWorld(),
+					receivingMailbox.location);
+
+			return true;
 		}
-
-		String msg = getTranslationLanguage(sender,
-				stringKeys.MAILSUCCESS.toString());
-		sender.sendMessage(String.format(msg, receivingMailbox.name));
-		/*
-		 * sender.sendMessage("§2Your items were sent to §6" +
-		 * receivingMailbox.name + "§2's mailbox!\n");
-		 */
-		doRandomFirework(receivingMailbox.getLocation().getWorld(),
-				receivingMailbox.getLocation());
-
-		return true;
+		return false;
 
 	}
 
@@ -7530,7 +7805,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				if (arg3[0].toLowerCase().equals("mailbox")) {
 					for (int i = 0; i < mailBoxes.size(); i++) {
-						if (sender.getName().equals(mailBoxes.get(i).name)) {
+						if (sender.getName().equals(mailBoxes.get(i).uuid)) {
 							Bukkit.getServer()
 									.getPlayer(sender.getName())
 									.setCompassTarget(mailBoxes.get(i).location);
@@ -7998,19 +8273,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onChestPlace(BlockPlaceEvent event) {
 		if (event.getBlock().getType().equals(Material.CHEST)
 				|| event.getBlock().getType().equals(Material.TRAPPED_CHEST)) {
-			for (int i = 0; i < mailBoxes.size(); i++) {
+			for (Mailbox mb : mailBoxes) {
 				if (event.getBlock().equals(
-						mailBoxes.get(i).getLocation().getBlock()
-								.getRelative(BlockFace.NORTH))
+						mb.location.getBlock().getRelative(BlockFace.NORTH))
 						|| event.getBlock().equals(
-								mailBoxes.get(i).getLocation().getBlock()
-										.getRelative(BlockFace.SOUTH))
+								mb.location.getBlock().getRelative(
+										BlockFace.SOUTH))
 						|| event.getBlock().equals(
-								mailBoxes.get(i).getLocation().getBlock()
-										.getRelative(BlockFace.EAST))
+								mb.location.getBlock().getRelative(
+										BlockFace.EAST))
 						|| event.getBlock().equals(
-								mailBoxes.get(i).getLocation().getBlock()
-										.getRelative(BlockFace.WEST))) {
+								mb.location.getBlock().getRelative(
+										BlockFace.WEST))) {
 					event.setCancelled(true);
 
 					String msg = getTranslationLanguage(event.getPlayer(),
@@ -8418,10 +8692,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 											EntityType.EXPERIENCE_ORB)) {
 								if (entities[k].getCustomName() == null) {
 									entities[k].remove();
+									count++;
 								}
-
 							}
-							count++;
 						}
 					}
 					// getLogger().info(s);
@@ -8531,11 +8804,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			for (Mailbox mb : mailBoxes) {
 				if (mb.location.equals(event.getBlock()
 						.getRelative(BlockFace.UP).getLocation())) {
-					if (PUBLIC_MAILBOXES.contains(mb.name)) {
-						return;
-					}
-					if (!mb.getName()
-							.equals(event.getPlayer().getDisplayName())) {
+					if (!mb.uuid.equals(event.getPlayer().getUniqueId())) {
 						event.setCancelled(true);
 						return;
 					}
@@ -9235,8 +9504,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public void putBookAndStuffInMailbox(String name) {
 		for (Mailbox mb : mailBoxes) {
-			if (mb.name.equals(name)) {
-				Chest receivingChest = (Chest) mb.getLocation().getBlock()
+			if (mb.uuid.equals(name)) {
+				Chest receivingChest = (Chest) mb.location.getBlock()
 						.getState();
 
 				ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
