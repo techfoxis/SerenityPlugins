@@ -2455,9 +2455,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPLayerJoin(PlayerJoinEvent event) {
+		Long now = System.currentTimeMillis();
 		if (!attachments.containsKey(event.getPlayer().getUniqueId())) {
 			addAndAttachAppropraitePermissionToPlayer(event.getPlayer());
 		}
+		
+		printDebugTimings("Time to add permissions: ", now);
 
 		SerenityPlayer sp = getSerenityPlayer(event.getPlayer().getUniqueId());
 		if (sp != null) {
@@ -2477,6 +2480,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			insertSerenityPlayer(event.getPlayer());
 			serenityPlayers.add(sp);
 		}
+		
+		printDebugTimings("Time check SP Player cache: ", now);
 
 		if (!event.getPlayer().hasPlayedBefore()) {
 			for (Player p : Bukkit.getOnlinePlayers()) {
@@ -2499,11 +2504,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			event.getPlayer().teleport(
 					event.getPlayer().getWorld().getSpawnLocation());
 		}
+		
+		printDebugTimings("Time check if Player was new: ", now);
 
 		if (!event.getPlayer().isOp()) {
 			event.setJoinMessage(getChatColor(event.getPlayer())
 					+ event.getJoinMessage().substring(2));
 		}
+		printDebugTimings("Time to set join message: ", now);
 
 		if (!event.getPlayer().isOp()) {
 			Date d = new Date();
@@ -2511,8 +2519,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			String date = sdtf.format(d);
 			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
 					date);
-			whoIsOnline.saveConfig();
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable(){
+				@Override
+				public void run(){
+					whoIsOnline.saveConfig();		
+				}
+			}, 0L);
 		}
+		
+		printDebugTimings("Time set who is online: ", now);
 
 		if (event.getPlayer().isOp()) {
 			event.getPlayer().setSleepingIgnored(true);
@@ -2530,6 +2545,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			event.getPlayer().setDisplayName("[Server]");
 			event.setJoinMessage(null);
 		}
+		
+		printDebugTimings("Time set hide OP and set things: ", now);
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (p.isOp()) {
@@ -2537,13 +2554,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				p.sendMessage("Hidden from " + event.getPlayer().getName());
 			}
 		}
+		
+		printDebugTimings("Time set hide OP from non OP: ", now);
 
 		setListNames();
+		
+		printDebugTimings("Time set list names: ", now);
 
 		if (!knownIp(event.getPlayer().getAddress().getAddress()
 				.getHostAddress()))
 			storeIp(event.getPlayer().getAddress().getAddress()
 					.getHostAddress(), event.getPlayer().getName());
+		printDebugTimings("Time set IP: ", now);
 
 		for (Mailbox mb : mailBoxes) {
 			if (mb.uuid.equals(event.getPlayer().getUniqueId())) {
@@ -2556,6 +2578,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}
+		
+		printDebugTimings("Time to check mail: ", now);
 
 		return;
 	}
