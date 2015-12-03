@@ -1,6 +1,7 @@
 package com.minecraft.hal.SerenityPlugins;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -133,7 +134,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		CommandExecutor {
 
 	public SerenityPlugins global = this;
-	public ConfigAccessor playtimeCfg;
 	public ConfigAccessor mailboxCfg;
 	public ConfigAccessor statusCfg;
 	public ConfigAccessor chatcolorCfg;
@@ -149,7 +149,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor leaderboardCfg;
 	// public ConfigAccessor portalAnalytics;
 	public ConfigAccessor whoIsOnline;
-	public ConfigAccessor itCfg;
 	public ConfigAccessor diamondFoundCfg;
 	public ConfigAccessor voteCfg;
 	public ConfigAccessor monsterCfg;
@@ -175,6 +174,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public Set<PlayerStatus> playerStatuses;
 	public List<FireWorkShow> fireworkShowLocations;
 	public String mainMotd = "";
+	public List<SerenityPlayer> serenityPlayers;
 
 	public short specEff = 0;
 
@@ -352,8 +352,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	};
 
 	public boolean pluginReady = false;
-	public SQLite db = new SQLite(this);
-	public Connection conn = db.getConnection();
 
 	// public String[] betters;
 	// public String[] horses;
@@ -361,32 +359,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@Override
 	public void onEnable() {
 		sdtf.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-		// create tables if they don't exist
-		try {
-			Statement statement = conn.createStatement();
-			String sql = "create table if not exists Mailboxes (Player TEXT PRIMARY KEY, World TEXT, X INTEGER, Y INTEGER, Z INTEGER, Public BOOLEAN)";
-			statement.executeUpdate(sql);
-			sql = "create table if not exists ChatColor (Player TEXT PRIMARY KEY, Color TEXT)";
-			statement.executeUpdate(sql);
-			sql = "create table if not exists Fireworks (Player TEXT PRIMARY KEY, World TEXT, X INTEGER, Y INTEGER, Z INTEGER)";
-			statement.executeUpdate(sql);
-			sql = "create table if not exists IP (IP TEXT, Player TEXT)";
-			statement.executeUpdate(sql);
-			sql = "create table if not exists Playtime (Player TEXT PRIMARY KEY, Time INTEGER)";
-			statement.executeUpdate(sql);
-			sql = "create table if not exists ProtectedAreasLocations (Player TEXT, World TEXT, X1 INTEGER, Z1 INTEGER, X2 INTEGER, Z2 INTEGER)";
-			statement.executeUpdate(sql);
-			sql = "create table if not exists ProtectedAreasTrust (Player TEXT PRIMARY KEY, Friend TEXT)";
-			statement.executeUpdate(sql);
-			statement.close();
-		} catch (SQLException e2) {
-			e2.printStackTrace();
-		}
-
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
 
+		createTables();
+		serenityPlayers = loadSerenityPlayersFromDatabase();
+		mailBoxes = new ArrayList<Mailbox>();
+		loadSerenityMailboxesFromDatabase();
+		// populateMailboxes();
+
+		// populatePlayerTable();
 		// AFKInv = Bukkit.createInventory(null, 9, "AFK INVENTORY");
 
 		// AFKInv.setMaxStackSize(0);
@@ -479,7 +461,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		racers = new HashMap<String, Long>();
 
 		mailboxCfg = new ConfigAccessor(this, "mailboxes.yml");
-		playtimeCfg = new ConfigAccessor(this, "playtime.yml");
 		statusCfg = new ConfigAccessor(this, "status.yml");
 		fireworksCfg = new ConfigAccessor(this, "fireworks.yml");
 		protectedAreasCfg = new ConfigAccessor(this, "protectedareas.yml");
@@ -493,7 +474,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		daleCfg = new ConfigAccessor(this, "dale.yml");
 		leaderboardCfg = new ConfigAccessor(this, "leaderboard.yml");
 		whoIsOnline = new ConfigAccessor(this, "whoIsOnline.yml");
-		itCfg = new ConfigAccessor(this, "it.yml");
 		diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
 		voteCfg = new ConfigAccessor(this, "vote.yml");
 		monsterCfg = new ConfigAccessor(this, "monster.yml");
@@ -501,7 +481,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ipCfg = new ConfigAccessor(this, "ip.yml");
 		ipCfg.saveDefaultConfig();
 
-		mailBoxes = new ArrayList<Mailbox>();
 		preppedToProtectArea = new ArrayList<PlayerProtect>();
 		preppedToUnProtectChunk = new ArrayList<Player>();
 		localChatters = new ArrayList<Player>();
@@ -592,39 +571,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			addAndAttachAppropraitePermissionToPlayer(p);
 		}
 
-		try {
-			Statement stm = conn.createStatement();
-			ResultSet boxes = stm.executeQuery("SELECT * FROM Mailboxes");
-			while (boxes.next()) {
-				Mailbox mb = new Mailbox();
-				OfflinePlayer p = null;
-				try {
-					p = Bukkit.getServer().getOfflinePlayer(
-							UUID.fromString(boxes.getString("Player")));
-				} catch (Exception e) {
-					p = Bukkit.getServer().getOfflinePlayer(
-							boxes.getString("Player"));
-				}
+		/*
+		 * try { Statement stm = conn.createStatement(); ResultSet boxes =
+		 * stm.executeQuery("SELECT * FROM Mailboxes"); while (boxes.next()) {
+		 * Mailbox mb = new Mailbox(); OfflinePlayer p = null; try { p =
+		 * Bukkit.getServer().getOfflinePlayer(
+		 * UUID.fromString(boxes.getString("Player"))); } catch (Exception e) {
+		 * p = Bukkit.getServer().getOfflinePlayer( boxes.getString("Player"));
+		 * }
+		 * 
+		 * mb.isPublic = boxes.getBoolean("Public"); mb.uuid = p.getUniqueId();
+		 * mb.location = new Location(Bukkit.getWorld(boxes
+		 * .getString("World")), (double) boxes.getInt("X"), (double)
+		 * boxes.getInt("Y"), (double) boxes.getInt("Z")); mb.actualName =
+		 * p.getName();
+		 * 
+		 * if (p.isOp()) { mb.actualName = "[Server]"; } mailBoxes.add(mb);
+		 * 
+		 * } } catch (SQLException e1) { // TODO Auto-generated catch block
+		 * e1.printStackTrace(); }
+		 */
 
-				mb.isPublic = boxes.getBoolean("Public");
-				mb.uuid = p.getUniqueId();
-				mb.location = new Location(Bukkit.getWorld(boxes
-						.getString("World")), (double) boxes.getInt("X"),
-						(double) boxes.getInt("Y"), (double) boxes.getInt("Z"));
-				mb.actualName = p.getName();
-
-				if (p.isOp()) {
-					mb.actualName = "[Server]";
-				}
-				mailBoxes.add(mb);
-
-			}
-		} catch (SQLException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-		
 		ConfigurationSection statusesFromConfig = statusCfg.getConfig()
 				.getConfigurationSection("Status");
 
@@ -841,6 +808,218 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		getLogger().info("Serenity Plugins enabled");
 	}
 
+	private List<SerenityPlayer> loadSerenityPlayersFromDatabase() {
+
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			List<SerenityPlayer> sps = new ArrayList<SerenityPlayer>();
+			ResultSet rs = st.executeQuery("Select * FROM Player");
+			while (rs.next()) {
+				SerenityPlayer sp = new SerenityPlayer();
+				sp.chatColor = rs.getString("Color");
+				sp.uuid = UUID.fromString(rs.getString("UUID"));
+				sp.name = rs.getString("Name");
+				sp.IP = rs.getString("IP");
+				sp.minutes = rs.getInt("Time");
+				sp.firstPlayed = rs.getLong("FirstPlayed");
+				sp.lastPlayed = rs.getLong("LastPlayed");
+				sp.localeId = rs.getInt("Locale");
+				sp.isOp = rs.getBoolean("Op");
+				sps.add(sp);
+			}
+			if (conn != null)
+				conn.close();
+			getLogger().info(
+					"Time to get SerenityPlayer cache: "
+							+ (System.currentTimeMillis() - now) + "ms");
+			return sps;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	private void loadSerenityMailboxesFromDatabase() {
+
+		mailBoxes = new ArrayList<Mailbox>();
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			ResultSet rs = st.executeQuery("Select * FROM Mailbox");
+			while (rs.next()) {
+				Mailbox mb = new Mailbox();
+				mb.uuid = UUID.fromString(rs.getString("Owner"));
+				String world = rs.getString("World");
+				int x = rs.getInt("X");
+				int y = rs.getInt("Y");
+				int z = rs.getInt("Z");
+				mb.isPublic = rs.getBoolean("Public");
+				mb.name = rs.getString("Name");
+				mb.location = new Location(Bukkit.getWorld(world), (double) x,
+						(double) y, (double) z);
+				mailBoxes.add(mb);
+			}
+			if (conn != null)
+				conn.close();
+			getLogger().info(
+					"Time to get Mailboxes loaded: "
+							+ (System.currentTimeMillis() - now) + "ms");
+			return;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return;
+	}
+
+	private void populateMailboxes() {
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Connection conn = getConnection();
+					Statement st = conn.createStatement();
+
+					ConfigurationSection mailBoxesFromConfig = mailboxCfg
+							.getConfig().getConfigurationSection("Mailboxes");
+
+					for (String key : mailBoxesFromConfig.getKeys(false)) {
+
+						ArrayList<String> coords = new ArrayList<String>();
+						for (Object object : mailBoxesFromConfig.getList(key)) {
+							coords.add(object.toString());
+						}
+
+						int x = Integer.parseInt(coords.get(1));
+						int y = Integer.parseInt(coords.get(2));
+						int z = Integer.parseInt(coords.get(3));
+						String s = coords.get(0);
+						Location l = new Location(Bukkit.getWorld(s), x, y, z);
+						Mailbox mb = new Mailbox();
+						String origName = key;
+						mb.location = l;
+						mb.isPublic = false;
+
+						UUID insName = Bukkit.getOfflinePlayer(key)
+								.getUniqueId();
+
+						if (uUIDisCached(insName)) {
+							String sql = "INSERT INTO Mailbox (Owner, World, X, Y, Z, Public, Name) VALUES ('"
+									+ insName
+									+ "','"
+									+ mb.location.getWorld().getName()
+									+ "','"
+									+ mb.location.getBlockX()
+									+ "','"
+									+ mb.location.getBlockY()
+									+ "','"
+									+ mb.location.getBlockZ()
+									+ "','"
+									+ ((mb.isPublic) ? 1 : 0)
+									+ "','"
+									+ key
+									+ "');";
+							st.executeUpdate(sql);
+						}
+					}
+					loadSerenityMailboxesFromDatabase();
+					if (conn != null)
+						conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}, 25L);
+	}
+
+	protected boolean uUIDisCached(UUID insName) {
+		for (SerenityPlayer sp : serenityPlayers) {
+			if (insName.equals(sp.uuid)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected UUID getSPUUID(String insName) {
+		for (SerenityPlayer sp : serenityPlayers) {
+			if (insName.equals(sp.name)) {
+				return sp.uuid;
+			}
+		}
+
+		return null;
+	}
+
+	private void createTables() {
+		try {
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+			String sql = "CREATE TABLE IF NOT EXISTS Player (UUID VARCHAR(40) NOT NULL PRIMARY KEY , Name VARCHAR(20), IP VARCHAR(15), Time INT, FirstPlayed Long, LastPlayed Long, Color VARCHAR(4), Locale INT, Op TINYINT(1))";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Mailbox (M_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+					+ "Owner VARCHAR(40),"
+					+ "FOREIGN KEY (Owner) REFERENCES Player(UUID), World VARCHAR(20), "
+					+ " X INT, Y INT, Z INT, Public TINYINT(0), Name VARCHAR(20))";
+			st.executeUpdate(sql);
+
+			if (conn != null)
+				conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private void populatePlayerTable() {
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Connection conn = getConnection();
+					for (OfflinePlayer p : Bukkit.getOfflinePlayers()) {
+						Statement st = conn.createStatement();
+						String sql = "INSERT INTO Player VALUES ('"
+								+ p.getUniqueId().toString() + "','"
+								+ p.getName() + "', null,"
+								+ getPlayerMinutes(p.getName()) + ","
+								+ p.getFirstPlayed() + "," + p.getLastPlayed()
+								+ ",'" + getChatColor(p.getUniqueId())
+								+ "',1033,0)";
+						st.executeUpdate(sql);
+					}
+					serenityPlayers = loadSerenityPlayersFromDatabase();
+					if (conn != null)
+						conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}, 25L);
+	}
+
+	protected Connection getConnection() {
+		try {
+			return DriverManager.getConnection(
+					this.getConfig().getString("database"), this.getConfig()
+							.getString("dbUser"),
+					this.getConfig().getString("dbPass"));
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	@EventHandler
 	public void CraftItemEvent(org.bukkit.event.inventory.CraftItemEvent event) {
 		if (event.getRecipe().getResult().hasItemMeta()
@@ -1023,13 +1202,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					printDebugTimings("Time to check party sticks", now);
 
 					printDebugTimings("*****TICK TIME:  ", now);
-
-					String it = itCfg.getConfig().getString("It");
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (p.getDisplayName().equals(it)) {
-							doSerenitySpook(p);
-						}
-					}
 				}
 			}
 
@@ -1304,50 +1476,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 															.toString()));
 						}
 					}
-				}
-			}
-		}
-	}
-
-	@EventHandler
-	public void PlayerClickOtherPlayer(PlayerInteractEntityEvent event) {
-		if (event.getPlayer().getDisplayName()
-				.equals(itCfg.getConfig().getString("It"))) {
-			if (event.getRightClicked().getType().equals(EntityType.PLAYER)) {
-				Player p = (Player) event.getRightClicked();
-				if (p.getDisplayName().equals(
-						itCfg.getConfig().getString("Last"))) {
-					event.getPlayer()
-							.sendMessage(
-									"§cNo tag-backs!  You must spook a different player");
-				} else {
-					event.getPlayer().sendMessage(
-							"§7You spooked §8" + p.getDisplayName());
-					String spookyMsg = "Serenity Spook";
-					String result = "";
-					for (int i = 0; i < spookyMsg.length(); i++) {
-						int x = i % 3;
-						switch (x) {
-						case 0:
-							result += "§f§l" + spookyMsg.charAt(i);
-							break;
-						case 1:
-							result += "§7§l" + spookyMsg.charAt(i);
-							break;
-						case 2:
-							result += "§8§l" + spookyMsg.charAt(i);
-							break;
-						}
-					}
-					p.sendMessage("§7(Right click another player to spook them.  No tag-backs!)");
-					getLogger().info(
-							"§c" + event.getPlayer().getDisplayName()
-									+ " §2tagged §6" + p.getDisplayName());
-					itCfg.getConfig().set("It", p.getDisplayName());
-					itCfg.getConfig().set("Last",
-							event.getPlayer().getDisplayName());
-					itCfg.saveConfig();
-					itCfg.reloadConfig();
 				}
 			}
 		}
@@ -1994,8 +2122,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	protected void checkForTimes() {
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (!p.hasPermission("SerenityPlugins.oneHour")) {
-				if (playtimeCfg.getConfig().getInt(
-						"Playtime." + p.getUniqueId().toString()) >= 60) {
+				if (getPlayerMinutes(p.getDisplayName()) >= 60) {
 
 					p.sendMessage(getTranslationLanguage(p,
 							stringKeys.TIMEONEHOUR.toString()));
@@ -2008,8 +2135,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 			if (!p.hasPermission("SerenityPlugins.threeHour")) {
-				if (playtimeCfg.getConfig().getInt(
-						"Playtime." + p.getUniqueId().toString()) >= 180) {
+				if (getPlayerMinutes(p.getDisplayName()) >= 180) {
 					p.sendMessage(getTranslationLanguage(p,
 							stringKeys.TIMETHREEHOUR.toString()));
 					// p.sendMessage("§2\nThanks for playing!  \nYou may now vote for server events with /vote !\n");
@@ -2021,8 +2147,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 			if (!p.hasPermission("SerenityPlugins.twelveHour")) {
-				if (playtimeCfg.getConfig().getInt(
-						"Playtime." + p.getUniqueId().toString()) >= 720) {
+				if (getPlayerMinutes(p.getDisplayName()) >= 720) {
 					// p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now change your chat color with /setchatcolor !\n");
 					p.sendMessage(getTranslationLanguage(p,
 							stringKeys.TIMETWELVEHOUR.toString()));
@@ -2035,8 +2160,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 			}
-			if (playtimeCfg.getConfig().getInt(
-					"Playtime." + p.getUniqueId().toString()) == 1440) {
+			if (getPlayerMinutes(p.getDisplayName()) == 1440) {
 				for (ProtectedArea pa : areas) {
 					if (pa.owner.equals("[Server]")) {
 						ArrayList<String> list = new ArrayList<String>();
@@ -2109,7 +2233,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			 * }
 			 */
 			if (!isAfk(p)) {
-				addAMinute(p);
+				addAMinute(p.getUniqueId());
 			} else {
 				short t = afkTime.getOrDefault(p.getName(), (short) 1);
 				t++;
@@ -2122,37 +2246,61 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		if (Bukkit.getOnlinePlayers().size() > 0) {
-			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-				@Override
-				public void run() {
-					playtimeCfg.saveConfig();
-					// whoIsOnline.saveConfig();
-				}
-			});
+			saveDirtySerenityPlayers();
+			// whoIsOnline.saveConfig();
 		}
 	}
 
-	private void addAMinute(Player player) {
+	protected void saveDirtySerenityPlayers() {
 
-		final String uid = player.getUniqueId().toString();
-		final int playTime = playtimeCfg.getConfig().getInt(
-				"Playtime." + player.getUniqueId().toString()) + 1;
+		Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+			@Override
+			public void run() {
+				for (SerenityPlayer sp : serenityPlayers) {
+					if (sp.isDirty) {
+						executeSQLAsync(getSQLUpdateForSerenityPlayer(sp));
+						sp.setDirty(false);
+					}
+				}
+			}
+		}, 0L);
+	}
 
-		playtimeCfg.getConfig().set("Playtime." + uid, playTime);
+	protected String getSQLUpdateForSerenityPlayer(SerenityPlayer sp) {
+		String sql = "UPDATE Player Set " + "Name='" + sp.name + "'," + "IP='"
+				+ sp.IP + "'," + "Time=" + sp.minutes + "," + "FirstPlayed="
+				+ sp.firstPlayed + "," + "LastPlayed=" + sp.lastPlayed + ","
+				+ "Color='" + sp.chatColor + "'," + "Locale='" + sp.localeId
+				+ "'," + "Op=" + (sp.isOp ? 1 : 0) + " WHERE UUID='" + sp.uuid
+				+ "';";
+		return sql;
+	}
+
+	private void addAMinute(UUID uuid) {
+		getSerenityPlayer(uuid).setMinutes(getSerenityPlayer(uuid).minutes + 1);
+		getSerenityPlayer(uuid).setDirty(true);
+	}
+
+	private SerenityPlayer getSerenityPlayer(UUID uuid) {
+		for (SerenityPlayer sp : serenityPlayers) {
+			if (sp.uuid.equals(uuid)) {
+				return sp;
+			}
+		}
+		return null;
+	}
+
+	private SerenityPlayer getSerenityPlayer(String name) {
+		for (SerenityPlayer sp : serenityPlayers) {
+			if (sp.name.equals(name)) {
+				return sp;
+			}
+		}
+		return null;
 	}
 
 	@Override
 	public void onDisable() {
-
-		try {
-			conn.close();
-			db.closeConnection(db.getConnection());
-			conn = null;
-			db = null;
-
-		} catch (SQLException e) { // TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
 		attachments.clear();
 		getLogger().info("Serenity Plugins disabled");
@@ -2252,13 +2400,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */
 	}
 
-	@EventHandler
-	public void onPLayerJoinPerms(PlayerJoinEvent event) {
-		if (!attachments.containsKey(event.getPlayer().getUniqueId())) {
-			addAndAttachAppropraitePermissionToPlayer(event.getPlayer());
-		}
-	}
-
 	private void addAndAttachAppropraitePermissionToPlayer(Player player) {
 		PermissionAttachment attachment = player.addAttachment(this);
 		attachments.put(player.getUniqueId(), attachment);
@@ -2314,6 +2455,65 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPLayerJoin(PlayerJoinEvent event) {
+		if (!attachments.containsKey(event.getPlayer().getUniqueId())) {
+			addAndAttachAppropraitePermissionToPlayer(event.getPlayer());
+		}
+
+		SerenityPlayer sp = getSerenityPlayer(event.getPlayer().getUniqueId());
+		if (sp != null) {
+			sp.setIP(event.getPlayer().getAddress().getAddress()
+					.getHostAddress());
+			sp.setName(event.getPlayer().getName());
+			executeSQLAsync(getSQLUpdateForSerenityPlayer(sp));
+			sp.setDirty(false);
+		}else{
+			sp = new SerenityPlayer();
+			sp.setIP(event.getPlayer().getAddress().getAddress()
+					.getHostAddress());
+			sp.setName(event.getPlayer().getName());
+			sp.setMinutes(0);
+			sp.setFirstPlayed(event.getPlayer().getFirstPlayed());
+			sp.setOp(event.getPlayer().isOp());
+			insertSerenityPlayer(event.getPlayer());
+			serenityPlayers.add(sp);
+		}
+
+		if (!event.getPlayer().hasPlayedBefore()) {
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				if (!event.getPlayer().equals(p)) {
+					if (getPlayerMinutes(p.getDisplayName()) > 720) {
+						// p.sendMessage("§b" + "It's " + "§e"
+						// + event.getPlayer().getDisplayName() + "§b"
+						// + "'s first time on the server!  " + "§c"
+						// + "(Hint: /mailto #Spawn)");
+
+						p.sendMessage(String.format(
+								getTranslationLanguage(p,
+										stringKeys.JOINPLAYERFIRSTLOGIN
+												.toString()), event.getPlayer()
+										.getDisplayName()));
+					}
+				}
+			}
+
+			event.getPlayer().teleport(
+					event.getPlayer().getWorld().getSpawnLocation());
+		}
+
+		if (!event.getPlayer().isOp()) {
+			event.setJoinMessage(getChatColor(event.getPlayer())
+					+ event.getJoinMessage().substring(2));
+		}
+
+		if (!event.getPlayer().isOp()) {
+			Date d = new Date();
+			d.setDate(d.getDate() + 1);
+			String date = sdtf.format(d);
+			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
+					date);
+			whoIsOnline.saveConfig();
+		}
+
 		if (event.getPlayer().isOp()) {
 			event.getPlayer().setSleepingIgnored(true);
 
@@ -2338,39 +2538,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
-		// World world = event.getPlayer().getWorld();
-		// Location location = event.getPlayer().getLocation();
-		/*
-		 * if (!event.getPlayer().isOp()) { for (int i = 0; i < 5; i++) {
-		 * doRandomFirework(world, location); } }
-		 */
-
 		setListNames();
-
-		if (event.getPlayer().getDisplayName()
-				.equals(itCfg.getConfig().getString("It"))) {
-
-			String spookyMsg = "Serenity Spook";
-			String result = "";
-			for (int i = 0; i < spookyMsg.length(); i++) {
-				int x = i % 3;
-				switch (x) {
-				case 0:
-					result += "§f§l" + spookyMsg.charAt(i);
-					break;
-				case 1:
-					result += "§7§l" + spookyMsg.charAt(i);
-					break;
-				case 2:
-					result += "§8§l" + spookyMsg.charAt(i);
-					break;
-				}
-			}
-
-			event.getPlayer().sendMessage(
-					"§6§lYou're still the " + result
-							+ "\n§7(Right click another player to tag them)");
-		}
 
 		if (!knownIp(event.getPlayer().getAddress().getAddress()
 				.getHostAddress()))
@@ -2390,6 +2558,29 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		return;
+	}
+
+	private void insertSerenityPlayer(Player p) {
+		String sql = "INSERT INTO Player VALUES ('"
+				+ p.getUniqueId().toString() + "','"
+				+ p.getName() + "', " + p.getAddress().getAddress().getHostAddress() + ","
+				+ 0 + ","
+				+ p.getFirstPlayed() + "," + p.getLastPlayed()
+				+ ",'" + getChatColor(p.getUniqueId())
+				+ "',1033,0)";
+		Connection conn = getConnection();
+		Statement st;
+		try {
+			st = conn.createStatement();
+			st.executeUpdate(sql);
+			conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
 	}
 
 	private boolean knownIp(String hostAddress) {
@@ -2414,9 +2605,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getPlayer().isOp()) {
 			event.setQuitMessage(null);
 		}
+		
+		if (!event.getPlayer().isOp()) {
+			event.setQuitMessage(getChatColor(event.getPlayer())
+					+ event.getQuitMessage().substring(2));
+		}
 
+		if (!event.getPlayer().isOp()) {
+			String date = sdtf.format(new Date());
+			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
+					date);
+			whoIsOnline.saveConfig();
+		}
+		
 		celebrators.remove(event.getPlayer().getName());
-
+		
+		getSerenityPlayer(event.getPlayer().getUniqueId()).setLastPlayed(event.getPlayer().getLastPlayed());
 	}
 
 	@EventHandler
@@ -2764,37 +2968,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		return "";
 	}
 
-	@EventHandler
-	public void onPlayerJoinEvent(PlayerJoinEvent event) {
-		if (!event.getPlayer().isOp()) {
-			event.setJoinMessage(getChatColor(event.getPlayer())
-					+ event.getJoinMessage().substring(2));
+	private String getChatColor(UUID player) {
+		if (chatcolorCfg.getConfig()
+				.getString("ChatColor." + player.toString()) != null) {
+			return chatcolorCfg.getConfig().getString(
+					"ChatColor." + player.toString());
 		}
-
-		if (!event.getPlayer().isOp()) {
-			Date d = new Date();
-			d.setDate(d.getDate() + 1);
-			String date = sdtf.format(d);
-			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
-					date);
-			whoIsOnline.saveConfig();
-		}
-	}
-
-	@EventHandler
-	public void onPlayerQuitEvent(PlayerQuitEvent event) {
-		if (!event.getPlayer().isOp()) {
-			event.setQuitMessage(getChatColor(event.getPlayer())
-					+ event.getQuitMessage().substring(2));
-		}
-
-		if (!event.getPlayer().isOp()) {
-			String date = sdtf.format(new Date());
-			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
-					date);
-			whoIsOnline.saveConfig();
-		}
-
+		return "";
 	}
 
 	@EventHandler
@@ -2821,27 +3001,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPlayerFirstTime(PlayerJoinEvent event) {
-		if (!event.getPlayer().hasPlayedBefore()) {
-			for (Player p : Bukkit.getOnlinePlayers()) {
-				if (!event.getPlayer().equals(p)) {
-					if (getPlayerMinutes(p.getDisplayName()) > 720) {
-						// p.sendMessage("§b" + "It's " + "§e"
-						// + event.getPlayer().getDisplayName() + "§b"
-						// + "'s first time on the server!  " + "§c"
-						// + "(Hint: /mailto #Spawn)");
-
-						p.sendMessage(String.format(
-								getTranslationLanguage(p,
-										stringKeys.JOINPLAYERFIRSTLOGIN
-												.toString()), event.getPlayer()
-										.getDisplayName()));
-					}
-				}
-			}
-
-			event.getPlayer().teleport(
-					event.getPlayer().getWorld().getSpawnLocation());
-		}
 	}
 
 	@EventHandler
@@ -2900,16 +3059,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return;
 				}
 
-				if (!hasAMailbox(event.getPlayer().getUniqueId())) {
+				if (!hasAMailbox(event.getPlayer().getUniqueId()) || event.getPlayer().isOp()) {
 					Mailbox mb = new Mailbox();
-					mb.actualName = event.getPlayer().getDisplayName();
+					mb.name = event.getPlayer().getDisplayName();
 					mb.uuid = event.getPlayer().getUniqueId();
 					mb.location = chestLoc;
-					mb.isPublic = mb.actualName.charAt(0) == '#';
+					mb.isPublic = event.getPlayer().isOp();
 					mailBoxes.add(mb);
-					String sql = "INSERT INTO Mailboxes (Player, World, X, Y, Z, Public) VALUES ('"
-							+ (event.getPlayer().isOp() ? event.getPlayer()
-									.getDisplayName() : mb.uuid)
+					String sql = "INSERT INTO Mailbox (Owner, World, X, Y, Z, Public, Name) VALUES ('"
+							+ mb.uuid.toString()
 							+ "','"
 							+ mb.location.getWorld().getName()
 							+ "','"
@@ -2918,8 +3076,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							+ mb.location.getBlockY()
 							+ "','"
 							+ mb.location.getBlockZ()
-							+ "','"
-							+ ((mb.isPublic) ? 1 : 0) + "');";
+							+ "',"
+							+ ((mb.isPublic) ? 1 : 0) + ",'" + mb.name + "');";
 					event.getPlayer().sendMessage(
 							getTranslationLanguage(event.getPlayer(),
 									stringKeys.MAILCREATEDAMAILBOX.toString()));
@@ -3057,7 +3215,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									stringKeys.MAILOPENEDAPUBLICMAILBOX
 											.toString());
 							event.getPlayer().sendMessage(
-									String.format(msg, mb.actualName));
+									String.format(msg, mb.name));
 
 							return;
 						}
@@ -3068,7 +3226,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									stringKeys.MAILINTERRACTEDWITHAMAILBOX
 											.toString());
 							event.getPlayer().sendMessage(
-									String.format(msg, mb.actualName));
+									String.format(msg, mb.name));
 
 							event.setCancelled(true);
 							return;
@@ -3467,13 +3625,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				Mailbox mb = mailBoxes.get(i);
 				if (mb.location.equals(event.getBlock().getLocation())
 						&& mb.uuid == event.getPlayer().getUniqueId()) {
-					String sql = "DELETE FROM Mailboxes where Player = '"
-							+ Bukkit.getOfflinePlayer(
-									event.getPlayer().getDisplayName())
-									.getUniqueId() + "'";
-					if (event.getPlayer().isOp()) {
-						sql = "DELETE FROM Mailboxes where Player = '[Server]'";
-					}
+					String sql = "DELETE FROM Mailbox where Owner = '"
+							+ event.getPlayer().getUniqueId().toString()
+							+ "' AND World = '"
+							+ mb.location.getWorld().getName() + "' AND X = "
+							+ mb.location.getBlockX() + " AND " + " Y = "
+							+ mb.location.getBlockY() + " AND Z = "
+							+ mb.location.getBlockZ();
 					executeSQLAsync(sql);
 					String msg = getTranslationLanguage(event.getPlayer(),
 							stringKeys.MAILDESTROYEDMAILBOX.toString());
@@ -3485,20 +3643,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void executeSQLAsync(String sql) {
+
 		final String sqlf = sql;
 		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
 			@Override
 			public void run() {
 				try {
-					conn.createStatement().executeUpdate(sqlf);
-					getLogger().info(sqlf);
+					Connection conn = getConnection();
+					Statement st = conn.createStatement();
+					st.executeUpdate(sqlf);
+
+					if (conn != null)
+						conn.close();
+					return;
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		}, 0L);
-
 	}
 
 	@EventHandler
@@ -5582,9 +5745,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return 595000565;
 		}
 
-		String UUID = Bukkit.getOfflinePlayer(playerName).getUniqueId()
-				.toString();
-		return (playtimeCfg.getConfig().getInt("Playtime." + UUID) / 60) * 256;
+		return (getPlayerMinutes(playerName) / 60) * 256;
 	}
 
 	@EventHandler
@@ -6218,38 +6379,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
-				if (arg3[0].equals("commit")) {
-
-					try {
-						conn.commit();
-					} catch (SQLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
+				if (arg3[0].equals("populateP")) {
+					populatePlayerTable();
 				}
 
-				if (arg3[0].equals("release")) {
-
-					try {
-						conn.close();
-					} catch (SQLException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
+				if (arg3[0].equals("populateM")) {
+					populateMailboxes();
 				}
 
 				if (arg3[0].equals("mToSQL")) {
 
-					ConfigurationSection mailBoxesFromConfig = mailboxCfg.getConfig()
-							.getConfigurationSection("Mailboxes");
+					ConfigurationSection mailBoxesFromConfig = mailboxCfg
+							.getConfig().getConfigurationSection("Mailboxes");
 
 					try {
 						for (String key : mailBoxesFromConfig.getKeys(false)) {
 
 							ArrayList<String> coords = new ArrayList<String>();
-							for (Object object : mailBoxesFromConfig.getList(key)) {
+							for (Object object : mailBoxesFromConfig
+									.getList(key)) {
 								coords.add(object.toString());
 							}
 
@@ -6257,21 +6405,24 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							int y = Integer.parseInt(coords.get(2));
 							int z = Integer.parseInt(coords.get(3));
 							String s = coords.get(0);
-							Location l = new Location(Bukkit.getWorld(s), x, y, z);
+							Location l = new Location(Bukkit.getWorld(s), x, y,
+									z);
 							Mailbox mb = new Mailbox();
 							String origName = key;
 							mb.location = l;
 							String insName = "";
 							mb.isPublic = origName.charAt(0) == '#';
-							
+
 							if (!mb.isPublic) {
-								insName = Bukkit.getOfflinePlayer(key).getUniqueId().toString();
+								insName = Bukkit.getOfflinePlayer(key)
+										.getUniqueId().toString();
 							} else {
 								insName = key;
 							}
-							
-							String sql = "INSERT INTO Mailboxes (Player, World, X, Y, Z, Public) VALUES ('"
-									+ insName									+ "','"
+
+							String sql = "INSERT INTO Mailbox (Player, World, X, Y, Z, Public) VALUES ('"
+									+ insName
+									+ "','"
 									+ mb.location.getWorld().getName()
 									+ "','"
 									+ mb.location.getBlockX()
@@ -6281,29 +6432,19 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									+ mb.location.getBlockZ()
 									+ "','"
 									+ ((mb.isPublic) ? 1 : 0) + "');";
-						   executeSQLAsync(sql);
+							executeSQLAsync(sql);
 
 						}
 					} catch (Exception e) {
-						getLogger().info("Exception thrown while trying to add mailboxes!");
+						getLogger()
+								.info("Exception thrown while trying to add mailboxes!");
 						e.printStackTrace();
 
 					}
 
-					getLogger().info("Added " + mailBoxes.size() + " mailboxes");
+					getLogger()
+							.info("Added " + mailBoxes.size() + " mailboxes");
 
-				}
-
-				if (arg3[0].equals("testOfflinePlayer")) {
-
-					final CommandSender senderF = sender;
-					final String ins = "insert into Mailboxes (Player, World, X, Y, Z) VALUES";
-					sender.sendMessage(Bukkit.getOfflinePlayer("Notch")
-							.getUniqueId().toString());
-					sender.sendMessage(Bukkit.getOfflinePlayer("Sums")
-							.getUniqueId().toString());
-					sender.sendMessage(Bukkit.getOfflinePlayer("Dinnerbone")
-							.getUniqueId().toString());
 				}
 
 				if (arg3[0].equals("partytest")) {
@@ -6658,7 +6799,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					emailCfg.reloadConfig();
 					bookCfg.reloadConfig();
 					linksCfg.reloadConfig();
-					itCfg.reloadConfig();
 					daleCfg.reloadConfig();
 					// mailboxCfg.reloadConfig();
 					whoIsOnline.reloadConfig();
@@ -6827,12 +6967,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								}
 							}, 20L * Integer.parseInt(arg3[1]));
 					return true;
-				}
-
-				if (arg3[0].equals("setit")) {
-					itCfg.getConfig().set("It", arg3[1]);
-					itCfg.saveConfig();
-					itCfg.reloadConfig();
 				}
 
 				if (arg3[0].equals("cleanonline")) {
@@ -7268,155 +7402,372 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	private boolean lastLogin(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.lastseen")) {
-			final long now = System.currentTimeMillis();
-
-			final OfflinePlayer[] offPF = Bukkit.getServer()
-					.getOfflinePlayers();
-
-			printDebugTimings("time to get all players in a list", now);
-
-			final String[] arg = arg3;
-			final CommandSender senderF = sender;
-
-			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-
-				@Override
-				public void run() {
-
-					TreeSet<LastLogin> logins = new TreeSet<LastLogin>();
-
-					for (OfflinePlayer op : offPF) {
-						if (!op.isOp()) {
-							if (op.isWhitelisted()) {
-								logins.add(new LastLogin(op.getName(), op
-										.getLastPlayed()));
-							}
-						}
-					}
-
-					Stack<String> ll = new Stack<String>();
-					for (LastLogin key : logins) {
-						ll.push("§b"
-								+ key.name
-								+ " §3"
-								+ getDurationBreakdown(System
-										.currentTimeMillis()
-										- key.timeInMilliseconds));
-					}
-
-					printDebugTimings("time to push them into a stack", now);
-
-					Stack<String> result = new Stack<String>();
-
-					if (arg.length < 1) {
-						int count = 0;
-						int totalPages = (ll.size() / 6) + 1;
-						result.push("§7Page 1/" + totalPages
-								+ "  §6/lastseen 2 §efor next page");
-						while (!ll.isEmpty()) {
-							String s = ll.pop();
-							if (count < 6)
-								result.push(s + "\n");
-							count++;
-						}
-						String results = "";
-
-						while (!result.isEmpty()) {
-							results += result.pop();
-						}
-
-						final String results1F = results;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
-								new Runnable() {
-									@Override
-									public void run() {
-										senderF.sendMessage(results1F);
-									}
-								});
-
-						return;
-					}
-
-					int page = -1;
-
-					try {
-						page = Integer.parseInt(arg[0]);
-					} catch (Exception e) {
-						ll.clear();
-
-						for (LastLogin key : logins) {
-							if (key.name.toUpperCase().contains(
-									arg[0].toUpperCase())) {
-								ll.push("§b"
-										+ key.name
-										+ " §3"
-										+ getDurationBreakdown(System
-												.currentTimeMillis()
-												- key.timeInMilliseconds));
-							}
-						}
-
-						String resultser = "";
-
-						while (!ll.isEmpty()) {
-							String s = ll.pop();
-							resultser += s + "\n";
-						}
-
-						final String resultserF = resultser;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
-								new Runnable() {
-									@Override
-									public void run() {
-										senderF.sendMessage(resultserF);
-									}
-								});
-						return;
-					}
-					int count = 0;
-					page--;
-					int nextPage = page + 2;
-					int totalPages = (ll.size() / 6) + 1;
-					if (totalPages > nextPage - 1)
-						result.push("§7Page " + arg[0] + "/" + totalPages
-								+ " §6/lastseen " + nextPage
-								+ " §efor next page");
-					else if (totalPages == nextPage - 1) {
-						result.push("§7Page " + arg[0] + "/" + totalPages);
-					} else {
-						return;
-					}
-					while (!ll.isEmpty()) {
-						String s = ll.pop();
-						if (page * 6 <= count && count < 6 * page + 6)
-							result.push(s + "\n");
-						count++;
-					}
-
-					String results = "";
-					while (!result.isEmpty()) {
-						results += result.pop();
-					}
-
-					final String results2F = results;
-					Bukkit.getScheduler().scheduleSyncDelayedTask(global,
-							new Runnable() {
-								@Override
-								public void run() {
-									senderF.sendMessage(results2F);
-								}
-							});
-					return;
-				}
-			});
-
-			printDebugTimings("done", now);
-
-			return true;
-		}
+	private boolean lastLogin(CommandSender sender, String[] arg3) {/*
+																	 * if
+																	 * (sender.
+																	 * hasPermission
+																	 * (
+																	 * "SerenityPlugins.lastseen"
+																	 * )) {
+																	 * final
+																	 * long now
+																	 * = System.
+																	 * currentTimeMillis
+																	 * ();
+																	 * 
+																	 * final
+																	 * OfflinePlayer
+																	 * [] offPF
+																	 * = Bukkit.
+																	 * getServer
+																	 * () .
+																	 * getOfflinePlayers
+																	 * ();
+																	 * 
+																	 * printDebugTimings
+																	 * (
+																	 * "time to get all players in a list"
+																	 * , now);
+																	 * 
+																	 * final
+																	 * String[]
+																	 * arg =
+																	 * arg3;
+																	 * final
+																	 * CommandSender
+																	 * senderF =
+																	 * sender;
+																	 * 
+																	 * Bukkit.
+																	 * getScheduler
+																	 * ().
+																	 * runTaskAsynchronously
+																	 * (this,
+																	 * new
+																	 * Runnable
+																	 * () {
+																	 * 
+																	 * @Override
+																	 * public
+																	 * void
+																	 * run() {
+																	 * 
+																	 * TreeSet<
+																	 * LastLogin
+																	 * > logins
+																	 * = new
+																	 * TreeSet
+																	 * <LastLogin
+																	 * >();
+																	 * 
+																	 * for (
+																	 * OfflinePlayer
+																	 * op :
+																	 * offPF) {
+																	 * if
+																	 * (!op.isOp
+																	 * ()) { if
+																	 * (op.
+																	 * isWhitelisted
+																	 * ()) {
+																	 * logins
+																	 * .add(new
+																	 * LastLogin
+																	 * (
+																	 * op.getName
+																	 * (), op .
+																	 * getLastPlayed
+																	 * ())); } }
+																	 * }
+																	 * 
+																	 * Stack<String
+																	 * > ll =
+																	 * new
+																	 * Stack<
+																	 * String
+																	 * >(); for
+																	 * (
+																	 * LastLogin
+																	 * key :
+																	 * logins) {
+																	 * ll
+																	 * .push("§b"
+																	 * +
+																	 * key.name
+																	 * + " §3" +
+																	 * getDurationBreakdown
+																	 * (System .
+																	 * currentTimeMillis
+																	 * () - key.
+																	 * timeInMilliseconds
+																	 * )); }
+																	 * 
+																	 * printDebugTimings
+																	 * (
+																	 * "time to push them into a stack"
+																	 * , now);
+																	 * 
+																	 * Stack<String
+																	 * > result
+																	 * = new
+																	 * Stack
+																	 * <String
+																	 * >();
+																	 * 
+																	 * if
+																	 * (arg.length
+																	 * < 1) {
+																	 * int count
+																	 * = 0; int
+																	 * totalPages
+																	 * =
+																	 * (ll.size
+																	 * () / 6) +
+																	 * 1;
+																	 * result.
+																	 * push
+																	 * ("§7Page 1/"
+																	 * +
+																	 * totalPages
+																	 * +
+																	 * "  §6/lastseen 2 §efor next page"
+																	 * ); while
+																	 * (
+																	 * !ll.isEmpty
+																	 * ()) {
+																	 * String s
+																	 * =
+																	 * ll.pop();
+																	 * if (count
+																	 * < 6)
+																	 * result
+																	 * .push(s +
+																	 * "\n");
+																	 * count++;
+																	 * } String
+																	 * results =
+																	 * "";
+																	 * 
+																	 * while
+																	 * (!result
+																	 * .isEmpty
+																	 * ()) {
+																	 * results
+																	 * +=
+																	 * result.
+																	 * pop(); }
+																	 * 
+																	 * final
+																	 * String
+																	 * results1F
+																	 * =
+																	 * results;
+																	 * Bukkit
+																	 * .getScheduler
+																	 * ().
+																	 * scheduleSyncDelayedTask
+																	 * (global,
+																	 * new
+																	 * Runnable
+																	 * () {
+																	 * 
+																	 * @Override
+																	 * public
+																	 * void
+																	 * run() {
+																	 * senderF
+																	 * .sendMessage
+																	 * (
+																	 * results1F
+																	 * ); } });
+																	 * 
+																	 * return; }
+																	 * 
+																	 * int page
+																	 * = -1;
+																	 * 
+																	 * try {
+																	 * page =
+																	 * Integer
+																	 * .parseInt
+																	 * (arg[0]);
+																	 * } catch
+																	 * (Exception
+																	 * e) {
+																	 * ll.clear
+																	 * ();
+																	 * 
+																	 * for
+																	 * (LastLogin
+																	 * key :
+																	 * logins) {
+																	 * if
+																	 * (key.name
+																	 * .
+																	 * toUpperCase
+																	 * (
+																	 * ).contains
+																	 * ( arg[0].
+																	 * toUpperCase
+																	 * ())) {
+																	 * ll.
+																	 * push("§b"
+																	 * +
+																	 * key.name
+																	 * + " §3" +
+																	 * getDurationBreakdown
+																	 * (System .
+																	 * currentTimeMillis
+																	 * () - key.
+																	 * timeInMilliseconds
+																	 * )); } }
+																	 * 
+																	 * String
+																	 * resultser
+																	 * = "";
+																	 * 
+																	 * while
+																	 * (!ll
+																	 * .isEmpty
+																	 * ()) {
+																	 * String s
+																	 * =
+																	 * ll.pop();
+																	 * resultser
+																	 * += s +
+																	 * "\n"; }
+																	 * 
+																	 * final
+																	 * String
+																	 * resultserF
+																	 * =
+																	 * resultser
+																	 * ;
+																	 * 
+																	 * Bukkit.
+																	 * getScheduler
+																	 * ().
+																	 * scheduleSyncDelayedTask
+																	 * (global,
+																	 * new
+																	 * Runnable
+																	 * () {
+																	 * 
+																	 * @Override
+																	 * public
+																	 * void
+																	 * run() {
+																	 * senderF
+																	 * .sendMessage
+																	 * (
+																	 * resultserF
+																	 * ); } });
+																	 * return; }
+																	 * int count
+																	 * = 0;
+																	 * page--;
+																	 * int
+																	 * nextPage
+																	 * = page +
+																	 * 2; int
+																	 * totalPages
+																	 * =
+																	 * (ll.size
+																	 * () / 6) +
+																	 * 1; if
+																	 * (totalPages
+																	 * >
+																	 * nextPage
+																	 * - 1)
+																	 * result
+																	 * .push
+																	 * ("§7Page "
+																	 * + arg[0]
+																	 * + "/" +
+																	 * totalPages
+																	 * +
+																	 * " §6/lastseen "
+																	 * +
+																	 * nextPage
+																	 * +
+																	 * " §efor next page"
+																	 * ); else
+																	 * if
+																	 * (totalPages
+																	 * ==
+																	 * nextPage
+																	 * - 1) {
+																	 * result
+																	 * .push
+																	 * ("§7Page "
+																	 * + arg[0]
+																	 * + "/" +
+																	 * totalPages
+																	 * ); } else
+																	 * { return;
+																	 * } while
+																	 * (!
+																	 * ll.isEmpty
+																	 * ()) {
+																	 * String s
+																	 * =
+																	 * ll.pop();
+																	 * if (page
+																	 * * 6 <=
+																	 * count &&
+																	 * count < 6
+																	 * * page +
+																	 * 6)
+																	 * result.
+																	 * push(s +
+																	 * "\n");
+																	 * count++;
+																	 * }
+																	 * 
+																	 * String
+																	 * results =
+																	 * ""; while
+																	 * (!result.
+																	 * isEmpty
+																	 * ()) {
+																	 * results
+																	 * +=
+																	 * result.
+																	 * pop(); }
+																	 * 
+																	 * final
+																	 * String
+																	 * results2F
+																	 * =
+																	 * results;
+																	 * Bukkit
+																	 * .getScheduler
+																	 * ().
+																	 * scheduleSyncDelayedTask
+																	 * (global,
+																	 * new
+																	 * Runnable
+																	 * () {
+																	 * 
+																	 * @Override
+																	 * public
+																	 * void
+																	 * run() {
+																	 * senderF
+																	 * .sendMessage
+																	 * (
+																	 * results2F
+																	 * ); } });
+																	 * return; }
+																	 * });
+																	 * 
+																	 * printDebugTimings
+																	 * ("done",
+																	 * now);
+																	 * 
+																	 * return
+																	 * true; }
+																	 */
 		return true;
 	}
 
@@ -7604,11 +7955,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			Mailbox sendingMailbox = new Mailbox();
 			Mailbox receivingMailbox = new Mailbox();
 			for (Mailbox mb : mailBoxes) {
-				if (mb.actualName.toLowerCase().contains(mailto.toLowerCase())) {
+				if (mb.name.toLowerCase().contains(mailto.toLowerCase())) {
 					receivingMailBoxExists = true;
 					receivingMailbox.uuid = mb.uuid;
 					receivingMailbox.location = mb.location;
-					receivingMailbox.actualName = mb.actualName;
+					receivingMailbox.name = mb.name;
 				}
 				if (mb.uuid.equals(p.getUniqueId())) {
 					sendingMailbox.uuid = mb.uuid;
@@ -7680,8 +8031,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				String msg = getTranslationLanguage(sender,
 						stringKeys.MAILFULL.toString());
-				sender.sendMessage(String.format(msg,
-						receivingMailbox.actualName));
+				sender.sendMessage(String.format(msg, receivingMailbox.name));
 
 				/*
 				 * sender.sendMessage("§6" + receivingMailbox.name +
@@ -7694,8 +8044,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				String msg = getTranslationLanguage(sender,
 						stringKeys.MAILNOTENOUGHSPACE.toString());
-				sender.sendMessage(String.format(msg,
-						receivingMailbox.actualName,
+				sender.sendMessage(String.format(msg, receivingMailbox.name,
 						((receivingItems.length - receivingItemsCount) - 1)));
 
 				/*
@@ -7718,7 +8067,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			String msg = getTranslationLanguage(sender,
 					stringKeys.MAILSUCCESS.toString());
-			sender.sendMessage(String.format(msg, receivingMailbox.actualName));
+			sender.sendMessage(String.format(msg, receivingMailbox.name));
 			/*
 			 * sender.sendMessage("§2Your items were sent to §6" +
 			 * receivingMailbox.name + "§2's mailbox!\n");
@@ -8719,8 +9068,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (name.equals("[Server]")) {
 			return 540;
 		}
-		String UUID = Bukkit.getOfflinePlayer(name).getUniqueId().toString();
-		return playtimeCfg.getConfig().getInt("Playtime." + UUID);
+		for (SerenityPlayer sp : serenityPlayers) {
+			if (sp.name.equals(name)) {
+				return sp.minutes;
+			}
+		}
+		return -1;
 	}
 
 	public Long getLastSeen(String name) {
@@ -9495,6 +9848,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.spawnEntity(p.getLocation(), EntityType.HORSE);
 						horse.setBaby();
 						horse.setAgeLock(true);
+						horse.setCustomName("§6" + name);
 
 					}
 				}
