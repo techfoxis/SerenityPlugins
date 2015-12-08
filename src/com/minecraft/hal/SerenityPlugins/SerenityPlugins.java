@@ -2226,9 +2226,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	public boolean hasNewMessages(UUID uuid) {
-		for (OfflineMessage om : serenityPlayers.get(uuid).getOfflineMessages()) {
-			if (!om.isRead()) {
-				return true;
+		SerenityPlayer sp = serenityPlayers.get(uuid);
+		if (sp != null) {
+			if (sp.getOfflineMessages() != null) {
+				for (OfflineMessage om : serenityPlayers.get(uuid)
+						.getOfflineMessages()) {
+					if (!om.isRead()) {
+						return true;
+					}
+				}
 			}
 		}
 		return false;
@@ -2353,6 +2359,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			sp.setOp(event.getPlayer().isOp());
 			sp.setWhitelisted(event.getPlayer().isWhitelisted());
 			sp.setOnline(true);
+			sp.setChatColor("");
+			sp.setBanned(event.getPlayer().isBanned());
+			sp.setMuted(false);
+			sp.setLocalChatting(false);
+			sp.setLastPlayed(System.currentTimeMillis());
+			sp.setUUID(event.getPlayer().getUniqueId());
+			
 			insertSerenityPlayer(event.getPlayer());
 			serenityPlayers.put(event.getPlayer().getUniqueId(), sp);
 		}
@@ -2456,11 +2469,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void insertSerenityPlayer(Player p) {
+		String chatColor = "";
+		chatColor += getChatColor(p.getUniqueId());
+		
 		String sql = "INSERT INTO Player VALUES ('"
-				+ p.getUniqueId().toString() + "','" + p.getName() + "', "
-				+ p.getAddress().getAddress().getHostAddress() + "," + 0 + ","
+				+ p.getUniqueId().toString() + "','" + p.getName() + "','"
+				+ p.getAddress().getAddress().getHostAddress() + "'," + 0 + ","
 				+ p.getFirstPlayed() + "," + p.getLastPlayed() + ",'"
-				+ getChatColor(p.getUniqueId()) + "',1033,0)";
+				+ chatColor + "',1033,0," + (p.isWhitelisted() ? "1": "0") + ",0,0,1,0)";
+		getLogger().info(sql);
 		Connection conn = getConnection();
 		Statement st;
 		try {
@@ -2819,7 +2836,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private String getChatColor(UUID uuid) {
-		return serenityPlayers.get(uuid).getChatColor();
+		SerenityPlayer sp = serenityPlayers.get(uuid);
+		if (sp != null) {
+			return sp.getChatColor();
+		} else {
+			return "";
+		}
 	}
 
 	@EventHandler
@@ -4303,13 +4325,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				for (OfflineMessage s : sp.getOfflineMessages()) {
 					if (s.getID() == Integer.parseInt(arg3[1])) {
 						SerenityPlayer from = serenityPlayers.get(s.getFrom());
-						sender.sendMessage("\n§nMessage from "
+						sender.sendMessage("==§nMessage from "
 								+ from.getChatColor() + "§n" + from.getName()
-								+ ":§r\n \n" + "§r"
-								+ s.getMessage().replace('`', '\'') + "\n\n");
+								+ "§r==\n \n" + "§r"
+								+ s.getMessage().replace('`', '\'') + "\n ");
 						String sql = "Update Messages set ReadStatus = 1 Where M_ID = "
 								+ s.getID();
 						s.setRead(true);
+						String del = FancyText.GenerateFancyText("§4(delete)",
+								FancyText.RUN_COMMAND, "/msg ^ " + s.getID(),
+								FancyText.SHOW_TEXT, "Click to delete");
+						String more = FancyText.GenerateFancyText(
+								"     §6(all messages)", FancyText.RUN_COMMAND,
+								"/msg read", FancyText.SHOW_TEXT, "/msg read");
+						sendRawPacket(((Player) sender).getPlayer(), "[" + del
+								+ "," + more + "]");
 						executeSQLAsync(sql);
 						return;
 					}
@@ -4365,21 +4395,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		for (int i = 1; i < arg3.length; i++) {
 			message += arg3[i] + " ";
 		}
-		/*
-		 * if (arg3[0].equals("[Server]")) { String senderName = ""; String
-		 * recipient = "[Server]"; if (sender instanceof Player) { message +=
-		 * getChatColor(((Player) sender).getUniqueId()); senderName = ((Player)
-		 * sender).getDisplayName(); } else { senderName = "§d[Server]"; }
-		 * 
-		 * getLogger().info("§oFrom " + senderName + ": " + message);
-		 * sender.sendMessage("§oTo " + recipient + ": " + message);
-		 * 
-		 * if (playerRecentMessages.containsKey(recipient))
-		 * playerRecentMessages.remove(recipient);
-		 * playerRecentMessages.put(recipient, senderName);
-		 * 
-		 * return true; }
-		 */
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (p.getName().toUpperCase().contains(arg3[0].toUpperCase())) {
@@ -4390,10 +4405,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					senderName = ((Player) sender).getDisplayName();
 				} else {
 					senderName = "[Server]";
-				}
-
-				for (int i = 1; i < arg3.length; i++) {
-					message += arg3[i] + " ";
 				}
 
 				p.sendMessage("§oFrom " + senderName + ": " + message);
@@ -7372,34 +7383,36 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									+ ": §7"
 									+ convertToHoursAndMinutesSinceNoSeconds(splist
 											.get(i).getLastPlayed()) + "§r\n";
-							
-							if(p!=null)
-							sendRawPacket(
-									p,
-									FancyText
-											.GenerateFancyText(
-													splist.get(i)
-															.getChatColor()
-															+ splist.get(i)
-																	.getName()
-															+ ": §7"
-															+ convertToHoursAndMinutesSinceNoSeconds(splist
-																	.get(i)
-																	.getLastPlayed()),
-													FancyText.SUGGEST_COMMAND,
-													"/msg "
-															+ splist.get(i)
-																	.getName()
-															+ " ",
-													FancyText.SHOW_TEXT,
-													"/msg "
-															+ splist.get(i)
-																	.getName()));
+
+							if (p != null) {
+								sendRawPacket(
+										p,
+										FancyText
+												.GenerateFancyText(
+														splist.get(i)
+																.getChatColor()
+																+ splist.get(i)
+																		.getName()
+																+ ": §7"
+																+ convertToHoursAndMinutesSinceNoSeconds(splist
+																		.get(i)
+																		.getLastPlayed()),
+														FancyText.SUGGEST_COMMAND,
+														"/msg "
+																+ splist.get(i)
+																		.getName()
+																+ " ",
+														FancyText.SHOW_TEXT,
+														"/msg "
+																+ splist.get(i)
+																		.getName()));
+							}
 						}
 					}
 				}
-				if(p==null)
-				senderf.sendMessage(ret);
+				if (p == null) {
+					senderf.sendMessage(ret);
+				}
 				if (senderf instanceof Player) {
 					int next = pagef + 2;
 					int prev = pagef;
