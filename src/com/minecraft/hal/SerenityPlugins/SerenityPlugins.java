@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -53,7 +54,9 @@ import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.craftbukkit.v1_8_R3.command.CraftConsoleCommandSender;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
@@ -3453,8 +3456,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				|| event.getBlock().getType().equals(Material.TRAPPED_CHEST)) {
 			for (int i = 0; i < mailBoxes.size(); i++) {
 				Mailbox mb = mailBoxes.get(i);
-				if (mb.location.equals(event.getBlock().getLocation())
-						&& mb.uuid == event.getPlayer().getUniqueId()) {
+				if (mb.uuid == event.getPlayer().getUniqueId()) {
 					String sql = "DELETE FROM Mailbox where Owner = '"
 							+ event.getPlayer().getUniqueId().toString()
 							+ "' AND World = '"
@@ -3467,6 +3469,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							stringKeys.MAILDESTROYEDMAILBOX.toString());
 					event.getPlayer().sendMessage(msg);
 					mailBoxes.remove(i);
+					return;
 				}
 			}
 		}
@@ -4281,6 +4284,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				Player p = (Player) sender;
 				Collections.sort(sp.getOfflineMessages());
 				for (OfflineMessage s : sp.getOfflineMessages()) {
+
 					String json = s.constructString(getChatColor(s.getFrom()),
 							serenityPlayers.get(s.getFrom()).getName());
 					Packet packet = new PacketPlayOutChat(
@@ -4475,7 +4479,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 													.getName()
 											+ " §acan read your message when he/she logs in!");
 				} else {
-					getLogger().info("Sent to " + serenityPlayers.get(omf.getTo()).getName());
+					getLogger().info(
+							"Sent to "
+									+ serenityPlayers.get(omf.getTo())
+											.getName());
 				}
 			}
 			if (conn != null)
@@ -6372,6 +6379,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
+				if (arg3[0].equals("reloadmailboxes")) {
+					mailBoxes = new ArrayList<Mailbox>();
+					loadSerenityMailboxesFromDatabase();
+				}
+
 				if (arg3[0].equals("showsql")) {
 					showingSql = !showingSql;
 					sender.sendMessage("Showing sql = " + showingSql);
@@ -7254,7 +7266,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean lastLogin(CommandSender sender, String[] arg3) {
+		if (arg3.length == 0) {
+			arg3 = new String[1];
+			arg3[0] = "1";
+		}
 		if (arg3.length > 0) {
+			int page = 0;
+			boolean searching = false;
+			try {
+				page = Integer.parseInt(arg3[0]);
+				page--;
+			} catch (NumberFormatException e) {
+				searching = true;
+			}
+
+			if (!searching) {
+				getPageNLogins(sender, page);
+				return true;
+			}
+
 			final String searchTerm = arg3[0];
 			final CommandSender senderf = sender;
 			Bukkit.getScheduler().runTaskLaterAsynchronously(this,
@@ -7265,23 +7295,194 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									.entrySet()) {
 								if (entry.getValue().getName().toUpperCase()
 										.contains(searchTerm.toUpperCase())) {
-									if (entry.getValue().isOp() == false) {
-										senderf.sendMessage(entry.getValue()
-												.getChatColor()
-												+ entry.getValue().getName()
-												+ ": §7"
-												+ convertToHoursAndMinutesSince(entry
-														.getValue()
-														.getLastPlayed()));
+									if (entry.getValue().isWhitelisted() == true
+											&& entry.getValue().isBanned() == false) {
+										if (senderf instanceof Player) {
+											sendRawPacket(
+													((Player) senderf)
+															.getPlayer(),
+													FancyText
+															.GenerateFancyText(
+																	entry.getValue()
+																			.getChatColor()
+																			+ entry.getValue()
+																					.getName()
+																			+ ": §7"
+																			+ convertToHoursAndMinutesSinceNoSeconds(entry
+																					.getValue()
+																					.getLastPlayed()),
+																	FancyText.SUGGEST_COMMAND,
+																	"/msg "
+																			+ entry.getValue()
+																					.getName()
+																			+ " ",
+																	FancyText.SHOW_TEXT,
+																	"/msg "
+																			+ entry.getValue()
+																					.getName()));
+										} else {
+											senderf.sendMessage(entry
+													.getValue().getChatColor()
+													+ entry.getValue()
+															.getName()
+													+ ": §7"
+													+ convertToHoursAndMinutesSinceNoSeconds(entry
+															.getValue()
+															.getLastPlayed()));
+										}
 									}
 								}
 							}
-
 						}
 					}, 0L);
 		}
 
 		return true;
+	}
+
+	private void getPageNLogins(CommandSender sender, int page) {
+		final CommandSender senderf = sender;
+		final int pagef = page;
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				List<SerenityPlayer> splist = new ArrayList();
+				for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers
+						.entrySet()) {
+					splist.add(entry.getValue());
+				}
+				Collections.sort(splist,
+						Comparator.comparing(SerenityPlayer::getLastPlayed));
+				Collections.reverse(splist);
+				for (SerenityPlayer sp : splist) {
+					if (sp.isBanned() || !sp.isWhitelisted()) {
+						splist.remove(sp);
+					}
+				}
+				Player p = null;
+				if (senderf instanceof Player) {
+					p = (Player) senderf;
+				}
+				String ret = "";
+				for (int i = pagef * 8; i < pagef * 8 + 8; i++) {
+					if (i < splist.size()) {
+						if (splist.get(i) != null) {
+							ret += splist.get(i).getChatColor()
+									+ splist.get(i).getName()
+									+ ": §7"
+									+ convertToHoursAndMinutesSinceNoSeconds(splist
+											.get(i).getLastPlayed()) + "§r\n";
+							
+							if(p!=null)
+							sendRawPacket(
+									p,
+									FancyText
+											.GenerateFancyText(
+													splist.get(i)
+															.getChatColor()
+															+ splist.get(i)
+																	.getName()
+															+ ": §7"
+															+ convertToHoursAndMinutesSinceNoSeconds(splist
+																	.get(i)
+																	.getLastPlayed()),
+													FancyText.SUGGEST_COMMAND,
+													"/msg "
+															+ splist.get(i)
+																	.getName()
+															+ " ",
+													FancyText.SHOW_TEXT,
+													"/msg "
+															+ splist.get(i)
+																	.getName()));
+						}
+					}
+				}
+				if(p==null)
+				senderf.sendMessage(ret);
+				if (senderf instanceof Player) {
+					int next = pagef + 2;
+					int prev = pagef;
+					int curr = pagef + 1;
+					String nav = "  --  Page " + (pagef + 1) + " of "
+							+ (splist.size() / 8);
+					String fancyNext = FancyText.GenerateFancyText("§a  --->",
+							FancyText.RUN_COMMAND, "/lastseen " + next,
+							FancyText.SHOW_TEXT, "Next");
+					String fancyPrev = FancyText.GenerateFancyText(nav
+							+ "§a  <---", FancyText.RUN_COMMAND, "/lastseen "
+							+ prev, FancyText.SHOW_TEXT, "Previous");
+					String phonyNext = FancyText.GenerateFancyText("§7  --->",
+							FancyText.RUN_COMMAND, "/lastseen " + curr, null,
+							null);
+					String phonyPrev = FancyText.GenerateFancyText(nav
+							+ "§7  <---", null, null, FancyText.RUN_COMMAND,
+							"/lastseen " + curr);
+
+					if (curr == splist.size() / 8) {
+						sendRawPacket(p, "[" + fancyPrev + "," + phonyNext
+								+ "]");
+						return;
+					}
+					if (curr == 1) {
+						sendRawPacket(p, "[" + phonyPrev + "," + fancyNext
+								+ "]");
+						return;
+					}
+					if (curr > 1 && pagef + 1 < splist.size()) {
+						sendRawPacket(p, "[" + fancyPrev + "," + fancyNext
+								+ "]");
+					}
+				}
+
+			}
+		}, 0L);
+	}
+
+	private void sendRawPacket(Player p, String s) {
+		String json = s;
+		Packet packet = new PacketPlayOutChat(ChatSerializer.a(json));
+
+		((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
+
+	}
+
+	public static String getDurationBreakdownNoSeconds(long millis) {
+		if (millis < 0) {
+			return "";
+		}
+
+		long days = TimeUnit.MILLISECONDS.toDays(millis);
+		millis -= TimeUnit.DAYS.toMillis(days);
+		long hours = TimeUnit.MILLISECONDS.toHours(millis);
+		millis -= TimeUnit.HOURS.toMillis(hours);
+		long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+
+		StringBuilder sb = new StringBuilder(128);
+
+		if (days > 0) {
+			sb.append(days);
+			if (days == 1) {
+				sb.append(" Day ");
+			} else {
+				sb.append(" Days ");
+			}
+		}
+
+		if (hours > 0) {
+			sb.append(hours);
+
+			if (hours == 1) {
+				sb.append(" Hour ");
+			} else {
+				sb.append(" Hours ");
+			}
+		}
+
+		sb.append(minutes);
+		sb.append(" Minutes ");
+
+		return (sb.toString());
 	}
 
 	public static String getDurationBreakdown(long millis) {
@@ -8575,6 +8776,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public static String convertToHoursAndMinutesSince(Long time) {
 		Long difference = System.currentTimeMillis() - time;
 		return getDurationBreakdown(difference);
+	}
+
+	public static String convertToHoursAndMinutesSinceNoSeconds(Long time) {
+		Long difference = System.currentTimeMillis() - time;
+		return getDurationBreakdownNoSeconds(difference);
 	}
 
 	private String getTranslationLanguage(Player player, String key) {

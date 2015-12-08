@@ -63,13 +63,13 @@ public class OfflineMessage implements Comparable {
 		
 		String ret = "";
 		if(!isRead()){
-		ret = "{text:\"§a§onew §r" + color + name + " §7(" + getTimeAgo() + ") §r" + firstfewChars + "\",hoverEvent:{action:show_text,value:\"Click to read\"},"
-				+ "clickEvent:{action:run_command,value:\"/msg ~ " + getID() + "\"}}";
+			ret = FancyText.GenerateFancyText("§a§onew §r" + color + name + " §7(" + getTimeAgo() + ") §r" + firstfewChars, FancyText.RUN_COMMAND, "/msg ~ " + getID(), FancyText.SHOW_TEXT, "Click to read");
 		}else{
-			ret ="[{text:\"§4x §r\",hoverEvent:{action:show_text,value:\"Click to delete\"},"
-					+ "clickEvent:{action:run_command,value:\"/msg ^ " + getID() + "\"}}," +
-			"{text:\"" + color + name + " §7(" + getTimeAgo() + ") §r" + firstfewChars + "\",hoverEvent:{action:show_text,value:\"Click to read\"},"
-					+ "clickEvent:{action:run_command,value:\"/msg ~ " + getID() + "\"}}]";
+			ret = "[";
+			ret += FancyText.GenerateFancyText("§4x", FancyText.RUN_COMMAND, "/msg ^ " + getID(), FancyText.SHOW_TEXT, "Click to delete");
+			ret += ",";
+			ret += FancyText.GenerateFancyText("§r " + color + name + " §7(" + getTimeAgo() + ") §r" + firstfewChars, FancyText.RUN_COMMAND, "/msg ~ " + getID(), FancyText.SHOW_TEXT, "Click to read");
+			ret+= "]";
 		}
 		return ret;
 	}
