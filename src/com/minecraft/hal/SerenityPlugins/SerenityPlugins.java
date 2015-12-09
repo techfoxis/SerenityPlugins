@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DecimalFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -56,7 +55,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.craftbukkit.v1_8_R3.command.CraftConsoleCommandSender;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
@@ -129,7 +127,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.material.Dispenser;
 import org.bukkit.material.Wool;
-import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -169,9 +166,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
 	public SimpleDateFormat sdtf = new SimpleDateFormat(
 			"EEE, MMM d, yyyy hh:mm:ss a z");
-
-	public Date AprilFoolsday = new Date();
-	public boolean isAprilFoolsDay = false;
 
 	public List<Mailbox> mailBoxes;
 	public List<Player> preppedToUnProtectChunk;
@@ -283,13 +277,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public List<Ignoring> ignorers;
 	public List<Long> lags;
-	public List<TeleportClicker> teleportClickers;
 	public List<ProtectedArea> areas;
 	public boolean votingForDay;
 	public final int MAX_DISTANCE = 700;
 	public Random rand = new Random();
 	public List<String> mutedNames;
-	public HashMap<UUID, PermissionAttachment> attachments;
 	public boolean wasLagging = false;
 	public boolean thisHour = false;
 	public Location TELEPORTDESTINATIONFORSOMETHING;
@@ -311,16 +303,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public HashMap<String, Long> racers;
 	public HashMap<String, String> englishStrings;
-	public HashMap<String, String> playerRecentMessages;
-	public HashMap<String, String> teamList;
 
 	public enum stringKeys {
 		PORTBADPORTAL, TIMEONEHOUR, TIMETHREEHOUR, TIMETWELVEHOUR, PORTENDPORTALWARNING, PORTEARLYPORTALATTEMPT, MAILHASMAIL, PROTISSTUCK, CHATTRIEDTOCHATWITHGLOBALCHATDISABLED, JOINPLAYERFIRSTLOGIN, MAILTRIEDTOEXPANDMAILBOX, MAILCREATEDAMAILBOX, MAILALREADYHASAMAILBOX, MAILOPENEDAPUBLICMAILBOX, MAILINTERRACTEDWITHAMAILBOX, MAILDESTROYEDMAILBOX, MAILTRIEDTOBREAKPUBLICMAILBOX, BEDSOMEONEENTEREDABED, PROTOWNBLOCK, PROTDOESNOTOWNBUTHASPERMISSION, PROTDOESNOTOWNBLOCK, PROTNOBODYOWNSBLOCK, RANDOMTPWAIT, RANDOMTPTOOFAR, RANDOMTPWRONGWORLD, CHATHELP, PROTALREADYPREPPED, PROTPREPPEDTOPROTECT, PROTAREABADARG, PROTAREATOOSMALL, PROTAREATOOBIG, PROTAREAREADY, PROTUNCLAIMPREPPED, PROTUNCLAIMSTILLPREPPED, PROTNOAREAS, PROTTRUSTLIST, PROTAREALIST, PROTEXTENDEDLISTDATA, PROTSTUCKABUSEATTEMPT, PROTSTUCKABUSEATTEMPTNOTEVENPROT, PROTTIMEBADARG, PROTADDEDTRUST, PROTTRUSTISSUES, PROTCANTFINDTRUST, PROTUNTRUSTED, PROTHELP, PROTTOOFAR, PROTALREADYOWN, PROTAREACLAIMED, PROTFIRSTCORNER, PROTINTERSECT, PROTPREMATURE, PROTNOTYET, PROTSUCCESS, PROTNOTOVERWORLD, PROTTOOFARAWAYTOUNCLAIM, PROTUNCLAIMSUCCESS, PROTUNCLAIMDOESNOTOWN, PROTUNCLAIMNOBODYOWNS, CHATCANSEEGLOBAL, CHATCANTSEEGLOBAL, STATUSSUCCESS, PORTALOVERWORLD, PORTALNETHER, LASTSEENNOTFOUND, BEDVOTING, BEDOKNOTVOTING, AFKALREADYAFK, GETTIMETICKS, MAILDOESNTHAVEMAILBOX, MAILCOULDNOTFINDBOX, MAILTOSELF, MAILEMPTY, MAILFULL, MAILNOTENOUGHSPACE, MAILSUCCESS, COMPASSHELP, COMPASSSPAWN, COMPASSBED, COMPASSBEDDESTROYED, COMPASSMAILBOX, COMPASSNOMAILBOX, COMPASSHERE, COMPASSCUST, CHATCOLORINVALID, CHATCOLOREARLY, CHATPUBLICNOW, CHATLOCALNOW, LAGWAIT, IGNORECOULDNOTFIND, IGNORENOLONGERIGNORING, IGNORESUCCESS, NOPERMS, FIREWORKSCREATE, FIREWORKSEXISTS, FIREWORKSEARLYBREAKATTEMPT, FIREWORKNONOWNERBREAK, FIREWORKBREAKSUCCESS
 	}
 
 	public boolean scoreboardIsDisplayed = false;
-
-	public HashMap<String, Long> textCooldown;
 
 	public boolean isAParty = false;
 	public short partyMode = -1;
@@ -372,22 +360,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		mailBoxes = new ArrayList<Mailbox>();
 		loadSerenityMailboxesFromDatabase();
 		loadMessagesFromDatabase();
-		// populateMailboxes();
-
-		// populatePlayerTable();
-		// AFKInv = Bukkit.createInventory(null, 9, "AFK INVENTORY");
-
-		// AFKInv.setMaxStackSize(0);
-
-		try {
-			AprilFoolsday = psdf.parse("04/01");
-		} catch (ParseException e1) {
-		}
-
-		if (new Date().getDay() == AprilFoolsday.getDay()
-				&& new Date().getMonth() == AprilFoolsday.getMonth()) {
-			isAprilFoolsDay = true;
-		}
 
 		Secret = new Secrets();
 
@@ -490,14 +462,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		fireworkShowLocations = new ArrayList<FireWorkShow>();
 		ignorers = new ArrayList<Ignoring>();
 		lags = new ArrayList<Long>();
-		teleportClickers = new ArrayList<TeleportClicker>();
 		areas = new ArrayList<ProtectedArea>();
 		votingForDay = false;
 		mutedNames = new ArrayList<String>();
-		attachments = new HashMap<UUID, PermissionAttachment>();
-		playerRecentMessages = new HashMap<String, String>();
-		teamList = new HashMap<String, String>();
-		textCooldown = new HashMap<String, Long>();
 		ItemStack stick = Secret.SECRETITEMSTACK1;
 		ItemMeta item = stick.getItemMeta();
 		item.setDisplayName(Secret.SECRETITEM1NAME);
@@ -565,31 +532,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			this.getServer().addRecipe(bootRecipe);
 
 		}
-
-		for (Player p : Bukkit.getOnlinePlayers()) {
-			addAndAttachAppropraitePermissionToPlayer(p);
-		}
-
-		/*
-		 * try { Statement stm = conn.createStatement(); ResultSet boxes =
-		 * stm.executeQuery("SELECT * FROM Mailboxes"); while (boxes.next()) {
-		 * Mailbox mb = new Mailbox(); OfflinePlayer p = null; try { p =
-		 * Bukkit.getServer().getOfflinePlayer(
-		 * UUID.fromString(boxes.getString("Player"))); } catch (Exception e) {
-		 * p = Bukkit.getServer().getOfflinePlayer( boxes.getString("Player"));
-		 * }
-		 * 
-		 * mb.isPublic = boxes.getBoolean("Public"); mb.uuid = p.getUniqueId();
-		 * mb.location = new Location(Bukkit.getWorld(boxes
-		 * .getString("World")), (double) boxes.getInt("X"), (double)
-		 * boxes.getInt("Y"), (double) boxes.getInt("Z")); mb.actualName =
-		 * p.getName();
-		 * 
-		 * if (p.isOp()) { mb.actualName = "[Server]"; } mailBoxes.add(mb);
-		 * 
-		 * } } catch (SQLException e1) { // TODO Auto-generated catch block
-		 * e1.printStackTrace(); }
-		 */
 
 		ConfigurationSection statusesFromConfig = statusCfg.getConfig()
 				.getConfigurationSection("Status");
@@ -746,43 +688,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			getLogger().info("Exception thrown while trying to add MOTD main");
 		}
 
-		/*
-		 * dutchStrings = new HashMap<String, String>();
-		 * 
-		 * try { ConfigurationSection englishStringsFromConfig = stringsCfg
-		 * .getConfig().getConfigurationSection("Language.Dutch"); for (String
-		 * subkey : englishStringsFromConfig.getKeys(true)) { String translation
-		 * = englishStringsFromConfig.getString(subkey); translation =
-		 * translation.replace('@', '§'); translation = translation.replace('^',
-		 * '\n'); dutchStrings.put(subkey, translation); } } catch (Exception e)
-		 * { getLogger().info(
-		 * "Exception thrown while trying to dutch translations"); }
-		 * 
-		 * dutchSpeakers = new ArrayList<String>(); try { ConfigurationSection
-		 * dutchSpeakersFromConfig = languagesCfg
-		 * .getConfig().getConfigurationSection("Language");
-		 * 
-		 * for (Object subkey : dutchSpeakersFromConfig.getList("Dutch")) {
-		 * Bukkit.broadcastMessage(subkey + " likes dutch");
-		 * dutchSpeakers.add(subkey.toString()); } } catch (Exception e) {
-		 * getLogger().info("Exception thrown while trying to dutch players"); }
-		 */
-		/*
-		 * ConfigurationSection teamsFromConfig = teamsCfg.getConfig()
-		 * .getConfigurationSection("Team");
-		 */
-
-		/*
-		 * try { for (String key : teamsFromConfig.getKeys(false)) { for (Object
-		 * subkey : teamsFromConfig.getList(key)) {
-		 * teamList.put(subkey.toString(), key); } } } catch (Exception e) {
-		 * getLogger().info("Exception thrown while trying to add teams"); }
-		 */
-
-		/*
-		 * for (Player p : Bukkit.getOnlinePlayers()) {
-		 * playerLocations.put(p.getDisplayName(), p.getLocation()); }
-		 */
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
 			sp.setOnline(true);
@@ -790,6 +695,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		runEverySecond();
 		runEveryMinute();
+		runsaveDirtySerenityPlayersScheduler();
+		runAFKTest();
+		runUnAFKTest();
+		runTeleportTask();
+		runMailboxHearts();
+		runEntityCountWatchdog();
+
 		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 
 			@Override
@@ -800,6 +712,136 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		pluginReady = true;
 		getLogger().info("Serenity Plugins enabled");
+	}
+
+	private void runEveryMinute() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					addAMinuteToEachPlayer();
+				}
+			}
+		}, 0L, 1200L);
+	}
+
+	private void runAFKTest() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					afkTest();
+				}
+			}
+		}, 0L, 600L);
+	}
+
+	private void runUnAFKTest() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
+						if (sp.isAFK()) {
+							Player p = Bukkit.getPlayer(sp.getUUID());
+							Vector bV = p.getLocation().getDirection();
+							if (sp.getPlayerVectorHash() != bV.hashCode()) {
+								sp.setPlayerVectorHash(bV.hashCode());
+								unAfk(sp);
+							}
+						}
+					}
+				}
+			}
+		}, 0L, 100L);
+	}
+
+	private void runTeleportTask() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					if (aBattleIsRaging)
+						teleportSomeone();
+				}
+			}
+		}, 0L, 50L);
+	}
+
+	private void runsaveDirtySerenityPlayersScheduler() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				saveDirtySerenityPlayers();
+			}
+		}, 0L, 6000L);
+	}
+
+	private void runMailboxHearts() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					fireOnMailBoxes();
+					updateFireworksBlocks();
+				}
+			}
+		}, 0L, 40L);
+	}
+
+	private void runEntityCountWatchdog() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					int currentDay = new Date().getDay();
+					if (getServer().getOnlinePlayers().size() != 0) {
+						addScores(currentDay);
+						checkAndClearAllChunks();
+						unloadChunks();
+					}
+				}
+			}
+		}, 0L, 6000L);
+	}
+
+	private void runEverySecond() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				Long now = System.currentTimeMillis();
+				if (lags.size() > 9) {
+					lags.remove(0);
+				}
+				lags.add(now);
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					PartyLeather();
+
+					if (opParticles) {
+						for (Player p : Bukkit.getOnlinePlayers()) {
+							if (p.isOp()) {
+								doHalSpook(p);
+							}
+						}
+					}
+
+					highlightSticks();
+					if (getTickrate() < 16) {
+						Bukkit.getLogger().info("§cTickrate: " + getTickrate());
+					}
+					checkParty();
+				}
+			}
+
+		}, 0L, 20L);
 	}
 
 	private void loadMessagesFromDatabase() {
@@ -828,16 +870,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-
-	private void runEveryMinute() {
-		BukkitScheduler scheduler = Bukkit.getScheduler();
-		scheduler.runTaskTimer(this, new Runnable() {
-			@Override
-			public void run() {
-				saveDirtySerenityPlayers();
-			}
-		}, 0L, 1200L);
 	}
 
 	private void loadSerenityPlayersFromDatabase() {
@@ -1083,118 +1115,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}, 5L);
-	}
-
-	private void runEverySecond() {
-
-		BukkitScheduler scheduler = Bukkit.getScheduler();
-		scheduler.runTaskTimer(this, new Runnable() {
-
-			Boolean b = false;
-			int watchDog = 0;
-			int minute = 0;
-
-			@Override
-			public void run() {
-
-				Long now = System.currentTimeMillis();
-				if (lags.size() > 9) {
-					lags.remove(0);
-				}
-				lags.add(now);
-				if (Bukkit.getOnlinePlayers().size() > 0 /* || debugTickTimings */) {
-					PartyLeather();
-					printDebugTimings("Time to manipulate lag", now);
-
-					if (opParticles) {
-						for (Player p : Bukkit.getOnlinePlayers()) {
-							if (p.isOp()) {
-								doHalSpook(p);
-							}
-						}
-					}
-
-					printDebugTimings("Time to op particles", now);
-
-					if (!b) {
-						fireOnMailBoxes();
-						printDebugTimings("Time to update mailboxes", now);
-						updateFireworksBlocks();
-						printDebugTimings("Time to update fireworks", now);
-					}
-					b = !b;
-
-					watchDog++;
-					if (watchDog >= (60 * 3)) {
-						int currentDay = new Date().getDay();
-						if (getServer().getOnlinePlayers().size() != 0) {
-							addScores(currentDay);
-							printDebugTimings("Time to do leaderboard stuff",
-									now);
-							checkAndClearAllChunks();
-							unloadChunks();
-							printDebugTimings("Time to do watchdog stuff", now);
-							watchDog = 0;
-						}
-					}
-
-					minute++;
-
-					if (minute % 30 == 0) {
-						afkTest();
-					}
-
-					if (minute >= 60) {
-						addAMinuteToEachPlayer();
-						printDebugTimings("Time to add a minute", now);
-						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
-								new Runnable() {
-									@Override
-									public void run() {
-										checkForTimes();
-									}
-								}, 10L);
-
-						printDebugTimings("Time to check for times", now);
-						minute = 0;
-
-						printDebugTimings("Time to AFK test", now);
-					}
-
-					if (minute % 5 == 0) {
-						for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
-							if (sp.isAFK()) {
-								Player p = Bukkit.getPlayer(sp.getUUID());
-								Vector bV = p.getLocation().getDirection();
-								if (sp.getPlayerVectorHash() != bV.hashCode()) {
-									sp.setPlayerVectorHash(bV.hashCode());
-									unAfk(sp);
-								}
-							}
-						}
-						printDebugTimings("Time to UNAFK", now);
-					}
-
-					if (minute % 10 == 0) {
-						if (aBattleIsRaging)
-							teleportSomeone();
-					}
-
-					highlightSticks();
-					printDebugTimings("Time to highlight sticks", now);
-
-					if (getTickrate() < 16) {
-						Bukkit.getLogger().info("§cTickrate: " + getTickrate());
-					}
-
-					checkParty();
-					printDebugTimings("Time to check party sticks", now);
-
-					printDebugTimings("*****TICK TIME:  ", now);
-				}
-			}
-
-		}, 0L, 20L);
 	}
 
 	private List<SerenityPlayer> getOnlineSerenityPlayers() {
@@ -2039,83 +1959,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	protected void checkForTimes() {
-		for (Player p : Bukkit.getOnlinePlayers()) {
-			if (!p.hasPermission("SerenityPlugins.oneHour")) {
-				if (getPlayerMinutes(p.getUniqueId()) >= 60) {
-
-					p.sendMessage(getTranslationLanguage(p,
-							stringKeys.TIMEONEHOUR.toString()));
-					attachments.remove(p.getUniqueId());
-					addAndAttachAppropraitePermissionToPlayer(p);
-					Bukkit.getLogger().info(
-							p.getDisplayName() + " has reached 1 hour");
-					doRandomFirework(p.getWorld(), p.getLocation());
-				}
-			}
-
-			if (!p.hasPermission("SerenityPlugins.threeHour")) {
-				if (getPlayerMinutes(p.getUniqueId()) >= 180) {
-					p.sendMessage(getTranslationLanguage(p,
-							stringKeys.TIMETHREEHOUR.toString()));
-					// p.sendMessage("§2\nThanks for playing!  \nYou may now vote for server events with /vote !\n");
-					Bukkit.getLogger().info(
-							p.getDisplayName() + " has reached 3 hours");
-					attachments.remove(p.getUniqueId());
-					addAndAttachAppropraitePermissionToPlayer(p);
-				}
-			}
-
-			if (!p.hasPermission("SerenityPlugins.twelveHour")) {
-				if (getPlayerMinutes(p.getUniqueId()) >= 720) {
-					// p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now change your chat color with /setchatcolor !\n");
-					p.sendMessage(getTranslationLanguage(p,
-							stringKeys.TIMETWELVEHOUR.toString()));
-					attachments.remove(p.getUniqueId());
-					addAndAttachAppropraitePermissionToPlayer(p);
-					Bukkit.getLogger().info(
-							p.getDisplayName() + " has reached 12 hours");
-					for (int j = 0; j < 15; j++) {
-						doRandomFirework(p.getWorld(), p.getLocation());
-					}
-				}
-			}
-			if (getPlayerMinutes(p.getUniqueId()) == 1440) {
-				for (ProtectedArea pa : areas) {
-					if (pa.owner.equals("[Server]")) {
-						ArrayList<String> list = new ArrayList<String>();
-						for (ProtectedArea pas : areas) {
-							if (pas.owner.equals("[Server]")) {
-								pas.addTrust(p.getDisplayName());
-								list = pa.trustedPlayers;
-							}
-						}
-
-						String path = "ProtectedAreas." + "[Server].Trusts";
-
-						String[] loc = new String[list.size()];
-						for (int j = 0; j < list.size(); j++) {
-							loc[j] = list.get(j);
-						}
-
-						protectedAreasCfg.getConfig().set(path, loc);
-						protectedAreasCfg.saveConfig();
-						protectedAreasCfg.reloadConfig();
-
-						p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now edit the spawn area!\n");
-						getLogger().info(
-								"§c " + p.getDisplayName()
-										+ " §6reached 24 hours");
-
-						for (int j = 0; j < 24; j++) {
-							doRandomFirework(p.getWorld(), p.getLocation());
-						}
-					}
-				}
-			}
-		}
-	}
-
 	protected void addAMinuteToEachPlayer() {
 
 		Date d = new Date();
@@ -2127,6 +1970,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			 * }
 			 */
 			if (!p.isAFK()) {
+				checkMilestone(p);
 				addAMinute(p.getUUID());
 			} else {
 				int t = p.getAfkTime();
@@ -2136,6 +1980,74 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					p.setAfkTime(0);
 					Player pl = Bukkit.getPlayer(p.getUUID());
 					pl.kickPlayer("You have been idle for too long!");
+				}
+			}
+		}
+	}
+
+	private void checkMilestone(SerenityPlayer pl) {
+
+		if (getPlayerMinutes(pl.getUUID()) == 59) {
+			Player p = Bukkit.getPlayer(pl.getUUID());
+			p.sendMessage(getTranslationLanguage(p,
+					stringKeys.TIMEONEHOUR.toString()));
+			Bukkit.getLogger().info(p.getDisplayName() + " has reached 1 hour");
+			doRandomFirework(p.getWorld(), p.getLocation());
+			return;
+		}
+
+		if (getPlayerMinutes(pl.getUUID()) == 179) {
+			Player p = Bukkit.getPlayer(pl.getUUID());
+			p.sendMessage(getTranslationLanguage(p,
+					stringKeys.TIMETHREEHOUR.toString()));
+			// p.sendMessage("§2\nThanks for playing!  \nYou may now vote for server events with /vote !\n");
+			Bukkit.getLogger()
+					.info(p.getDisplayName() + " has reached 3 hours");
+			return;
+		}
+
+		if (getPlayerMinutes(pl.getUUID()) == 719) {
+			Player p = Bukkit.getPlayer(pl.getUUID());
+			p.sendMessage(getTranslationLanguage(p,
+					stringKeys.TIMETWELVEHOUR.toString()));
+			Bukkit.getLogger().info(
+					p.getDisplayName() + " has reached 12 hours");
+			for (int j = 0; j < 15; j++) {
+				doRandomFirework(p.getWorld(), p.getLocation());
+			}
+			return;
+		}
+
+		if (getPlayerMinutes(pl.getUUID()) == 1439) {
+			Player p = Bukkit.getPlayer(pl.getUUID());
+			for (ProtectedArea pa : areas) {
+				if (pa.owner.equals("[Server]")) {
+					ArrayList<String> list = new ArrayList<String>();
+					for (ProtectedArea pas : areas) {
+						if (pas.owner.equals("[Server]")) {
+							pas.addTrust(p.getDisplayName());
+							list = pa.trustedPlayers;
+						}
+					}
+
+					String path = "ProtectedAreas." + "[Server].Trusts";
+
+					String[] loc = new String[list.size()];
+					for (int j = 0; j < list.size(); j++) {
+						loc[j] = list.get(j);
+					}
+
+					protectedAreasCfg.getConfig().set(path, loc);
+					protectedAreasCfg.saveConfig();
+					protectedAreasCfg.reloadConfig();
+
+					p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now edit the spawn area!\n");
+					getLogger().info(
+							"§c " + p.getDisplayName() + " §6reached 24 hours");
+
+					for (int j = 0; j < 24; j++) {
+						doRandomFirework(p.getWorld(), p.getLocation());
+					}
 				}
 			}
 		}
@@ -2176,7 +2088,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@Override
 	public void onDisable() {
 		saveDirtySerenityPlayersBlocking();
-		attachments.clear();
 		getLogger().info("Serenity Plugins disabled");
 	}
 
@@ -2222,6 +2133,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			newMotd += getRandomNonBlackColor();
 			newMotd += allMotds.get(rand.nextInt(allMotds.size()));
 			e.setMotd(newMotd);
+		}
+
+		Iterator<Player> it = e.iterator();
+
+		while (it.hasNext()) {
+			if (it.next().isOp())
+				it.remove();
 		}
 	}
 
@@ -2286,52 +2204,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 */
 	}
 
-	private void addAndAttachAppropraitePermissionToPlayer(Player player) {
-		PermissionAttachment attachment = player.addAttachment(this);
-		attachments.put(player.getUniqueId(), attachment);
-
-		if (getPlayerMinutes(player.getUniqueId()) >= 720) {
-			Bukkit.getLogger().info(player.getName() + " is in group 12 hours");
-			/*
-			 * attachments.get(player.getUniqueId()).setPermission(
-			 * "SerenityPlugins.starter", true);
-			 * attachments.get(player.getUniqueId()).setPermission(
-			 * "SerenityPlugins.oneHour", true);
-			 * attachments.get(player.getUniqueId()).setPermission(
-			 * "SerenityPlugins.threeHour", true);
-			 */
-			attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.twelveHour", true);
-			return;
-		}
-		if (getPlayerMinutes(player.getUniqueId()) >= 180) {
-			Bukkit.getLogger().info(player.getName() + " is in group 3 hours");
-			/*
-			 * attachments.get(player.getUniqueId()).setPermission(
-			 * "SerenityPlugins.starter", true);
-			 * attachments.get(player.getUniqueId()).setPermission(
-			 * "SerenityPlugins.oneHour", true);
-			 */
-			attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.threeHour", true);
-			return;
-		}
-		if (getPlayerMinutes(player.getUniqueId()) >= 60) {
-			Bukkit.getLogger().info(player.getName() + " is in group 1 hour");
-			attachments.get(player.getUniqueId()).setPermission(
-					"SerenityPlugins.oneHour", true);
-			/*
-			 * attachments.get(player.getUniqueId()).setPermission(
-			 * "SerenityPlugins.starter", true);
-			 */
-			return;
-		}
-		Bukkit.getLogger().info(player.getName() + " is in group starter");
-		attachments.get(player.getUniqueId()).setPermission(
-				"SerenityPlugins.starter", true);
-
-	}
-
 	@EventHandler
 	public void PlayerLoginEvent(PlayerLoginEvent event) {
 		if (!pluginReady)
@@ -2365,13 +2237,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			sp.setLocalChatting(false);
 			sp.setLastPlayed(System.currentTimeMillis());
 			sp.setUUID(event.getPlayer().getUniqueId());
-			
+
 			insertSerenityPlayer(event.getPlayer());
 			serenityPlayers.put(event.getPlayer().getUniqueId(), sp);
-		}
-
-		if (!attachments.containsKey(event.getPlayer().getUniqueId())) {
-			addAndAttachAppropraitePermissionToPlayer(event.getPlayer());
 		}
 
 		if (!event.getPlayer().hasPlayedBefore()) {
@@ -2471,12 +2339,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private void insertSerenityPlayer(Player p) {
 		String chatColor = "";
 		chatColor += getChatColor(p.getUniqueId());
-		
+
 		String sql = "INSERT INTO Player VALUES ('"
 				+ p.getUniqueId().toString() + "','" + p.getName() + "','"
 				+ p.getAddress().getAddress().getHostAddress() + "'," + 0 + ","
 				+ p.getFirstPlayed() + "," + p.getLastPlayed() + ",'"
-				+ chatColor + "',1033,0," + (p.isWhitelisted() ? "1": "0") + ",0,0,1,0)";
+				+ chatColor + "',1033,0," + (p.isWhitelisted() ? "1" : "0")
+				+ ",0,0,1,0)";
 		getLogger().info(sql);
 		Connection conn = getConnection();
 		Statement st;
@@ -2495,7 +2364,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onPlayerLeave(PlayerQuitEvent event) {
 		SerenityPlayer sp = serenityPlayers
 				.get(event.getPlayer().getUniqueId());
-		attachments.remove(event.getPlayer().getUniqueId());
 
 		if (event.getPlayer().isOp()) {
 			event.setQuitMessage(null);
@@ -4169,29 +4037,38 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean text(CommandSender sender, String[] arg3) {
 
-		if (sender.hasPermission("SerenityPlugins.text")) {
-			if (arg3.length < 1) {
-				return false;
-			}
-			if (textCooldown.containsKey(sender.getName())) {
-				Long now = System.currentTimeMillis();
-				Long then = textCooldown.get(sender.getName());
-				if (now - then < 10000) {
-					sender.sendMessage("§cYou must wait to text Hal again");
-					return true;
-				}
-			}
-			String s = "";
-			for (int i = 0; i < arg3.length; i++) {
-				s += arg3[i] + " ";
-			}
+		String message = "";
+		for (int i = 0; i < arg3.length; i++) {
+			message += arg3[i] + " ";
+		}
+		if (sender instanceof Player) {
+			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
+					.getUniqueId());
 
-			sender.sendMessage("§4Attempting to send text message...");
-			sendATextToHal(sender.getName(), s);
-			textCooldown.put(sender.getName(), System.currentTimeMillis());
-			return true;
+			if (sp.getMinutes() > 720) {
+				if (arg3.length < 1) {
+					return false;
+				}
+
+				if (sp.getLastText() != null) {
+					Long now = System.currentTimeMillis();
+					Long then = sp.getLastText();
+					if (now - then < 10000) {
+						sender.sendMessage("§cYou must wait to text Hal again");
+						return true;
+					}
+				}
+
+				sender.sendMessage("§4Attempting to send text message...");
+				sendATextToHal(sender.getName(), message);
+				sp.setLastText(System.currentTimeMillis());
+				return true;
+			} else {
+				sender.sendMessage("§cYou can only text Hal after you've played for 12 hours");
+				return true;
+			}
 		} else {
-			sender.sendMessage("§cYou can only text Hal after you've played for 12 hours");
+			sendATextToHal("Yourself", message);
 			return true;
 		}
 	}
@@ -4280,17 +4157,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (arg3.length > 1) {
 			if (arg3[0].equals("r")) {
-				if (playerRecentMessages.containsKey(sender.getName())) {
-					arg3[0] = playerRecentMessages.get(sender.getName());
-					String s = "";
-					for (int i = 0; i < arg3.length; i++) {
-						s += arg3[i] + " ";
+				if (sender instanceof Player) {
+					SerenityPlayer sp = serenityPlayers.get(((Player) sender)
+							.getUniqueId());
+					if (sp.getLastToSendMessage() != null) {
+						arg3[0] = sp.getLastToSendMessage();
+						String s = "";
+						for (int i = 0; i < arg3.length; i++) {
+							s += arg3[i] + " ";
+						}
+						Bukkit.dispatchCommand(sender, "msg " + s);
+						return true;
 					}
-					Bukkit.dispatchCommand(sender, "msg " + s);
+					sender.sendMessage("§cNobody has sent you a message recently!");
 					return true;
 				}
-				sender.sendMessage("§cNobody has sent you a message recently!");
-				return true;
 			} else {
 				return sendPrivateMessage(sender, arg3);
 			}
@@ -4336,10 +4217,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								FancyText.RUN_COMMAND, "/msg ^ " + s.getID(),
 								FancyText.SHOW_TEXT, "Click to delete");
 						String more = FancyText.GenerateFancyText(
-								"     §6(all messages)", FancyText.RUN_COMMAND,
+								"  §6(all messages)", FancyText.RUN_COMMAND,
 								"/msg read", FancyText.SHOW_TEXT, "/msg read");
+						String reply = FancyText.GenerateFancyText(
+								"  §2(reply)", FancyText.SUGGEST_COMMAND,
+								"/msg "
+										+ serenityPlayers.get(s.getFrom())
+												.getName() + " ",
+								FancyText.SHOW_TEXT, "/msg "
+										+ serenityPlayers.get(s.getFrom())
+												.getName());
 						sendRawPacket(((Player) sender).getPlayer(), "[" + del
-								+ "," + more + "]");
+								+ "," + more + "," + reply + "]");
 						executeSQLAsync(sql);
 						return;
 					}
@@ -4390,10 +4279,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean sendPrivateMessage(CommandSender sender, String[] arg3) {
+		
 		String name = arg3[0];
 		String message = "";
 		for (int i = 1; i < arg3.length; i++) {
 			message += arg3[i] + " ";
+		}
+
+		if (name.equalsIgnoreCase("Server")) {
+			String fromColor = "";
+			if(sender instanceof Player){
+				fromColor = serenityPlayers.get(((Player) sender).getUniqueId()).getChatColor();
+			}
+			sender.sendMessage(fromColor + "§o" + "To [Server]: " + message);
+			getLogger().info("§cMsg from " + sender.getName() + ": §4" + message);
+			return true;
 		}
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
@@ -4406,13 +4306,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				} else {
 					senderName = "[Server]";
 				}
+				
 
-				p.sendMessage("§oFrom " + senderName + ": " + message);
-				sender.sendMessage("§oTo " + recipient + ": " + message);
+				if (sender instanceof ConsoleCommandSender) {
+					serenityPlayers.get(p.getUniqueId()).setLastToSendMessage(
+							"Server");
+				} else {
+					serenityPlayers.get(p.getUniqueId()).setLastToSendMessage(
+							sender.getName());
+				}
+				
+				String fromColor = "";
+				
+				if(sender instanceof Player){
+					fromColor = serenityPlayers.get(((Player) sender).getUniqueId()).getChatColor();
+				}
+				
+				p.sendMessage(fromColor + "§o" + "From " + senderName + ": " + message);
+				sender.sendMessage(fromColor + "§o" +"To " + recipient + ": " + message);
 
-				if (playerRecentMessages.containsKey(recipient))
-					playerRecentMessages.remove(recipient);
-				playerRecentMessages.put(recipient, senderName);
+				
 
 				return true;
 			}
@@ -4623,48 +4536,44 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 */
 
 	private boolean chat(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.lc")) {
-			if (arg3.length == 1) {
-				if (arg3[0].equals("tp")) {
-					doRandomTeleport(sender);
-					return true;
-				}
-
-				if (arg3[0].equalsIgnoreCase("celebrate")) {
-					// celebrate(sender);
-					return true;
-				}
+		if (arg3.length == 1) {
+			if (arg3[0].equals("tp")) {
+				doRandomTeleport(sender);
+				return true;
 			}
 
-			if (arg3.length == 1) {
-				if (arg3[0].equalsIgnoreCase("on")) {
-					return enableLocalChat(sender, arg3);
-				}
-
-				if (arg3[0].equalsIgnoreCase("off")) {
-					return enableGlobalChat(sender, arg3);
-				}
-
-				if (arg3[0].equalsIgnoreCase("g")) {
-					return globalChat(sender, arg3);
-				}
-
+			if (arg3[0].equalsIgnoreCase("celebrate")) {
+				// celebrate(sender);
+				return true;
 			}
-
-			if (arg3.length > 1) {
-				if (arg3[0].equalsIgnoreCase("g")) {
-					return globalChat(sender, arg3);
-				}
-			}
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.CHATHELP.toString());
-			sender.sendMessage(msg);
-			return true;
-		} else {
-			noPerms(sender);
-			return true;
 		}
+
+		if (arg3.length == 1) {
+			if (arg3[0].equalsIgnoreCase("on")) {
+				return enableLocalChat(sender, arg3);
+			}
+
+			if (arg3[0].equalsIgnoreCase("off")) {
+				return enableGlobalChat(sender, arg3);
+			}
+
+			if (arg3[0].equalsIgnoreCase("g")) {
+				return globalChat(sender, arg3);
+			}
+
+		}
+
+		if (arg3.length > 1) {
+			if (arg3[0].equalsIgnoreCase("g")) {
+				return globalChat(sender, arg3);
+			}
+		}
+
+		String msg = getTranslationLanguage(sender,
+				stringKeys.CHATHELP.toString());
+		sender.sendMessage(msg);
+		return true;
+
 	}
 
 	private boolean globalChat(CommandSender sender, String[] arg3) {
@@ -4783,80 +4692,78 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void doRandomTeleport(CommandSender sender) {
 
-		Location l = Bukkit.getPlayer(sender.getName()).getLocation();
-		if (l.getWorld().getName().equalsIgnoreCase("world")) {
-			if (Math.abs(l.getX()) < 50 && Math.abs(l.getZ()) < 50) {
-				boolean ready = true;
-				for (TeleportClicker tc : teleportClickers) {
-					if (tc.name.equals(sender.getName())) {
-						if (System.currentTimeMillis() - tc.lastClick < 1800000) {
+		if (sender instanceof Player) {
+			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
+					.getUniqueId());
+			Location l = Bukkit.getPlayer(sender.getName()).getLocation();
+
+			if (l.getWorld().getName().equalsIgnoreCase("world")) {
+				if (Math.abs(l.getX()) < 50 && Math.abs(l.getZ()) < 50) {
+					boolean ready = true;
+					if (sp.getLastRandomTP() != null) {
+
+						if (System.currentTimeMillis() - sp.getLastRandomTP() < 1800000) {
 							ready = false;
 						}
+
 					}
-				}
-				if (ready) {
-					Random rand = new Random();
-					Location teleLoc;
+					if (ready) {
+						Random rand = new Random();
+						Location teleLoc;
 
-					boolean safe = false;
-					do {
-						teleLoc = new Location(Bukkit.getWorld("world"),
-								(double) rand.nextInt(15000) - 7500, 5.0,
-								(double) rand.nextInt(15000) - 7500);
+						boolean safe = false;
+						do {
+							teleLoc = new Location(Bukkit.getWorld("world"),
+									(double) rand.nextInt(15000) - 7500, 5.0,
+									(double) rand.nextInt(15000) - 7500);
 
-						if (teleLoc.getWorld().getHighestBlockAt(teleLoc)
-								.getRelative(BlockFace.DOWN).getType() != Material.WATER
-								&& teleLoc.getWorld()
-										.getHighestBlockAt(teleLoc)
-										.getRelative(BlockFace.DOWN).getType() != Material.STATIONARY_WATER) {
-							boolean isprotected = false;
-							for (ProtectedArea pa : areas) {
-								if (pa.equals(teleLoc)) {
-									isprotected = true;
+							if (teleLoc.getWorld().getHighestBlockAt(teleLoc)
+									.getRelative(BlockFace.DOWN).getType() != Material.WATER
+									&& teleLoc.getWorld()
+											.getHighestBlockAt(teleLoc)
+											.getRelative(BlockFace.DOWN)
+											.getType() != Material.STATIONARY_WATER) {
+								boolean isprotected = false;
+								for (ProtectedArea pa : areas) {
+									if (pa.equals(teleLoc)) {
+										isprotected = true;
+									}
+								}
+								if (!isprotected) {
+									safe = true;
 								}
 							}
-							if (!isprotected) {
-								safe = true;
-							}
-						}
-					} while (!safe);
+						} while (!safe);
 
-					teleLoc.setY(teleLoc.getWorld().getHighestBlockYAt(teleLoc) + 1);
-					Bukkit.getPlayer(sender.getName()).teleport(teleLoc);
+						teleLoc.setY(teleLoc.getWorld().getHighestBlockYAt(
+								teleLoc) + 1);
+						Bukkit.getPlayer(sender.getName()).teleport(teleLoc);
 
-					for (int i = 0; i < teleportClickers.size(); i++) {
-						if (teleportClickers.get(i).name.equals(sender
-								.getName())) {
-							teleportClickers.remove(i);
-						}
+						sp.setLastRandomTP(System.currentTimeMillis());
+						return;
+					} else {
+
+						String msg = getTranslationLanguage(sender,
+								stringKeys.RANDOMTPWAIT.toString());
+						sender.sendMessage(msg);
+						// sender.sendMessage("§cYou must wait to use that again!");
+						return;
 					}
-
-					teleportClickers.add(new TeleportClicker(sender.getName(),
-							System.currentTimeMillis()));
-
-					return;
-				} else {
-
-					String msg = getTranslationLanguage(sender,
-							stringKeys.RANDOMTPWAIT.toString());
-					sender.sendMessage(msg);
-					// sender.sendMessage("§cYou must wait to use that again!");
-					return;
 				}
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.RANDOMTPTOOFAR.toString());
+				sender.sendMessage(msg);
+				// sender.sendMessage("§cYou can only do this at spawn!");
+				return;
+			} else {
+				String msg = getTranslationLanguage(sender,
+						stringKeys.RANDOMTPWRONGWORLD.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§cYou can only do this in the overworld!");
+				return;
 			}
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.RANDOMTPTOOFAR.toString());
-			sender.sendMessage(msg);
-			// sender.sendMessage("§cYou can only do this at spawn!");
-			return;
-		} else {
-			String msg = getTranslationLanguage(sender,
-					stringKeys.RANDOMTPWRONGWORLD.toString());
-			sender.sendMessage(msg);
-
-			// sender.sendMessage("§cYou can only do this in the overworld!");
-			return;
 		}
 
 	}
@@ -6090,28 +5997,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean coords(CommandSender sender) {
-		if (sender.hasPermission("SerenityPlugins.coords")) {
-			Location l = Bukkit.getServer().getPlayer(sender.getName())
-					.getLocation();
-			this.getServer().broadcastMessage(
-					"§3"
-							+ Bukkit.getServer().getPlayer(sender.getName())
-									.getDisplayName()
-							+ "§r§9 is in the §3"
-							+ sender.getServer().getPlayer(sender.getName())
-									.getWorld().getName() + "§9 at:"
-							+ "§9 X: §3" + (int) l.getX() + "§9 Y: §3"
-							+ (int) l.getY() + "§9 Z: §3" + (int) l.getZ());
-			return true;
-		} else {
-			noPerms(sender);
-			return true;
-		}
+		Location l = Bukkit.getServer().getPlayer(sender.getName())
+				.getLocation();
+		this.getServer().broadcastMessage(
+				"§3"
+						+ Bukkit.getServer().getPlayer(sender.getName())
+								.getDisplayName()
+						+ "§r§9 is in the §3"
+						+ sender.getServer().getPlayer(sender.getName())
+								.getWorld().getName() + "§9 at:" + "§9 X: §3"
+						+ (int) l.getX() + "§9 Y: §3" + (int) l.getY()
+						+ "§9 Z: §3" + (int) l.getZ());
+		return true;
 	}
 
 	private boolean server(CommandSender sender, String[] arg3) {
-
-		if (sender.hasPermission("SerenityPlugins.server")) {
+		if (sender.isOp() || sender instanceof ConsoleCommandSender) {
 			if (arg3[0].equalsIgnoreCase("say")) {
 				String s = "§d[Server] ";
 				for (int i = 1; i < arg3.length; i++) {
@@ -7148,132 +7049,121 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean status(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.coords")) {
 
-			final CommandSender senderF = sender;
-			final String[] arg = arg3;
+		final CommandSender senderF = sender;
+		final String[] arg = arg3;
 
-			Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-				@Override
-				public void run() {
-					if (arg.length == 0) {
-						GregorianCalendar gc = new GregorianCalendar();
+		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				if (arg.length == 0) {
+					GregorianCalendar gc = new GregorianCalendar();
 
-						Iterator<PlayerStatus> it = playerStatuses.iterator();
-						List<PlayerStatus> statusesToDelete = new ArrayList<PlayerStatus>();
-						while (it.hasNext()) {
-							PlayerStatus ps = it.next();
-							if (gc.getTimeInMillis()
-									- ps.getTime().getTimeInMillis() > 259200000) {
-								statusesToDelete.add(ps);
-							}
+					Iterator<PlayerStatus> it = playerStatuses.iterator();
+					List<PlayerStatus> statusesToDelete = new ArrayList<PlayerStatus>();
+					while (it.hasNext()) {
+						PlayerStatus ps = it.next();
+						if (gc.getTimeInMillis()
+								- ps.getTime().getTimeInMillis() > 259200000) {
+							statusesToDelete.add(ps);
 						}
-
-						for (int i = 0; i < statusesToDelete.size(); i++) {
-							deletePlayerStatus(statusesToDelete.get(i)
-									.getName());
-						}
-
-						String messageToSend = "";
-
-						it = playerStatuses.iterator();
-
-						while (it.hasNext()) {
-							PlayerStatus ps = it.next();
-							messageToSend += ps.toString();
-						}
-
-						final String messageToSendF = messageToSend;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
-								new Runnable() {
-									@Override
-									public void run() {
-										senderF.sendMessage(messageToSendF);
-									}
-								});
-
-						return;
-					} else {
-						deletePlayerStatus(senderF.getName());
-						String status = "";
-						for (int i = 0; i < arg.length; i++) {
-							if (i != arg.length - 1) {
-								status += arg[i] + " ";
-							} else {
-								status += arg[i];
-							}
-						}
-						status = status.replaceAll("\"", "");
-						status = status.replaceAll("'", "");
-						status = status.replaceAll("<", "");
-						status = status.replaceAll(">", "");
-						PlayerStatus ps = new PlayerStatus(senderF.getName(),
-								status, new GregorianCalendar());
-
-						addPlayerStatus(ps);
-						// sender.sendMessage("§2Your status was updated!");
-
-						String msg = getTranslationLanguage(senderF,
-								stringKeys.STATUSSUCCESS.toString());
-						final String msgF = msg;
-
-						Bukkit.getScheduler().scheduleSyncDelayedTask(global,
-								new Runnable() {
-									@Override
-									public void run() {
-										senderF.sendMessage(msgF);
-									}
-								});
 					}
+
+					for (int i = 0; i < statusesToDelete.size(); i++) {
+						deletePlayerStatus(statusesToDelete.get(i).getName());
+					}
+
+					String messageToSend = "";
+
+					it = playerStatuses.iterator();
+
+					while (it.hasNext()) {
+						PlayerStatus ps = it.next();
+						messageToSend += ps.toString();
+					}
+
+					final String messageToSendF = messageToSend;
+
+					Bukkit.getScheduler().scheduleSyncDelayedTask(global,
+							new Runnable() {
+								@Override
+								public void run() {
+									senderF.sendMessage(messageToSendF);
+								}
+							});
+
 					return;
+				} else {
+					deletePlayerStatus(senderF.getName());
+					String status = "";
+					for (int i = 0; i < arg.length; i++) {
+						if (i != arg.length - 1) {
+							status += arg[i] + " ";
+						} else {
+							status += arg[i];
+						}
+					}
+					status = status.replaceAll("\"", "");
+					status = status.replaceAll("'", "");
+					status = status.replaceAll("<", "");
+					status = status.replaceAll(">", "");
+					PlayerStatus ps = new PlayerStatus(senderF.getName(),
+							status, new GregorianCalendar());
 
+					addPlayerStatus(ps);
+					// sender.sendMessage("§2Your status was updated!");
+
+					String msg = getTranslationLanguage(senderF,
+							stringKeys.STATUSSUCCESS.toString());
+					final String msgF = msg;
+
+					Bukkit.getScheduler().scheduleSyncDelayedTask(global,
+							new Runnable() {
+								@Override
+								public void run() {
+									senderF.sendMessage(msgF);
+								}
+							});
 				}
-			});
-			return true;
+				return;
 
-		} else {
-			noPerms(sender);
-			return true;
-		}
+			}
+		});
+		return true;
+
 	}
 
 	private boolean getPortal(CommandSender sender) {
-		if (sender.hasPermission("SerenityPlugins.portal")) {
-			Location l = Bukkit.getServer().getPlayer(sender.getName())
-					.getLocation();
-			if (l.getWorld().getName().equals(("world"))) {
+		Location l = Bukkit.getServer().getPlayer(sender.getName())
+				.getLocation();
+		if (l.getWorld().getName().equals(("world"))) {
 
-				String msg = getTranslationLanguage(sender,
-						stringKeys.PORTALNETHER.toString());
-				sender.sendMessage(String.format(msg, (int) (l.getX() / 8),
-						(int) (l.getZ() / 8)));
+			String msg = getTranslationLanguage(sender,
+					stringKeys.PORTALNETHER.toString());
+			sender.sendMessage(String.format(msg, (int) (l.getX() / 8),
+					(int) (l.getZ() / 8)));
 
-				/*
-				 * sender.sendMessage(
-				 * "§l§5If you want your portal to exit here, build it in the nether at: "
-				 * + "§r§d\n   X: §l§3" + (int) (l.getX() / 8) +
-				 * "§r§d\n   Z: §l§3" + (int) (l.getZ() / 8));
-				 */
-			} else {
-
-				String msg = getTranslationLanguage(sender,
-						stringKeys.PORTALOVERWORLD.toString());
-				sender.sendMessage(String.format(msg, (int) (l.getX() * 8),
-						(int) (l.getZ() * 8)));
-
-				/*
-				 * sender.sendMessage(
-				 * "§l§5If you build your portal here you will end up at: " +
-				 * "§r§d\n   X: §l§3" + (int) (l.getX() * 8) +
-				 * "§r§d\n   Z: §l§3" + (int) (l.getZ() * 8));
-				 */
-			}
-			return true;
+			/*
+			 * sender.sendMessage(
+			 * "§l§5If you want your portal to exit here, build it in the nether at: "
+			 * + "§r§d\n   X: §l§3" + (int) (l.getX() / 8) + "§r§d\n   Z: §l§3"
+			 * + (int) (l.getZ() / 8));
+			 */
 		} else {
-			noPerms(sender);
-			return true;
+
+			String msg = getTranslationLanguage(sender,
+					stringKeys.PORTALOVERWORLD.toString());
+			sender.sendMessage(String.format(msg, (int) (l.getX() * 8),
+					(int) (l.getZ() * 8)));
+
+			/*
+			 * sender.sendMessage(
+			 * "§l§5If you build your portal here you will end up at: " +
+			 * "§r§d\n   X: §l§3" + (int) (l.getX() * 8) + "§r§d\n   Z: §l§3" +
+			 * (int) (l.getZ() * 8));
+			 */
 		}
+		return true;
 	}
 
 	private boolean lastLogin(CommandSender sender, String[] arg3) {
@@ -7541,128 +7431,113 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean afk(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.afk")) {
-			if (sender instanceof Player) {
-				Player player = (Player) sender;
-				SerenityPlayer sp = serenityPlayers.get(player.getUniqueId());
+		if (sender instanceof Player) {
+			Player player = (Player) sender;
+			SerenityPlayer sp = serenityPlayers.get(player.getUniqueId());
 
-				if (arg3.length > 0) {
-					if (votingForDay) {
-						int total = 0;
+			if (arg3.length > 0) {
+				if (votingForDay) {
+					int total = 0;
 
-						player.setSleepingIgnored(true);
-						int count = 0;
-						for (Player p : Bukkit.getOnlinePlayers()) {
-							if (!p.isOp()) {
-								total++;
-								if (p.isSleepingIgnored() || p.isSleeping()) {
-									count++;
-								}
+					player.setSleepingIgnored(true);
+					int count = 0;
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (!p.isOp()) {
+							total++;
+							if (p.isSleepingIgnored() || p.isSleeping()) {
+								count++;
 							}
 						}
-
-						double percentage = (double) count / total;
-						percentage *= 100.0;
-
-						String result = new DecimalFormat("##.##")
-								.format(percentage);
-
-						String msg = getTranslationLanguage(sender,
-								stringKeys.BEDVOTING.toString());
-
-						sender.sendMessage(msg + "§6" + result + "%");
-
-						/*
-						 * sender.sendMessage("§9" +
-						 * "Waiting for >50% of players to get in bed or type /ok. Current: "
-						 * + "§b" + result + "%");
-						 */
-
-						checkHalfIgnored();
-						return true;
-
-					} else {
-
-						String msg = getTranslationLanguage(sender,
-								stringKeys.BEDOKNOTVOTING.toString());
-						sender.sendMessage(msg);
-
-						/*
-						 * sender.sendMessage("§c" +
-						 * "This can only be done after somebody enters a bed");
-						 */
-						return true;
-
 					}
-				}
 
-				if (sp.isAFK()) {
+					double percentage = (double) count / total;
+					percentage *= 100.0;
+
+					String result = new DecimalFormat("##.##")
+							.format(percentage);
 
 					String msg = getTranslationLanguage(sender,
-							stringKeys.AFKALREADYAFK.toString());
+							stringKeys.BEDVOTING.toString());
+
+					sender.sendMessage(msg + "§6" + result + "%");
+
+					/*
+					 * sender.sendMessage("§9" +
+					 * "Waiting for >50% of players to get in bed or type /ok. Current: "
+					 * + "§b" + result + "%");
+					 */
+
+					checkHalfIgnored();
+					return true;
+
+				} else {
+
+					String msg = getTranslationLanguage(sender,
+							stringKeys.BEDOKNOTVOTING.toString());
 					sender.sendMessage(msg);
 
-					// sender.sendMessage("§cYou are already AFK!");
+					/*
+					 * sender.sendMessage("§c" +
+					 * "This can only be done after somebody enters a bed");
+					 */
 					return true;
-				}
 
-				setAfk(sp, false);
+				}
 			}
 
-			return true;
-		} else {
-			noPerms(sender);
-			return true;
+			if (sp.isAFK()) {
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.AFKALREADYAFK.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§cYou are already AFK!");
+				return true;
+			}
+
+			setAfk(sp, false);
 		}
+
+		return true;
 	}
 
 	private boolean getTime(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.gettime")) {
-			Long time = Bukkit.getWorld("world").getTime();
-			String msg = "§7Minecraft time: §e" + time + " §7(";
+		Long time = Bukkit.getWorld("world").getTime();
+		String msg = "§7Minecraft time: §e" + time + " §7(";
 
-			String s = "";
-			if (time < 800) {
-				s += "§emorning§7)";
-			} else if (time < 10000) {
-				s += "§6day§7)";
-			} else if (time < 12500) {
-				s += "§7dusk§7)";
-			} else if (time < 22500) {
-				s += "§8night§7)";
-			} else {
-				s += "§7pre-morning§7)";
-			}
-			sender.sendMessage(msg + s);
-			String timeStamp = new SimpleDateFormat("HH:mm MMM dd, YYYY")
-					.format(Calendar.getInstance().getTime());
-			sender.sendMessage("§7Server time: §e" + timeStamp);
-			return true;
+		String s = "";
+		if (time < 800) {
+			s += "§emorning§7)";
+		} else if (time < 10000) {
+			s += "§6day§7)";
+		} else if (time < 12500) {
+			s += "§7dusk§7)";
+		} else if (time < 22500) {
+			s += "§8night§7)";
 		} else {
-			noPerms(sender);
-			return true;
+			s += "§7pre-morning§7)";
 		}
+		sender.sendMessage(msg + s);
+		String timeStamp = new SimpleDateFormat("HH:mm MMM dd, YYYY")
+				.format(Calendar.getInstance().getTime());
+		sender.sendMessage("§7Server time: §e" + timeStamp);
+		return true;
 	}
 
 	private boolean mailTo(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.mailto")) {
-			if (arg3.length < 1) {
-				String s = "";
-				s += "\n§cType a mailbox name!";
-				sender.sendMessage(s);
-				return false;
-			}
-			String mailto = arg3[0];
-			/*
-			 * if (mailto.equals("EVERYBODY18104")) { for (Mailbox mb :
-			 * mailBoxes) { mailItemsTo(sender, mb.name, true); } return true; }
-			 */
-
-			return mailItemsTo(sender, mailto);
-		} else {
-			noPerms(sender);
-			return true;
+		if (arg3.length < 1) {
+			String s = "";
+			s += "\n§cType a mailbox name!";
+			sender.sendMessage(s);
+			return false;
 		}
+		String mailto = arg3[0];
+		/*
+		 * if (mailto.equals("EVERYBODY18104")) { for (Mailbox mb : mailBoxes) {
+		 * mailItemsTo(sender, mb.name, true); } return true; }
+		 */
+
+		return mailItemsTo(sender, mailto);
 	}
 
 	private boolean mailItemsTo(CommandSender sender, String mailto) {
@@ -7800,259 +7675,250 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean setCompass(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.setcompass")) {
-			if (arg3.length < 1) {
+		if (arg3.length < 1) {
+
+			String msg = getTranslationLanguage(sender,
+					stringKeys.COMPASSHELP.toString());
+			sender.sendMessage(msg);
+
+			/*
+			 * sender.sendMessage(
+			 * "§cNo destination specified.. try: §2\n  \"home\" §3for your bed\n"
+			 * + "§2  \"spawn\" §3for the world's spawn\n" +
+			 * "§2  \"mailbox\" §3for your mailbox\n" +
+			 * "§2  \"here\" §3for your current location\n" +
+			 * "  or manually type any <X> <Y> <Z> coordinates" +
+			 * "\n§cExamples: §2" + "\n/setcompass home" +
+			 * "\n/setcompass 200 64 -200");
+			 */
+			return true;
+		}
+		if (arg3.length < 2) {
+			if (arg3[0].toLowerCase().equals("spawn")) {
 
 				String msg = getTranslationLanguage(sender,
-						stringKeys.COMPASSHELP.toString());
+						stringKeys.COMPASSSPAWN.toString());
 				sender.sendMessage(msg);
 
-				/*
-				 * sender.sendMessage(
-				 * "§cNo destination specified.. try: §2\n  \"home\" §3for your bed\n"
-				 * + "§2  \"spawn\" §3for the world's spawn\n" +
-				 * "§2  \"mailbox\" §3for your mailbox\n" +
-				 * "§2  \"here\" §3for your current location\n" +
-				 * "  or manually type any <X> <Y> <Z> coordinates" +
-				 * "\n§cExamples: §2" + "\n/setcompass home" +
-				 * "\n/setcompass 200 64 -200");
-				 */
+				// sender.sendMessage("§2Set compass to point to spawn");
+				this.getServer()
+						.getPlayer(sender.getName())
+						.setCompassTarget(
+								this.getServer().getPlayer(sender.getName())
+										.getWorld().getSpawnLocation());
 				return true;
 			}
-			if (arg3.length < 2) {
-				if (arg3[0].toLowerCase().equals("spawn")) {
+			if (arg3[0].toLowerCase().equals("home")
+					|| arg3[0].toLowerCase().equals("bed")) {
 
-					String msg = getTranslationLanguage(sender,
-							stringKeys.COMPASSSPAWN.toString());
-					sender.sendMessage(msg);
-
-					// sender.sendMessage("§2Set compass to point to spawn");
+				if (this.getServer().getPlayer(sender.getName())
+						.getBedSpawnLocation() != null) {
 					this.getServer()
 							.getPlayer(sender.getName())
 							.setCompassTarget(
 									this.getServer()
 											.getPlayer(sender.getName())
-											.getWorld().getSpawnLocation());
+											.getBedSpawnLocation());
+					// sender.sendMessage("§2Set compass to point to your bed");
+
+					String msg = getTranslationLanguage(sender,
+							stringKeys.COMPASSBED.toString());
+					sender.sendMessage(msg);
+
 					return true;
 				}
-				if (arg3[0].toLowerCase().equals("home")
-						|| arg3[0].toLowerCase().equals("bed")) {
+				/*
+				 * this.getServer() .getPlayer(sender.getName()) .sendMessage(
+				 * "§cYou currently do not have a bed! (Was it destroyed or did someone else sleep in it?) \n"
+				 * + "§2If you have a mailbox, you can try /setcompass mailbox"
+				 * );
+				 */
 
-					if (this.getServer().getPlayer(sender.getName())
-							.getBedSpawnLocation() != null) {
-						this.getServer()
-								.getPlayer(sender.getName())
-								.setCompassTarget(
-										this.getServer()
-												.getPlayer(sender.getName())
-												.getBedSpawnLocation());
-						// sender.sendMessage("§2Set compass to point to your bed");
+				String msg = getTranslationLanguage(sender,
+						stringKeys.COMPASSBEDDESTROYED.toString());
+				sender.sendMessage(msg);
+
+				return true;
+			}
+
+			if (arg3[0].toLowerCase().equals("mailbox")) {
+				for (int i = 0; i < mailBoxes.size(); i++) {
+					if (sender.getName().equals(mailBoxes.get(i).uuid)) {
+						Bukkit.getServer().getPlayer(sender.getName())
+								.setCompassTarget(mailBoxes.get(i).location);
+						/*
+						 * Bukkit.getServer() .getPlayer(sender.getName())
+						 * .sendMessage(
+						 * "§2Set compass to point to your mailbox!");
+						 */
 
 						String msg = getTranslationLanguage(sender,
-								stringKeys.COMPASSBED.toString());
+								stringKeys.COMPASSMAILBOX.toString());
 						sender.sendMessage(msg);
 
 						return true;
 					}
-					/*
-					 * this.getServer() .getPlayer(sender.getName())
-					 * .sendMessage(
-					 * "§cYou currently do not have a bed! (Was it destroyed or did someone else sleep in it?) \n"
-					 * +
-					 * "§2If you have a mailbox, you can try /setcompass mailbox"
-					 * );
-					 */
-
-					String msg = getTranslationLanguage(sender,
-							stringKeys.COMPASSBEDDESTROYED.toString());
-					sender.sendMessage(msg);
-
-					return true;
 				}
-
-				if (arg3[0].toLowerCase().equals("mailbox")) {
-					for (int i = 0; i < mailBoxes.size(); i++) {
-						if (sender.getName().equals(mailBoxes.get(i).uuid)) {
-							Bukkit.getServer()
-									.getPlayer(sender.getName())
-									.setCompassTarget(mailBoxes.get(i).location);
-							/*
-							 * Bukkit.getServer() .getPlayer(sender.getName())
-							 * .sendMessage(
-							 * "§2Set compass to point to your mailbox!");
-							 */
-
-							String msg = getTranslationLanguage(sender,
-									stringKeys.COMPASSMAILBOX.toString());
-							sender.sendMessage(msg);
-
-							return true;
-						}
-					}
-
-					String msg = getTranslationLanguage(sender,
-							stringKeys.COMPASSNOMAILBOX.toString());
-					sender.sendMessage(msg);
-
-					/*
-					 * Bukkit.getServer() .getPlayer(sender.getName())
-					 * .sendMessage(
-					 * "§cYou don't have a mailbox!  \n§2Make one at your home!  (Chest on top of a fence post)"
-					 * );
-					 */
-					return true;
-				}
-
-				if (arg3[0].toLowerCase().equals("here")) {
-					Bukkit.getServer()
-							.getPlayer(sender.getName())
-							.setCompassTarget(
-									Bukkit.getServer()
-											.getPlayer(sender.getName())
-											.getLocation());
-
-					String msg = getTranslationLanguage(sender,
-							stringKeys.COMPASSHERE.toString());
-					sender.sendMessage(msg);
-					/*
-					 * Bukkit.getServer() .getPlayer(sender.getName())
-					 * .sendMessage(
-					 * "§2Set compass to point to your current location!");
-					 */
-					return true;
-				}
-
-			}
-			if (arg3.length == 3) {
-				Location l = new Location(this.getServer()
-						.getPlayer(sender.getName()).getWorld(),
-						Integer.parseInt(arg3[0]), Integer.parseInt(arg3[1]),
-						Integer.parseInt(arg3[2]));
 
 				String msg = getTranslationLanguage(sender,
-						stringKeys.COMPASSCUST.toString());
-				sender.sendMessage(String.format(msg, (int) l.getX(),
-						(int) l.getY(), (int) l.getZ()));
+						stringKeys.COMPASSNOMAILBOX.toString());
+				sender.sendMessage(msg);
+
 				/*
-				 * sender.sendMessage("§2Set compass to point to X: §3" +
-				 * l.getX() + "§2 Y: §3" + l.getY() + "§2 Z: §3" + l.getZ());
+				 * Bukkit.getServer() .getPlayer(sender.getName()) .sendMessage(
+				 * "§cYou don't have a mailbox!  \n§2Make one at your home!  (Chest on top of a fence post)"
+				 * );
 				 */
-				Bukkit.getPlayer(sender.getName()).setCompassTarget(l);
 				return true;
 			}
-		} else {
-			noPerms(sender);
+
+			if (arg3[0].toLowerCase().equals("here")) {
+				Bukkit.getServer()
+						.getPlayer(sender.getName())
+						.setCompassTarget(
+								Bukkit.getServer().getPlayer(sender.getName())
+										.getLocation());
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.COMPASSHERE.toString());
+				sender.sendMessage(msg);
+				/*
+				 * Bukkit.getServer() .getPlayer(sender.getName()) .sendMessage(
+				 * "§2Set compass to point to your current location!");
+				 */
+				return true;
+			}
+
+		}
+		if (arg3.length == 3) {
+			Location l = new Location(this.getServer()
+					.getPlayer(sender.getName()).getWorld(),
+					Integer.parseInt(arg3[0]), Integer.parseInt(arg3[1]),
+					Integer.parseInt(arg3[2]));
+
+			String msg = getTranslationLanguage(sender,
+					stringKeys.COMPASSCUST.toString());
+			sender.sendMessage(String.format(msg, (int) l.getX(),
+					(int) l.getY(), (int) l.getZ()));
+			/*
+			 * sender.sendMessage("§2Set compass to point to X: §3" + l.getX() +
+			 * "§2 Y: §3" + l.getY() + "§2 Z: §3" + l.getZ());
+			 */
+			Bukkit.getPlayer(sender.getName()).setCompassTarget(l);
 			return true;
 		}
-		return false;
+		return true;
 	}
 
 	private boolean setChatColor(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player) {
+			if (serenityPlayers.get(((Player) sender).getUniqueId())
+					.getMinutes() >= 720) {
+				String color = "";
+				Player p = Bukkit.getPlayerExact(sender.getName());
+				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+				if (arg3.length == 0) {
+					sender.sendMessage("§aHere are your options:  \n"
+							+ "§0black, §1dark blue, §2dark green, \n"
+							+ "§3dark aqua, §4dark red, §5dark purple, \n"
+							+ "§6gold, §7gray, §8dark gray, \n"
+							+ "§9blue, §agreen, §baqua, \n"
+							+ "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
+					return true;
+				}
 
-		if (sender.hasPermission("SerenityPlugins.setchatcolor")) {
-			String color = "";
-			Player p = Bukkit.getPlayerExact(sender.getName());
-			SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
-			if (arg3.length == 0) {
-				sender.sendMessage("§aHere are your options:  \n"
-						+ "§0black, §1dark blue, §2dark green, \n"
-						+ "§3dark aqua, §4dark red, §5dark purple, \n"
-						+ "§6gold, §7gray, §8dark gray, \n"
-						+ "§9blue, §agreen, §baqua, \n"
-						+ "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
+				for (int i = 0; i < arg3.length; i++) {
+					color += arg3[i] + " ";
+				}
+
+				if (color.equalsIgnoreCase("black ")) {
+
+					sp.setChatColor("§0");
+
+				} else if (color.equalsIgnoreCase("dark blue ")) {
+					sp.setChatColor("§1");
+
+				} else if (color.equalsIgnoreCase("dark green ")) {
+					sp.setChatColor("§2");
+
+				} else if (color.equalsIgnoreCase("dark aqua ")) {
+					sp.setChatColor("§3");
+
+				} else if (color.equalsIgnoreCase("dark red ")) {
+					sp.setChatColor("§4");
+
+				} else if (color.equalsIgnoreCase("dark purple ")) {
+					sp.setChatColor("§5");
+
+				} else if (color.equalsIgnoreCase("gold ")) {
+					sp.setChatColor("§6");
+
+				} else if (color.equalsIgnoreCase("gray ")) {
+					sp.setChatColor("§7");
+
+				} else if (color.equalsIgnoreCase("dark gray ")) {
+					sp.setChatColor("§8");
+
+				} else if (color.equalsIgnoreCase("blue ")) {
+					sp.setChatColor("§9");
+
+				} else if (color.equalsIgnoreCase("green ")) {
+					sp.setChatColor("§a");
+
+				} else if (color.equalsIgnoreCase("aqua ")) {
+					sp.setChatColor("§b");
+
+				} else if (color.equalsIgnoreCase("red ")) {
+					sp.setChatColor("§c");
+
+				} else if (color.equalsIgnoreCase("light purple ")) {
+					sp.setChatColor("§d");
+
+				} else if (color.equalsIgnoreCase("yellow ")) {
+					sp.setChatColor("§e");
+
+				} else if (color.equalsIgnoreCase("white ")) {
+					sp.setChatColor("§f");
+
+				} else if (color.equalsIgnoreCase("scary ")) {
+					sp.setChatColor("§k");
+
+				} else {
+					sender.sendMessage("§cInvalid color!  Pick one of these:\n"
+							+ "§0black, §1dark blue, §2dark green, \n"
+							+ "§3dark aqua, §4dark red, §5dark purple, \n"
+							+ "§6gold, §7gray, §8dark gray, \n"
+							+ "§9blue, §agreen, §baqua, \n"
+							+ "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
+					return true;
+					/*
+					 * sender.sendMessage(
+					 * "§4Invalid color!  Here are your options:\n§a" +
+					 * 
+					 * "black, dark blue, dark green,\n" +
+					 * "dark aqua, dark red, dark purple,\n" +
+					 * "gold, gray, dark gray, blue,\n" + "green, aqua, red,\n"
+					 * + "light purple, yellow, white.");
+					 */
+				}
+				if (sender instanceof Player) {
+					Player play = (Player) sender;
+					play.sendMessage(sp.getChatColor() + "Chat color set!");
+					setListNames();
+				}
+
 				return true;
-			}
-
-			for (int i = 0; i < arg3.length; i++) {
-				color += arg3[i] + " ";
-			}
-
-			if (color.equalsIgnoreCase("black ")) {
-
-				sp.setChatColor("§0");
-
-			} else if (color.equalsIgnoreCase("dark blue ")) {
-				sp.setChatColor("§1");
-
-			} else if (color.equalsIgnoreCase("dark green ")) {
-				sp.setChatColor("§2");
-
-			} else if (color.equalsIgnoreCase("dark aqua ")) {
-				sp.setChatColor("§3");
-
-			} else if (color.equalsIgnoreCase("dark red ")) {
-				sp.setChatColor("§4");
-
-			} else if (color.equalsIgnoreCase("dark purple ")) {
-				sp.setChatColor("§5");
-
-			} else if (color.equalsIgnoreCase("gold ")) {
-				sp.setChatColor("§6");
-
-			} else if (color.equalsIgnoreCase("gray ")) {
-				sp.setChatColor("§7");
-
-			} else if (color.equalsIgnoreCase("dark gray ")) {
-				sp.setChatColor("§8");
-
-			} else if (color.equalsIgnoreCase("blue ")) {
-				sp.setChatColor("§9");
-
-			} else if (color.equalsIgnoreCase("green ")) {
-				sp.setChatColor("§a");
-
-			} else if (color.equalsIgnoreCase("aqua ")) {
-				sp.setChatColor("§b");
-
-			} else if (color.equalsIgnoreCase("red ")) {
-				sp.setChatColor("§c");
-
-			} else if (color.equalsIgnoreCase("light purple ")) {
-				sp.setChatColor("§d");
-
-			} else if (color.equalsIgnoreCase("yellow ")) {
-				sp.setChatColor("§e");
-
-			} else if (color.equalsIgnoreCase("white ")) {
-				sp.setChatColor("§f");
-
-			} else if (color.equalsIgnoreCase("scary ")) {
-				sp.setChatColor("§k");
-
 			} else {
-				sender.sendMessage("§cInvalid color!  Pick one of these:\n"
-						+ "§0black, §1dark blue, §2dark green, \n"
-						+ "§3dark aqua, §4dark red, §5dark purple, \n"
-						+ "§6gold, §7gray, §8dark gray, \n"
-						+ "§9blue, §agreen, §baqua, \n"
-						+ "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.CHATCOLOREARLY.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§2You can't set your chatcolor yet... Stick around and eventually you will!");
 				return true;
-				/*
-				 * sender.sendMessage("§4Invalid color!  Here are your options:\n§a"
-				 * +
-				 * 
-				 * "black, dark blue, dark green,\n" +
-				 * "dark aqua, dark red, dark purple,\n" +
-				 * "gold, gray, dark gray, blue,\n" + "green, aqua, red,\n" +
-				 * "light purple, yellow, white.");
-				 */
 			}
-			if (sender instanceof Player) {
-				Player play = (Player) sender;
-				play.sendMessage(sp.getChatColor() + "Chat color set!");
-				setListNames();
-			}
-
-			return true;
-		} else {
-
-			String msg = getTranslationLanguage(sender,
-					stringKeys.CHATCOLOREARLY.toString());
-			sender.sendMessage(msg);
-
-			// sender.sendMessage("§2You can't set your chatcolor yet... Stick around and eventually you will!");
-			return true;
 		}
+		return false;
 	}
 
 	private boolean lag(CommandSender sender) {
@@ -8121,148 +7987,111 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean ignore(CommandSender sender, String[] arg3) {
-		if (sender.hasPermission("SerenityPlugins.ignore")) {
-			if (sender instanceof Player) {
-				if (arg3.length != 1) {
-					return false;
-				} else {
-					try {
-						Player p = Bukkit.getServer().getPlayerExact(arg3[0]);
-						String s = p.getDisplayName();
-					} catch (Exception e) {
-
-						String msg = getTranslationLanguage(sender,
-								stringKeys.IGNORECOULDNOTFIND.toString());
-						sender.sendMessage(msg);
-
-						// sender.sendMessage("§cI could not find that player");
-						return true;
-					}
-
-					for (int i = 0; i < ignorers.size(); i++) {
-						if (ignorers.get(i).player.equals(((Player) sender)
-								.getPlayer())) {
-							for (int j = 0; j < ignorers.get(i).ignoreList
-									.size(); j++) {
-								if (ignorers.get(i).ignoreList.get(j)
-										.equalsIgnoreCase(arg3[0])) {
-									ignorers.get(i).ignoreList.remove(j);
-
-									String msg = getTranslationLanguage(sender,
-											stringKeys.IGNORENOLONGERIGNORING
-													.toString());
-									sender.sendMessage(String.format(msg,
-											arg3[0]));
-
-									// sender.sendMessage("§2You are no longer ignoring §e"
-									// + arg3[0]);
-									return true;
-								}
-							}
-							ignorers.get(i).ignoreList.add(arg3[0]);
-
-							String msg = getTranslationLanguage(sender,
-									stringKeys.IGNORESUCCESS.toString());
-							sender.sendMessage(String.format(msg, arg3[0]));
-
-							// sender.sendMessage("§2You are ignoring §e"
-							// + arg3[0]);
-							return true;
-						}
-					}
-
-					Ignoring newIg = new Ignoring(((Player) sender).getPlayer());
-					newIg.ignoreList.add(arg3[0]);
-					ignorers.add(newIg);
+		if (sender instanceof Player) {
+			if (arg3.length != 1) {
+				return false;
+			} else {
+				try {
+					Player p = Bukkit.getServer().getPlayerExact(arg3[0]);
+					String s = p.getDisplayName();
+				} catch (Exception e) {
 
 					String msg = getTranslationLanguage(sender,
-							stringKeys.IGNORESUCCESS.toString());
-					sender.sendMessage(String.format(msg, arg3[0]));
-					// sender.sendMessage("§2You are now ignoring §e" +
-					// arg3[0]);
-					return true;
+							stringKeys.IGNORECOULDNOTFIND.toString());
+					sender.sendMessage(msg);
 
+					// sender.sendMessage("§cI could not find that player");
+					return true;
 				}
+
+				for (int i = 0; i < ignorers.size(); i++) {
+					if (ignorers.get(i).player.equals(((Player) sender)
+							.getPlayer())) {
+						for (int j = 0; j < ignorers.get(i).ignoreList.size(); j++) {
+							if (ignorers.get(i).ignoreList.get(j)
+									.equalsIgnoreCase(arg3[0])) {
+								ignorers.get(i).ignoreList.remove(j);
+
+								String msg = getTranslationLanguage(sender,
+										stringKeys.IGNORENOLONGERIGNORING
+												.toString());
+								sender.sendMessage(String.format(msg, arg3[0]));
+
+								// sender.sendMessage("§2You are no longer ignoring §e"
+								// + arg3[0]);
+								return true;
+							}
+						}
+						ignorers.get(i).ignoreList.add(arg3[0]);
+
+						String msg = getTranslationLanguage(sender,
+								stringKeys.IGNORESUCCESS.toString());
+						sender.sendMessage(String.format(msg, arg3[0]));
+
+						// sender.sendMessage("§2You are ignoring §e"
+						// + arg3[0]);
+						return true;
+					}
+				}
+
+				Ignoring newIg = new Ignoring(((Player) sender).getPlayer());
+				newIg.ignoreList.add(arg3[0]);
+				ignorers.add(newIg);
+
+				String msg = getTranslationLanguage(sender,
+						stringKeys.IGNORESUCCESS.toString());
+				sender.sendMessage(String.format(msg, arg3[0]));
+				// sender.sendMessage("§2You are now ignoring §e" +
+				// arg3[0]);
+				return true;
+
 			}
-			return false;
-		} else {
-			noPerms(sender);
-			return true;
 		}
+		return false;
 	}
 
 	private boolean vote(CommandSender sender, String[] arg3) {
-
-		if (sender.hasPermission("SerenityPlugins.vote")) {
-			// sender.sendMessage("No current vote");
-			// return true;
-			// }
-			if (arg3.length == 0) {
-				sender.sendMessage("§3Do you want the end to continue being reset on Fridays?\n"
-						+ "§3Type §f/vote YES §3to keep resetting or\n"
-						+ "Type §f/vote NO §3to have a permanent End world");
-				return true;
-			}
-
-			if (arg3.length > 0) {
-				if (arg3[0].equalsIgnoreCase("yes")) {
-					sender.sendMessage("§aYour vote was cast!  Type §f/vote results §ato see current results");
-
-					voteCfg.getConfig().set("VoteEnd." + sender.getName(),
-							"yes");
-					voteCfg.saveConfig();
-					voteCfg.reloadConfig();
-					return true;
-				}
-				if (arg3[0].equalsIgnoreCase("no")) {
-					sender.sendMessage("§aYour vote was cast!  Type §f/vote results §ato see current results");
-					voteCfg.getConfig()
-							.set("VoteEnd." + sender.getName(), "no");
-					voteCfg.saveConfig();
-					voteCfg.reloadConfig();
-					return true;
-				}
-				if (arg3[0].equalsIgnoreCase("results")) {
-					ConfigurationSection votesFromConfig = voteCfg.getConfig()
-							.getConfigurationSection("VoteEnd");
-
-					ArrayList<String> votes = new ArrayList<String>();
-					for (String key : votesFromConfig.getKeys(false)) {
-						votes.add(votesFromConfig.getString(key));
-					}
-
-					int votesToReset = 0;
-					int votesToKeep = 0;
-					for (int i = 0; i < votes.size(); i++) {
-						if (votes.get(i).equalsIgnoreCase("yes")) {
-							votesToReset++;
-						}
-						if (votes.get(i).equalsIgnoreCase("no")) {
-							votesToKeep++;
-						}
-					}
-
-					sender.sendMessage("§3Total votes: §b"
-							+ (votesToReset + votesToKeep)
-							+ "\n§5Reset: §2"
-							+ new DecimalFormat("##.##")
-									.format((double) ((double) votesToReset
-											/ (double) (votesToKeep + votesToReset) * 100.00))
-							+ "%"
-							+ "\n§5Permanent:  §2"
-							+ new DecimalFormat("##.##")
-									.format((double) ((double) votesToKeep
-											/ (double) (votesToKeep + votesToReset) * 100.00))
-							+ "%");
-					return true;
-				}
-
-				return true;
-			}
-		} else {
-			noPerms(sender);
-			return true;
-		}
+		/*
+		 * if (sender.hasPermission("SerenityPlugins.vote")) { //
+		 * sender.sendMessage("No current vote"); // return true; // } if
+		 * (arg3.length == 0) { sender.sendMessage(
+		 * "§3Do you want the end to continue being reset on Fridays?\n" +
+		 * "§3Type §f/vote YES §3to keep resetting or\n" +
+		 * "Type §f/vote NO §3to have a permanent End world"); return true; }
+		 * 
+		 * if (arg3.length > 0) { if (arg3[0].equalsIgnoreCase("yes")) {
+		 * sender.sendMessage
+		 * ("§aYour vote was cast!  Type §f/vote results §ato see current results"
+		 * );
+		 * 
+		 * voteCfg.getConfig().set("VoteEnd." + sender.getName(), "yes");
+		 * voteCfg.saveConfig(); voteCfg.reloadConfig(); return true; } if
+		 * (arg3[0].equalsIgnoreCase("no")) { sender.sendMessage(
+		 * "§aYour vote was cast!  Type §f/vote results §ato see current results"
+		 * ); voteCfg.getConfig() .set("VoteEnd." + sender.getName(), "no");
+		 * voteCfg.saveConfig(); voteCfg.reloadConfig(); return true; } if
+		 * (arg3[0].equalsIgnoreCase("results")) { ConfigurationSection
+		 * votesFromConfig = voteCfg.getConfig()
+		 * .getConfigurationSection("VoteEnd");
+		 * 
+		 * ArrayList<String> votes = new ArrayList<String>(); for (String key :
+		 * votesFromConfig.getKeys(false)) {
+		 * votes.add(votesFromConfig.getString(key)); }
+		 * 
+		 * int votesToReset = 0; int votesToKeep = 0; for (int i = 0; i <
+		 * votes.size(); i++) { if (votes.get(i).equalsIgnoreCase("yes")) {
+		 * votesToReset++; } if (votes.get(i).equalsIgnoreCase("no")) {
+		 * votesToKeep++; } }
+		 * 
+		 * sender.sendMessage("§3Total votes: §b" + (votesToReset + votesToKeep)
+		 * + "\n§5Reset: §2" + new DecimalFormat("##.##") .format((double)
+		 * ((double) votesToReset / (double) (votesToKeep + votesToReset) *
+		 * 100.00)) + "%" + "\n§5Permanent:  §2" + new DecimalFormat("##.##")
+		 * .format((double) ((double) votesToKeep / (double) (votesToKeep +
+		 * votesToReset) * 100.00)) + "%"); return true; }
+		 * 
+		 * return true; } } else { noPerms(sender); return true; }
+		 */
 
 		return true;
 	}
@@ -8826,13 +8655,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							+ key);
 		}
 		return englishStrings.get(key);
-	}
-
-	private String getTeam(Player player) {
-		if (teamList.containsKey(player.getDisplayName())) {
-			return teamList.get(player.getDisplayName());
-		}
-		return null;
 	}
 
 	@EventHandler

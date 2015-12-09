@@ -27,6 +27,9 @@ public class SerenityPlayer {
 	private int afkTime;
 	private int playerVectorHash;
 	private List<OfflineMessage> offlineMessages;
+	private Long lastText;
+	private String lastToSendMessage;
+	private Long lastRandomTP;
 
 	@Override
 	public int hashCode() {
@@ -240,5 +243,29 @@ public class SerenityPlayer {
 
 	public void setOfflineMessages(List<OfflineMessage> offlineMessages) {
 		this.offlineMessages = offlineMessages;
+	}
+
+	public Long getLastText() {
+		return lastText;
+	}
+
+	public void setLastText(Long lastText) {
+		this.lastText = lastText;
+	}
+
+	public String getLastToSendMessage() {
+		return lastToSendMessage;
+	}
+
+	public void setLastToSendMessage(String lastToSendMessage) {
+		this.lastToSendMessage = lastToSendMessage;
+	}
+
+	public Long getLastRandomTP() {
+		return lastRandomTP;
+	}
+
+	public void setLastRandomTP(Long lastRandomTP) {
+		this.lastRandomTP = lastRandomTP;
 	}
 }
