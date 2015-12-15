@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Vector;
 
+import com.avaje.ebeaninternal.server.subclass.GetterSetterMethods;
+
 public class SerenityPlayer {
 	private UUID uuid;
 	private String name;
@@ -30,6 +32,7 @@ public class SerenityPlayer {
 	private Long lastText;
 	private String lastToSendMessage;
 	private Long lastRandomTP;
+	private SerenityLeader serenityLeader;
 
 	@Override
 	public int hashCode() {
@@ -47,6 +50,7 @@ public class SerenityPlayer {
 	
 	public SerenityPlayer(){
 		offlineMessages = new ArrayList<OfflineMessage>();
+		serenityLeader = new SerenityLeader();
 	}
 
 	public String getUpdateString() {
@@ -60,6 +64,18 @@ public class SerenityPlayer {
 				+ (isOnline() ? 1 : 0) + ",Banned=" + (isBanned() ? 1 : 0)
 				+ " WHERE UUID='" + getUUID().toString() + "';";
 		return sql;
+	}
+
+	public String getLeaderboardUpdate(){
+		return "INSERT INTO Leaderboard Values (" 
+				+ System.currentTimeMillis()
+				+ ",'" + getUUID().toString()
+				+ "'," + getSerenityLeader().getOnline()
+				+ "," + getSerenityLeader().getLifeInTicks()
+				+ "," + getSerenityLeader().getDiamondsFound()
+				+ "," + getSerenityLeader().getMonstersKilled()
+				+ "," + getSerenityLeader().getVillagerTrades()
+				+ "," + getSerenityLeader().getAnimalsBred() + ");";
 	}
 
 	public UUID getUUID() {
@@ -268,4 +284,13 @@ public class SerenityPlayer {
 	public void setLastRandomTP(Long lastRandomTP) {
 		this.lastRandomTP = lastRandomTP;
 	}
+	
+	public SerenityLeader getSerenityLeader(){
+		return this.serenityLeader;
+	}
+	
+	public void clearSerenityLeader(){
+		this.serenityLeader = new SerenityLeader();
+	}
+	
 }

@@ -45,6 +45,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
+import org.bukkit.Statistic;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -69,6 +70,7 @@ import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Horse;
+import org.bukkit.entity.Villager;
 import org.bukkit.entity.Horse.Style;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.MushroomCow;
@@ -92,6 +94,8 @@ import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -101,6 +105,8 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerBedEnterEvent;
@@ -120,6 +126,7 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -136,12 +143,14 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
+import com.avaje.ebeaninternal.server.core.TraditionalBackgroundExecutor;
+
 public final class SerenityPlugins extends JavaPlugin implements Listener,
 		CommandExecutor {
 
 	public SerenityPlugins global = this;
 	// public ConfigAccessor mailboxCfg;
-	public ConfigAccessor statusCfg;
+	// public ConfigAccessor statusCfg;
 	// public ConfigAccessor chatcolorCfg;
 	public ConfigAccessor fireworksCfg;
 	public ConfigAccessor protectedAreasCfg;
@@ -152,12 +161,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor bookCfg;
 	public ConfigAccessor linksCfg;
 	public ConfigAccessor daleCfg;
-	public ConfigAccessor leaderboardCfg;
+	//public ConfigAccessor leaderboardCfg;
 	// public ConfigAccessor portalAnalytics;
-	public ConfigAccessor whoIsOnline;
-	public ConfigAccessor diamondFoundCfg;
+	//public ConfigAccessor diamondFoundCfg;
 	public ConfigAccessor voteCfg;
-	public ConfigAccessor monsterCfg;
+	//public ConfigAccessor monsterCfg;
 	public ConfigAccessor motdsCfg;
 	public boolean opParticles;
 	public boolean opParticlesDeb;
@@ -281,9 +289,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public boolean votingForDay;
 	public final int MAX_DISTANCE = 700;
 	public Random rand = new Random();
-	public List<String> mutedNames;
-	public boolean wasLagging = false;
-	public boolean thisHour = false;
 	public Location TELEPORTDESTINATIONFORSOMETHING;
 	public Location BLUEBLOCKSINFINALDUNGEON;
 	public Location GREENBLOCKSINFINALDUNGEON;
@@ -357,9 +362,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		createTables();
 		loadSerenityPlayersFromDatabase();
-		mailBoxes = new ArrayList<Mailbox>();
 		loadSerenityMailboxesFromDatabase();
 		loadMessagesFromDatabase();
+		loadStatusesFromDatabase();
 
 		Secret = new Secrets();
 
@@ -438,7 +443,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		racers = new HashMap<String, Long>();
 
 		// mailboxCfg = new ConfigAccessor(this, "mailboxes.yml");
-		statusCfg = new ConfigAccessor(this, "status.yml");
+		// statusCfg = new ConfigAccessor(this, "status.yml");
 		fireworksCfg = new ConfigAccessor(this, "fireworks.yml");
 		protectedAreasCfg = new ConfigAccessor(this, "protectedareas.yml");
 		// chatcolorCfg = new ConfigAccessor(this, "chatcolor.yml");
@@ -449,22 +454,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		bookCfg = new ConfigAccessor(this, "book.yml");
 		linksCfg = new ConfigAccessor(this, "links.yml");
 		daleCfg = new ConfigAccessor(this, "dale.yml");
-		leaderboardCfg = new ConfigAccessor(this, "leaderboard.yml");
-		whoIsOnline = new ConfigAccessor(this, "whoIsOnline.yml");
-		diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
+		//leaderboardCfg = new ConfigAccessor(this, "leaderboard.yml");
+		//diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
 		voteCfg = new ConfigAccessor(this, "vote.yml");
-		monsterCfg = new ConfigAccessor(this, "monster.yml");
+		//monsterCfg = new ConfigAccessor(this, "monster.yml");
 		motdsCfg = new ConfigAccessor(this, "motds.yml");
 
 		preppedToProtectArea = new ArrayList<PlayerProtect>();
 		preppedToUnProtectChunk = new ArrayList<Player>();
-		playerStatuses = new TreeSet<PlayerStatus>();
+
 		fireworkShowLocations = new ArrayList<FireWorkShow>();
 		ignorers = new ArrayList<Ignoring>();
 		lags = new ArrayList<Long>();
 		areas = new ArrayList<ProtectedArea>();
 		votingForDay = false;
-		mutedNames = new ArrayList<String>();
 		ItemStack stick = Secret.SECRETITEMSTACK1;
 		ItemMeta item = stick.getItemMeta();
 		item.setDisplayName(Secret.SECRETITEM1NAME);
@@ -531,25 +534,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			bootRecipe.setIngredient('A', m);
 			this.getServer().addRecipe(bootRecipe);
 
-		}
-
-		ConfigurationSection statusesFromConfig = statusCfg.getConfig()
-				.getConfigurationSection("Status");
-
-		try {
-			for (String key : statusesFromConfig.getKeys(false)) {
-				ArrayList<String> stat = new ArrayList<String>();
-				for (Object subKey : statusesFromConfig.getList(key)) {
-					stat.add(subKey + "");
-				}
-				String status = stat.get(1);
-				GregorianCalendar time = new GregorianCalendar();
-				time.setTimeInMillis(Long.parseLong(stat.get(0)));
-				PlayerStatus ps = new PlayerStatus(key, status, time);
-				playerStatuses.add(ps);
-			}
-		} catch (Exception e) {
-			getLogger().info("Exception thrown while trying to add statuses");
 		}
 
 		getLogger().info("Added " + playerStatuses.size() + " statuses");
@@ -801,9 +785,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public void run() {
 				if (Bukkit.getOnlinePlayers().size() > 0) {
-					int currentDay = new Date().getDay();
+					//int currentDay = new Date().getDay();
 					if (getServer().getOnlinePlayers().size() != 0) {
-						addScores(currentDay);
+						//addScores(currentDay);
 						checkAndClearAllChunks();
 						unloadChunks();
 					}
@@ -842,6 +826,34 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 		}, 0L, 20L);
+	}
+
+	private void loadStatusesFromDatabase() {
+		playerStatuses = new TreeSet<PlayerStatus>();
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			ResultSet rs = st.executeQuery("Select * FROM Status");
+			while (rs.next()) {
+				GregorianCalendar gc = new GregorianCalendar();
+				gc.setTimeInMillis(rs.getLong("Time"));
+				PlayerStatus ps = new PlayerStatus(rs.getString("Status").replace('`', '\''), gc,
+						UUID.fromString(rs.getString("UUID")));
+				
+				ps.setStatus(ps.getStatus().replace('|', '\"'));
+				playerStatuses.add(ps);
+			}
+			if (conn != null)
+				conn.close();
+			getLogger().info(
+					"Time to get Status: " + (System.currentTimeMillis() - now)
+							+ "ms");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void loadMessagesFromDatabase() {
@@ -1009,6 +1021,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					+ "FOREIGN KEY (ToUUID) REFERENCES Player(UUID), "
 					+ "Message VARCHAR(500), " + "ReadStatus TINYINT(1), "
 					+ "Time Long);";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Leaderboard (" + "Time Long, "
+					+ "UUID VARCHAR(40), "
+					+ "FOREIGN KEY (UUID) REFERENCES Player(UUID), "
+					+ "Online INT, " + "Life Long, " + "Diamonds INT, "
+					+ "Monsters INT," + "Villagers INT," + "Animals INT);";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Status (" + "UUID VARCHAR(40), "
+					+ "FOREIGN KEY (UUID) REFERENCES Player(UUID), "
+					+ "Time Long," + "Status VARCHAR(300));";
 			st.executeUpdate(sql);
 
 			if (conn != null)
@@ -1263,6 +1287,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	}
 
+	/*
 	protected void addScores(int currentDay) {
 		for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
 			if (!sp.isOp()) {
@@ -1284,6 +1309,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+
 			@Override
 			public void run() {
 				leaderboardCfg.saveConfig();
@@ -1291,13 +1317,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				monsterCfg.saveConfig();
 			}
 		});
-	}
-
+	}*/
+	
+	/*
 	private void addScoreToCfg(ConfigAccessor config, String name) {
 		int currentScore = config.getConfig().getInt(name, 0);
 		currentScore++;
 		config.getConfig().set(name, currentScore);
-	}
+	}*/
 
 	@EventHandler
 	public void EatSecretSomethingEvent(PlayerItemConsumeEvent event) {
@@ -2062,6 +2089,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						.entrySet()) {
 					if (entry.getValue().isDirty()) {
 						executeSQLAsync(entry.getValue().getUpdateString());
+						executeSQLAsync(entry.getValue().getLeaderboardUpdate());
+						entry.getValue().clearSerenityLeader();
 						entry.getValue().setDirty(false);
 					}
 				}
@@ -2074,6 +2103,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			SerenityPlayer sp = entry.getValue();
 			if (sp.isDirty()) {
 				executeSQLBlocking(sp.getUpdateString());
+				executeSQLBlocking(sp.getLeaderboardUpdate());
+				sp.clearSerenityLeader();
 				sp.setDirty(false);
 			}
 		}
@@ -2083,6 +2114,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		serenityPlayers.get(uuid).setMinutes(
 				serenityPlayers.get(uuid).getMinutes() + 1);
 		serenityPlayers.get(uuid).setOnline(true);
+		int amt = serenityPlayers.get(uuid).getSerenityLeader().getOnline();
+		amt++;
+		serenityPlayers.get(uuid).getSerenityLeader().setOnline(amt);
+		serenityPlayers
+				.get(uuid)
+				.getSerenityLeader()
+				.setLifeInTicks(
+						Bukkit.getPlayer(uuid).getStatistic(
+								Statistic.TIME_SINCE_DEATH) + 0L);
 	}
 
 	@Override
@@ -2269,21 +2309,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					+ event.getJoinMessage().substring(2));
 		}
 
-		if (!event.getPlayer().isOp()) {
-			Date d = new Date();
-			d.setDate(d.getDate() + 1);
-			String date = sdtf.format(d);
-			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
-					date);
-			Bukkit.getScheduler().runTaskLaterAsynchronously(this,
-					new Runnable() {
-						@Override
-						public void run() {
-							whoIsOnline.saveConfig();
-						}
-					}, 0L);
-		}
-
 		if (event.getPlayer().isOp()) {
 			event.getPlayer().setSleepingIgnored(true);
 
@@ -2374,13 +2399,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					+ event.getQuitMessage().substring(2));
 		}
 
-		if (!event.getPlayer().isOp()) {
-			String date = sdtf.format(new Date());
-			whoIsOnline.getConfig().set(event.getPlayer().getDisplayName(),
-					date);
-			whoIsOnline.saveConfig();
-		}
-
 		sp.setOnline(false);
 		sp.setLastPlayed(System.currentTimeMillis());
 	}
@@ -2432,9 +2450,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
-		if (mutedNames.contains(event.getPlayer().getDisplayName())) {
-			event.setCancelled(true);
-			return;
+		if (sp.isMuted()) {
+			event.getRecipients().clear();
+			event.getRecipients().add(event.getPlayer());
 		}
 
 		event.setFormat("<" + getChatColor(sp.getUUID()) + "%s§r> %s");
@@ -2451,7 +2469,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (p.getLocation().distance(
 							event.getPlayer().getLocation()) <= 100) {
 						if (p.isOp()) {
-							if (getConfig().getBoolean("opParticles", false)) {
+							if (opParticles) {
 								event.getRecipients().add(p);
 							}
 						} else {
@@ -2480,11 +2498,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		// i am purple
-		if (event.getPlayer().getDisplayName().contains("[Server]")) {
+		if (event.getPlayer().isOp()) {
 			event.setFormat("§d" + "[Server] " + "%2$s");
 		}
-
-		Random rand = new Random();
 
 		if (rand.nextInt(1000) == 0 && event.getMessage().length() > 10) {
 			int r = rand.nextInt(3);
@@ -2548,11 +2564,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		event.setMessage(event.getMessage().replace("[s]", "§m"));
 		event.setMessage(event.getMessage().replace("[u]", "§n"));
 
-		event.setMessage(event.getMessage().replace("[I]", "§o"));
-		event.setMessage(event.getMessage().replace("[B]", "§l"));
-		event.setMessage(event.getMessage().replace("[S]", "§m"));
-		event.setMessage(event.getMessage().replace("[U]", "§n"));
-
 		event.setMessage(event.getMessage().replace("[/i]",
 				"§r" + getChatColor(sp.getUUID())));
 		event.setMessage(event.getMessage().replace("[/b]",
@@ -2560,15 +2571,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		event.setMessage(event.getMessage().replace("[/s]",
 				"§r" + getChatColor(sp.getUUID())));
 		event.setMessage(event.getMessage().replace("[/u]",
-				"§r" + getChatColor(sp.getUUID())));
-
-		event.setMessage(event.getMessage().replace("[/I]",
-				"§r" + getChatColor(sp.getUUID())));
-		event.setMessage(event.getMessage().replace("[/B]",
-				"§r" + getChatColor(sp.getUUID())));
-		event.setMessage(event.getMessage().replace("[/S]",
-				"§r" + getChatColor(sp.getUUID())));
-		event.setMessage(event.getMessage().replace("[/U]",
 				"§r" + getChatColor(sp.getUUID())));
 	}
 
@@ -3450,6 +3452,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (!event.getPlayer().getItemInHand().getEnchantments()
 						.containsKey(Enchantment.SILK_TOUCH)) {
 
+					int amt = serenityPlayers
+							.get(event.getPlayer().getUniqueId())
+							.getSerenityLeader().getDiamondsFound();
+					amt++;
+					serenityPlayers.get(event.getPlayer().getUniqueId())
+							.getSerenityLeader().setDiamondsFound(amt);
+
+					/*
 					final Player p = event.getPlayer();
 					Bukkit.getScheduler().runTaskLaterAsynchronously(this,
 							new Runnable() {
@@ -3478,7 +3488,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 													+ currentDay);
 									diamondFoundCfg.saveConfig();
 								}
-							}, 0L);
+							}, 0L);*/
 				}
 			}
 		}
@@ -3489,9 +3499,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		LivingEntity e = event.getEntity();
 		if (e.getKiller() != null) {
 			if (entityIsHostile(event.getEntity())) {
-				if (!e.getKiller().isOp()) {
-					addMonsterKill(e.getKiller().getDisplayName());
-				}
+
+				addMonsterKill(e.getKiller().getUniqueId());
+
 			}
 		}
 	}
@@ -3520,7 +3530,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		return false;
 	}
 
-	private void addMonsterKill(String displayName) {
+	private void addMonsterKill(UUID uuid) {
+
+		int amt = serenityPlayers.get(uuid).getSerenityLeader()
+				.getMonstersKilled();
+		amt++;
+		serenityPlayers.get(uuid).getSerenityLeader().setMonstersKilled(amt);
+/*
+		String displayName = Bukkit.getPlayer(uuid).getName();
 
 		Random rand = new Random();
 		final String displayNameF = displayName;
@@ -3540,8 +3557,40 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				displayNameF + ".Hour" + hour);
 
 		monsterCfg.getConfig()
-				.set(displayNameF + ".Hour" + hour, prevScore + 1);
+				.set(displayNameF + ".Hour" + hour, prevScore + 1);*/
 
+	}
+
+	@EventHandler
+	public void onBreedEvent(CreatureSpawnEvent event) {
+		if (event.getSpawnReason().equals(SpawnReason.BREEDING)) {
+			for (Entity e : event.getEntity().getNearbyEntities(15, 15, 15)) {
+				if (e instanceof Player) {
+					SerenityPlayer sp = serenityPlayers.get(e.getUniqueId());
+					int amt = sp.getSerenityLeader().getAnimalsBred();
+					amt++;
+					sp.getSerenityLeader().setAnimalsBred(amt);
+					return;
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void onVillagerTrade(InventoryClickEvent event) {
+		if (event.getInventory().getType().equals(InventoryType.MERCHANT)) {
+			if (event.getRawSlot() == 2) {
+				if (event.getInventory().getItem(2) != null) {
+					SerenityPlayer sp = serenityPlayers.get(event
+							.getWhoClicked().getUniqueId());
+					if (sp != null) {
+						int amt = sp.getSerenityLeader().getVillagerTrades();
+						amt++;
+						sp.getSerenityLeader().setVillagerTrades(amt);
+					}
+				}
+			}
+		}
 	}
 
 	@EventHandler
@@ -4279,7 +4328,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean sendPrivateMessage(CommandSender sender, String[] arg3) {
-		
+
 		String name = arg3[0];
 		String message = "";
 		for (int i = 1; i < arg3.length; i++) {
@@ -4288,11 +4337,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		if (name.equalsIgnoreCase("Server")) {
 			String fromColor = "";
-			if(sender instanceof Player){
-				fromColor = serenityPlayers.get(((Player) sender).getUniqueId()).getChatColor();
+			if (sender instanceof Player) {
+				fromColor = serenityPlayers
+						.get(((Player) sender).getUniqueId()).getChatColor();
 			}
 			sender.sendMessage(fromColor + "§o" + "To [Server]: " + message);
-			getLogger().info("§cMsg from " + sender.getName() + ": §4" + message);
+			getLogger().info(
+					"§cMsg from " + sender.getName() + ": §4" + message);
 			return true;
 		}
 
@@ -4306,7 +4357,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				} else {
 					senderName = "[Server]";
 				}
-				
 
 				if (sender instanceof ConsoleCommandSender) {
 					serenityPlayers.get(p.getUniqueId()).setLastToSendMessage(
@@ -4315,17 +4365,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					serenityPlayers.get(p.getUniqueId()).setLastToSendMessage(
 							sender.getName());
 				}
-				
-				String fromColor = "";
-				
-				if(sender instanceof Player){
-					fromColor = serenityPlayers.get(((Player) sender).getUniqueId()).getChatColor();
-				}
-				
-				p.sendMessage(fromColor + "§o" + "From " + senderName + ": " + message);
-				sender.sendMessage(fromColor + "§o" +"To " + recipient + ": " + message);
 
-				
+				String fromColor = "";
+
+				if (sender instanceof Player) {
+					fromColor = serenityPlayers.get(
+							((Player) sender).getUniqueId()).getChatColor();
+				}
+
+				p.sendMessage(fromColor + "§o" + "From " + senderName + ": "
+						+ message);
+				sender.sendMessage(fromColor + "§o" + "To " + recipient + ": "
+						+ message);
 
 				return true;
 			}
@@ -4581,7 +4632,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
 					.getUniqueId());
 
-			if (mutedNames.contains(sp.getName())) {
+			if (sp.isMuted()) {
 				return true;
 			}
 
@@ -6177,6 +6228,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
+				/*
 				if (arg3[0].equals("resetdailyscore")) {
 					final int today = new Date().getDay();
 					final OfflinePlayer[] pf = Bukkit.getOfflinePlayers();
@@ -6256,7 +6308,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								}
 							});
 					return true;
-				}
+				}*/
 
 				if (arg3[0].equals("kill")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
@@ -6289,6 +6341,33 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					s += "Total Area: " + area;
 					sender.sendMessage(s);
 
+				}
+
+				if (arg3[0].equals("updateSPs")) {
+					Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+							new Runnable() {
+								@Override
+								public void run() {
+									for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers
+											.entrySet()) {
+										sender.sendMessage("Checking "
+												+ entry.getValue().getName());
+										OfflinePlayer op = Bukkit
+												.getOfflinePlayer(entry
+														.getValue().getUUID());
+										if (op.isBanned()) {
+											entry.getValue().setBanned(true);
+										}
+										if (!op.isWhitelisted()) {
+											entry.getValue().setWhitelisted(
+													false);
+										}
+									}
+									sender.sendMessage("Done");
+
+								}
+							}, 0L);
+					return true;
 				}
 
 				if (arg3[0].equals("reloadmailboxes")) {
@@ -6471,6 +6550,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return true;
 				}
 
+				/*
 				if (arg3[0].equals("cleanonline")) {
 					final OfflinePlayer[] ofp = Bukkit.getOfflinePlayers();
 
@@ -6513,7 +6593,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								}
 							});
 					return true;
-				}
+				}*/
 
 				if (arg3[0].equals("eff")) {
 					opParticles = !opParticles;
@@ -6620,9 +6700,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					linksCfg.reloadConfig();
 					daleCfg.reloadConfig();
 					// mailboxCfg.reloadConfig();
-					whoIsOnline.reloadConfig();
-					leaderboardCfg.reloadConfig();
-					diamondFoundCfg.reloadConfig();
+					///leaderboardCfg.reloadConfig();
+					//diamondFoundCfg.reloadConfig();
 					motdsCfg.reloadConfig();
 					sender.sendMessage("Reloaded pod, email, books, links, it, dale, mailbox, who is onilne, diamond, leaderboard");
 					updateRandomMotds();
@@ -6755,19 +6834,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					return true;
 				}
 
-				if (arg3[0].equals("cleanonline")) {
-					whoIsOnline.getConfig().set(arg3[1], null);
-					whoIsOnline.saveConfig();
-					whoIsOnline.reloadConfig();
-					return true;
-				}
-
+				/*
 				if (arg3[0].equals("cleanleaderboard")) {
 					leaderboardCfg.getConfig().set(arg3[1], null);
 					leaderboardCfg.saveConfig();
 					leaderboardCfg.reloadConfig();
 					return true;
-				}
+				}*/
 
 				if (arg3[0].equals("secret")) {
 					if (sender instanceof Player) {
@@ -6894,19 +6967,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
-				/*
-				 * if (arg3[0].equals("time")) { sender.sendMessage(arg3[1] +
-				 * ": " + getHoursAndMinutes(arg3[1])); return true; }
-				 */
-
 				if (arg3[0].equals("mute")) {
-					if (mutedNames.contains(arg3[1])) {
-						mutedNames.remove(arg3[1]);
-						sender.sendMessage("Un-muted " + arg3[1]);
-						return true;
-					}
-					mutedNames.add(arg3[1]);
-					sender.sendMessage("Muted " + arg3[1]);
+
+					SerenityPlayer sp = serenityPlayers.get((Bukkit
+							.getPlayer(arg3[1]).getUniqueId()));
+					sp.setMuted(!sp.isMuted());
+					sender.sendMessage(sp.getName() + "muted = " + sp.isMuted());
 					return true;
 				}
 
@@ -7069,8 +7135,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 
-					for (int i = 0; i < statusesToDelete.size(); i++) {
-						deletePlayerStatus(statusesToDelete.get(i).getName());
+					for (PlayerStatus ps : statusesToDelete) {
+						deleteStatusFromDB(ps);
 					}
 
 					String messageToSend = "";
@@ -7079,7 +7145,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					while (it.hasNext()) {
 						PlayerStatus ps = it.next();
-						messageToSend += ps.toString();
+						messageToSend += serenityPlayers.get(ps.getUuid()).getChatColor() + serenityPlayers.get(ps.getUuid()).getName() + ps.toString();
 					}
 
 					final String messageToSendF = messageToSend;
@@ -7094,7 +7160,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					return;
 				} else {
-					deletePlayerStatus(senderF.getName());
 					String status = "";
 					for (int i = 0; i < arg.length; i++) {
 						if (i != arg.length - 1) {
@@ -7103,12 +7168,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							status += arg[i];
 						}
 					}
-					status = status.replaceAll("\"", "");
-					status = status.replaceAll("'", "");
-					status = status.replaceAll("<", "");
-					status = status.replaceAll(">", "");
-					PlayerStatus ps = new PlayerStatus(senderF.getName(),
-							status, new GregorianCalendar());
+
+					UUID uuid = null;
+
+					if (senderF instanceof Player) {
+						uuid = ((Player) senderF).getUniqueId();
+					} else {
+						for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers
+								.entrySet())
+							if (entry.getValue().isOp()) {
+								uuid = entry.getValue().getUUID();
+							}
+					}
+
+					PlayerStatus ps = new PlayerStatus(status,
+							new GregorianCalendar(), uuid);
 
 					addPlayerStatus(ps);
 					// sender.sendMessage("§2Your status was updated!");
@@ -7131,6 +7205,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		});
 		return true;
 
+	}
+
+	protected void deleteStatusFromDB(PlayerStatus ps) {
+		String sql = "DELETE FROM Status WHERE UUID=" + ps.getUuid().toString();
+		executeSQLAsync(sql);
 	}
 
 	private boolean getPortal(CommandSender sender) {
@@ -7250,16 +7329,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				List<SerenityPlayer> splist = new ArrayList();
 				for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers
 						.entrySet()) {
-					splist.add(entry.getValue());
+					if (entry.getValue().isBanned() == false
+							&& entry.getValue().isWhitelisted() == true)
+						splist.add(entry.getValue());
 				}
 				Collections.sort(splist,
 						Comparator.comparing(SerenityPlayer::getLastPlayed));
 				Collections.reverse(splist);
-				for (SerenityPlayer sp : splist) {
-					if (sp.isBanned() || !sp.isWhitelisted()) {
-						splist.remove(sp);
-					}
-				}
+
 				Player p = null;
 				if (senderf instanceof Player) {
 					p = (Player) senderf;
@@ -8097,28 +8174,35 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void addPlayerStatus(PlayerStatus ps) {
-		String[] status = { ps.getTime().getTimeInMillis() + "", ps.getStatus() };
-		playerStatuses.add(ps);
-		statusCfg.getConfig().set("Status." + ps.getName(), status);
-		statusCfg.saveConfig();
-		statusCfg.reloadConfig();
-	}
-
-	private void deletePlayerStatus(String playerName) {
-		statusCfg.getConfig().set("Status." + playerName, null);
-		Iterator<PlayerStatus> it = playerStatuses.iterator();
-		PlayerStatus toDelete = new PlayerStatus("placeholder", "placeholder",
-				new GregorianCalendar());
-		while (it.hasNext()) {
-			PlayerStatus ps = it.next();
-			if (ps.getName().equals(playerName)) {
-				toDelete = ps;
+		
+		for(Iterator<PlayerStatus> iterator = playerStatuses.iterator(); iterator.hasNext();){
+			PlayerStatus ps1 = iterator.next();
+			if(ps1.getUuid().equals(ps.getUuid())){
+				iterator.remove();
 			}
 		}
+		
+		playerStatuses.add(ps);
+		ps.setStatus(ps.getStatus().replace('\'', '`'));
+		ps.setStatus(ps.getStatus().replace('\"', '|'));
+		String sql = "DELETE From Status where UUID='"
+				+ ps.getUuid().toString() + "';";
+		executeSQLAsync(sql);
+		
+		sql = "INSERT INTO Status (UUID, Time, Status) VALUES ('"
+				+ ps.getUuid() + "','" + System.currentTimeMillis() + "','"
+				+ ps.getStatus() + "');";
+		String sqlf = sql;
+		
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable(){
+			@Override
+			public void run(){
+				executeSQLAsync(sqlf);		
+			}
+		}, 20L);
+		ps.setStatus(ps.getStatus().replace('`', '\''));
+		ps.setStatus(ps.getStatus().replace('|', '\"'));
 
-		playerStatuses.remove(toDelete);
-		statusCfg.saveConfig();
-		statusCfg.reloadConfig();
 	}
 
 	public void noPerms(CommandSender p) {
