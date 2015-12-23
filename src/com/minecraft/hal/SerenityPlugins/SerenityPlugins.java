@@ -3747,7 +3747,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		for (Player p : Bukkit.getServer().getOnlinePlayers()) {
 			if (!p.isOp()) {
 				onlineCount++;
-				if (p.isSleeping() || p.isSleepingIgnored()) {
+				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+				if (p.isSleeping() || p.isSleepingIgnored() || sp.isAFK()) {
 					if (p.isSleeping()) {
 						sleepers.add(p.getDisplayName());
 					}
