@@ -33,6 +33,7 @@ public class SerenityPlayer {
 	private String lastToSendMessage;
 	private Long lastRandomTP;
 	private SerenityLeader serenityLeader;
+	private Short celebrateEffect;
 
 	@Override
 	public int hashCode() {
@@ -51,6 +52,7 @@ public class SerenityPlayer {
 	public SerenityPlayer(){
 		offlineMessages = new ArrayList<OfflineMessage>();
 		serenityLeader = new SerenityLeader();
+		celebrateEffect = (short)0;
 	}
 
 	public String getUpdateString() {
@@ -291,6 +293,14 @@ public class SerenityPlayer {
 	
 	public void clearSerenityLeader(){
 		this.serenityLeader = new SerenityLeader();
+	}
+
+	public Short getCelebrateEffect() {
+		return celebrateEffect;
+	}
+
+	public void setCelebrateEffect(Short celebrateEffect) {
+		this.celebrateEffect = celebrateEffect;
 	}
 	
 }

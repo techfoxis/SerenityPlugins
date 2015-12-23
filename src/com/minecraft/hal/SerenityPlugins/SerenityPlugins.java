@@ -70,7 +70,6 @@ import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Horse;
-import org.bukkit.entity.Villager;
 import org.bukkit.entity.Horse.Style;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.MushroomCow;
@@ -126,7 +125,6 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -142,8 +140,6 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
-
-import com.avaje.ebeaninternal.server.core.TraditionalBackgroundExecutor;
 
 public final class SerenityPlugins extends JavaPlugin implements Listener,
 		CommandExecutor {
@@ -161,11 +157,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public ConfigAccessor bookCfg;
 	public ConfigAccessor linksCfg;
 	public ConfigAccessor daleCfg;
-	//public ConfigAccessor leaderboardCfg;
+	// public ConfigAccessor leaderboardCfg;
 	// public ConfigAccessor portalAnalytics;
-	//public ConfigAccessor diamondFoundCfg;
+	// public ConfigAccessor diamondFoundCfg;
 	public ConfigAccessor voteCfg;
-	//public ConfigAccessor monsterCfg;
+	// public ConfigAccessor monsterCfg;
 	public ConfigAccessor motdsCfg;
 	public boolean opParticles;
 	public boolean opParticlesDeb;
@@ -322,28 +318,48 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public Secrets Secret;
 	public List<Material> possiblePartyArmors;
 
-	public static List<String> allHalloweenSkulls = new ArrayList<String>() {
+	public static List<String> allHolidaySkulls = new ArrayList<String>() {
 		{
-			add("skull 1 3 {display:{Name:\"Spider\"},SkullOwner:{Id:\"8bdb71d0-4724-48b2-9344-e79480424798\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q1NDE1NDFkYWFmZjUwODk2Y2QyNThiZGJkZDRjZjgwYzNiYTgxNjczNTcyNjA3OGJmZTM5MzkyN2U1N2YxIn19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Herobrine\"},SkullOwner:{Id:\"d0b15454-36fa-43e4-a247-f882bb9fe288\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOThiN2NhM2M3ZDMxNGE2MWFiZWQ4ZmMxOGQ3OTdmYzMwYjZlZmM4NDQ1NDI1YzRlMjUwOTk3ZTUyZTZjYiJ9fX0=\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Mummy\"},SkullOwner:{Id:\"8f7c0c5b-720f-4944-8481-b0f7931f303f\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2U5MWU5NTgyMmZlOThjYzVhNTY1OGU4MjRiMWI4Y2YxNGQ0ZGU5MmYwZTFhZjI0ODE1MzcyNDM1YzllYWI2In19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Black Cat\"},SkullOwner:{Id:\"6dbe3930-9e7c-426a-a7aa-4a48e93078a8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q4Y2RjYTg3Mjk2Njc5Y2EyNmFhZDY3MDQzYmYxZDQ0Yjk4MjYyMTljY2E5ZjRjNDlhNDExM2IxNzZlNGMifX19\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Pumpkin\"},SkullOwner:{Id:\"c168fbe4-4ec1-4e45-b9bc-6ff5b0f0bf32\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjQxYWQxNDhlMzNjODFkY2EzZjFhNmNlMTNhYTcwZTRmZTZiYzJjNzllODcxODVkOGQxNzZiZGRhMWM5OGEzIn19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Devil\"},SkullOwner:{Id:\"c3c88c33-f305-4c10-9303-ce658b2fbde7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOWRhMzkyNjllZjQ1ZjgyNWVjNjFiYjRmOGFhMDliZDNjZjA3OTk2ZmI2ZmFjMzM4YTZlOTFkNjY5OWFlNDI1In19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Skeleton Miner\"},SkullOwner:{Id:\"fc0cbbe8-e2e2-4118-99a4-e4f811e75511\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTM3ZjhmOTVjMTI1NzU3Y2JmNzY3YTExZjUyYTRlNjY5MWNlMThhMjU5NzhjNjhjZmEzOTEwMzYwZmUifX19\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Cauldron\"},SkullOwner:{Id:\"d5a8d4a1-a76d-46f3-8e20-0ce2dc10583a\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjk1NWJkNTExNjM1YTc3ZTYxNmEyNDExMmM5ZmM0NTdiMjdjOGExNDZhNWU2ZGU3MjdmMTdlOTg5ODgyIn19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Skeleton with Hat\"},SkullOwner:{Id:\"73cf74c8-d2e2-432b-9157-a93ed1e4f09c\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZGQ1MDI2MzkyMzNkOGFlZWRjM2Y0NzNmYTlmODhlM2ZkMjZiNmVkYWFjMjlhODM4ZWI4ZDllMDI2NDc1YWIifX19\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Witch\"},SkullOwner:{Id:\"6c151ba9-2a10-4762-bd82-d0fa41abfb21\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWE2NDEwMzc4OTMwZDhiMTQxMjdkNDM4OGRlNzQ2MzZkMzRlZTI1MTdmM2IxZjJjYjZjZTYyYTFlNzIxNTMifX19\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Evil Bunny\"},SkullOwner:{Id:\"e4f254ad-1413-4853-8736-10c7aa53fbaf\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q0ZmRhZDVhNjEwNGFhNTQ5ZDFlNzZkNzNhM2M2ZmUzYzY3MjRiZjA5ZjdmZmNjMDJmMzNmOWVkZTdmYWRlIn19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Ghost\"},SkullOwner:{Id:\"31152fb2-cb1e-45c3-86dd-b23f7a20a6f8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjhkMjE4MzY0MDIxOGFiMzMwYWM1NmQyYWFiN2UyOWE5NzkwYTU0NWY2OTE2MTllMzg1NzhlYTRhNjlhZTBiNiJ9fX0=\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Scary Clown\"},SkullOwner:{Id:\"d1956517-9a4d-421d-8647-2d940dc64518\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODZkYmMxZGViYzU3NDM4YTVkZTRiYTkxNTE1MTM4MmFiYzNkOGYxMzE4ZTJhMzVlNzhkZmIzMGYwNGJjNDY3In19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Frankenstein\"},SkullOwner:{Id:\"aec7b0b6-7bf8-46a6-b873-feb3d6277af8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDdjYmUwNjFiNDQ1Yjg4Y2IyZGY1OWFjY2M4ZDJjMWMxMjExOGZlMGIyMTI3ZTZlNzU4MTM1NTBhZGFjNjdjZiJ9fX0=\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Scarecrow\"},SkullOwner:{Id:\"3ee188a6-2c6a-4c26-98a5-d655d4eed50f\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTE3MWJhYTVhZDE2N2JkMzNlNDE5ZmU3NDVmN2IwMTg0MGNiNmQ3ZThkN2FlYzZjZGEzMWNlMmQ1Y2Y2MSJ9fX0=\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Skull\"},SkullOwner:{Id:\"72e89a28-49fa-45af-93dc-567597f950af\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTFmNTRmZjliYjQyODUxOTEyYWE4N2ExYmRhNWI3Y2Q5ODE0Y2NjY2ZiZTIyNWZkZGE4ODdhZDYxODBkOSJ9fX0=\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Ogre\"},SkullOwner:{Id:\"579a7117-023d-4183-80d1-f33ab649f7ff\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNhNDc5NDZkNzI4NTgzNGVmMWUxNzYyOWY3MjgyYjY1ZTkxNDM1OTdmZTdiZjJiZTFkZTI0M2YxYzYzIn19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Werewolf\"},SkullOwner:{Id:\"fdc7eb2a-0bec-408d-8f16-f8494d3960d7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTFjOTkzNGNkZDU1YTllNjMzNTk2MmE4Nzc2MjYwZDc5MTYxNTA4MTM0ODNlOTU2YzI4NjFiMTFhOGEyNjdmNyJ9fX0=\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Enderdragon\"},SkullOwner:{Id:\"433562fa-9e23-443e-93b0-d67228435e77\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzRlY2MwNDA3ODVlNTQ2NjNlODU1ZWYwNDg2ZGE3MjE1NGQ2OWJiNGI3NDI0YjczODFjY2Y5NWIwOTVhIn19fQ==\"}]}}}");
-			add("skull 1 3 {display:{Name:\"Zombie\"},SkullOwner:{Id:\"96cbfca7-5729-47f1-bc3e-4788bc6b06fc\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2ZkMmRkMWQ1YzkzZTU5NWU3OWJmMWRkYTMzMmJiODJkMjNlYzk2M2U3YTMwNGZjMjFjMjM0ZGY0NWE2ZWYifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"6616a590-e326-442d-8806-b313fca1b5d5\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWM2Mjc0YzIyZDcyNmZjMTIwY2UyNTczNjAzMGNjOGFmMjM4YjQ0YmNiZjU2NjU1MjA3OTUzYzQxNDQyMmYifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"91df0725-c04d-4776-b9e7-01dad0ea6d5f\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmM4NjUyYmZkYjdhZGRlMTI4ZTdlYWNjNTBkMTZlYjlmNDg3YTMyMDliMzA0ZGUzYjk2OTdjZWJmMTMzMjNiIn19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"f5e1766b-91d7-42d5-9d0f-78d31f82b366\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDdlNTVmY2M4MDlhMmFjMTg2MWRhMmE2N2Y3ZjMxYmQ3MjM3ODg3ZDE2MmVjYTFlZGE1MjZhNzUxMmE2NDkxMCJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"fd711859-613c-4a98-899f-2068082f4bd1\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvN2ZjZDFjODJlMmZiM2ZhMzY4Y2ZhOWE1MDZhYjZjOTg2NDc1OTVkMjE1ZDY0NzFhZDQ3Y2NlMjk2ODVhZiJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"ee53f881-8b67-4604-bfb9-a43a6966eae2\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWM3MTJiMTk3MWM1ZjQyZWVmZjgwNTUxMTc5MjIwYzA4YjgyMTNlYWNiZTZiYzE5ZDIzOGMxM2Y4NmUyYzAifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"e174cc81-8646-4c48-afeb-d5fac7d24e16\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjU3YjJlZTY1NmQ3Yjg2NWMzZmFkZDViMTQyOGMzNThkNDc2M2Y0MTc4YWM1OTlkNjA0ODY5YTE5ZDcifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"b420e45b-65eb-4d93-8bd1-1c0253d4388e\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDNlMTY1ODU3YzRjMmI3ZDZkOGQ3MGMxMDhjYzZkNDY0ZjdmMzBlMDRkOTE0NzMxYjU5ZTMxZDQyNWEyMSJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"ce936179-5016-4926-8889-2c1705ef70d7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmYyZDE4OTVmZmY0YjFiYjkxMTZjOGE5ZTIyOTU5N2Y2OWYzZWVlODgxMjI3NzZlNWY5NzMzNTdlNmIifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"41ac016b-472a-4b12-88c8-dd964e3f42aa\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTg3NDU4OTg0YThhYWU1NzAxM2QxYjllOGRmYTRjM2I0ZDI1ZTQyNjE4MjMzOTI0Zjc0NDc0MTM0ZjYyYSJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"97f38226-bc1b-40d8-92b9-cebbfd37d63c\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNGFjYjNjMWUxYjM0Zjg3MzRhZWRmYWJkMWUxZjVlMGIyODBiZWY5MjRmYjhiYmYzZTY5MmQyNTM4MjY2ZjQifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"13e135fb-348f-4c6a-99e3-e6e3aa385e73\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTI4ZTY5MmQ4NmUyMjQ0OTc5MTVhMzk1ODNkYmUzOGVkZmZkMzljYmJhNDU3Y2M5NWE3YWMzZWEyNWQ0NDUifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"54a219b4-9a5f-45ed-80ff-8766d501588b\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODRlMWM0MmYxMTM4M2I5ZGM4ZTY3ZjI4NDZmYTMxMWIxNjMyMGYyYzJlYzdlMTc1NTM4ZGJmZjFkZDk0YmI3In19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"3c62af53-c3f2-4df8-8cdd-beaf88b98030\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzg1MzZhNDYxNjg0ZmM3YTYzYjU0M2M1ZGYyMzQ4Y2Q5NjhiZjU1ODM1OTFiMWJiY2M1ZjBkYjgzMTY2ZGM3In19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"dd7514ca-c10f-4389-9c14-78d2feae91b6\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjczYTIxMTQxMzZiOGVlNDkyNmNhYTUxNzg1NDE0MDM2YTJiNzZlNGYxNjY4Y2I4OWQ5OTcxNmM0MjEifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"50f36e51-ea4d-434d-adc9-ca7666546861\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2E3NTMyOGViYTdjYjVhMDUyMzI2ZjU5ZGRhZjY3YTFjZWJkNGU1NWJiNjgwMWMwM2MzMTQyZTI4ZTEifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"7def2717-e74c-4e70-870c-9155c1caffca\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWQ5N2Y0ZjQ0ZTc5NmY3OWNhNDMwOTdmYWE3YjRmZTkxYzQ0NWM3NmU1YzI2YTVhZDc5NGY1ZTQ3OTgzNyJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"e45cf551-aed1-4c70-8681-4821ff3267b7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTlmMDc0MzU3NmJiYTRhMjYyMjQ4MDU0ODk3MGI3MjE1NDNkMmM0NTc5NTVlOGRkNWM0ZjlkZGI2YTU2Yjk1YyJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"d08a119e-2aeb-48be-b14c-b3aa6b73af60\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYWMzODIxZDRmNjFiMTdmODJmMGQ3YThlNTMxMjYwOGZmNTBlZGUyOWIxYjRkYzg5ODQ3YmU5NDI3ZDM2In19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"c04fdca4-1221-49b2-b29d-f6622478dbbc\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTBjNzVhMDViMzQ0ZWEwNDM4NjM5NzRjMTgwYmE4MTdhZWE2ODY3OGNiZWE1ZTRiYTM5NWY3NGQ0ODAzZDFkIn19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"590fae25-9d3c-4650-97f4-8657336e4a45\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzU0MTlmY2U1MDZhNDk1MzQzYTFkMzY4YTcxZDIyNDEzZjA4YzZkNjdjYjk1MWQ2NTZjZDAzZjgwYjRkM2QzIn19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"ab43bbca-b466-4e37-a633-c6877b78e000\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWUzYThmZDA4NTI5Nzc0NDRkOWZkNzc5N2NhYzA3YjhkMzk0OGFkZGM0M2YwYmI1Y2UyNWFlNzJkOTVkYyJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"18998be6-3b5f-46f1-8cdd-89458b6ec578\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTNlNThlYTdmMzExM2NhZWNkMmIzYTZmMjdhZjUzYjljYzljZmVkN2IwNDNiYTMzNGI1MTY4ZjEzOTFkOSJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"736a2a57-7ca6-487d-a059-274865673e92\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWU2ZTQ1NjI5OWQyYWE1YjQ1ZjE0ODg1ZGEyMzY4YThhOTMzZTY5ZTU1YjUzZmU0YmJjODFmMWI0NjBmZDljIn19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"e4fc9813-b4f8-4787-a4c7-893544ff2af9\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTdjMDVhNmE3OWRmYjAyNWU4ZjAyYjljZDQ3OTRiN2JiZTIyMWNjMWIyZjJlYWQyMmQyNDY2NzEzNjE3YmMifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"f02c52f5-ae16-40a9-8040-7e45546d94d7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmVhMTc3ZjFiNzRjYTU3YTFjY2U5MzhlOGQ5OTRiYzFmNjM3ZTVmNjljODJlZmYyOTYxMmExM2JhOGIyZGQ3In19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"7380bd04-507e-47de-8f9e-acbbd0281e33\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTI2ZTM0NjI4N2EyMWRiZmNhNWI1OGMxNDJkOGQ1NzEyYmRjODRmNWI3NWQ0MzE0ZWQyYTgzYjIyMmVmZmEifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"d49c2625-cb64-4728-9acd-860bc0ef4272\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjI0MDcwYzliNjY1OWVkMjViMmNhMTI2OTE1ZjRkODgyMGZhZmNlNDMyNGVkOWE4ZjRiOGE1MDYzNDUzMDdmIn19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"91505014-a335-4fe5-94c5-162d685ab3d2\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDhjNTNiY2U4YWU1OGRjNjkyNDkzNDgxOTA5YjcwZTExYWI3ZTk0MjJkOWQ4NzYzNTEyM2QwNzZjNzEzM2UifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"86b1b5d8-b783-4a6f-a433-177c69e8d8b7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODg2NjJiYTA3MDhlOGQ2MGQ1NjM2NWVjMmJjMDBmZjE3OTJmMTY2MzRmYzg0NWE4NDNhODRkZTA4MWVhNGYifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"7f292b5e-8a1f-4c63-a371-9181631fcd85\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjExYWIzYTExMzJjOWQxZWY4MzVlYTgxZDk3MmVkOWI1Y2Q4ZGRmZjBhMDdjNTVhNzQ5YmNmY2Y4ZGY1In19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"14cb891f-35b9-43ed-aa29-86a5aa77cba0\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjdlMTFkYjhmMzkyNzI3YTFjNDU5ZWI1OTFkZDhhMGFhMzg2MWMyNzQ4N2UxMzg0YmIyMmY5MTU3M2JlNyJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"eb2e049e-5563-4df7-be8a-1c89123a79a1\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWU0ODYxNWRmNmI3ZGRmM2FkNDk1MDQxODc2ZDkxNjliZGM5ODNhM2ZhNjlhMmFjYTEwN2U4ZjI1MWY3Njg3In19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"674af43c-ecd1-416c-b4ef-9f182eaeafc6\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODg0ZTkyNDg3YzY3NDk5OTViNzk3MzdiOGE5ZWI0YzQzOTU0Nzk3YTZkZDZjZDliNGVmY2UxN2NmNDc1ODQ2In19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"11aca51c-d1f6-4493-b8c0-bfbc74365dda\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmVhZWQyMzI1ZDc5NTIyMTIwZjQyMmExZGU3Mjc1NmFmNDRjYWY3NWM3NWRjMjYzM2U1NjczMjM4NDdlZCJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"da2407bc-43b4-4bbd-bd19-020258f61009\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjY4MTI5NjIzZmZkZTIyY2JjNTM0OTE1YWUzOGE1ZDYwZjMyZGFlZGJjNGZkNWQyYzMxMGZlYTUzN2VkIn19fQ==\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"4cf3986b-2ec9-41cf-a976-01335a6266c3\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWJkNDZiMzhiMjFiMzQyY2FmOTE3YWQ5Y2E0MmFmYjY4Mzg4YTU1OTFiY2M5YWRlZDFlOGUzNDZlMTg4OTAifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"5ddb61e0-4e65-4097-8026-489261d7d278\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDQ5MjdjZTViYTIyYWQxZTc1N2Q2YTMzM2UyNzViMzZkYTFhODQzNmZjZWYwNzczNDBhYjUzZTNmYiJ9fX0=\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"973f5f11-aaca-4794-9863-81df5b76995b\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvN2ZiYmY5ZTRlZmQwMTkzYzUyNjQ3MTliYTQ3OGI5MTdhMjYwNzE0NmY2ZWE4MGNiNWZlMDkzYzNiOTlhNGMifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"41a9ffd8-dcd6-44a0-b4f3-a7cf38cf1528\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmQ2MWNjYmZkY2RmODk0MWFkYWY3NmM2YzBlMDE4MmQyYzhiYmI1ZGMxOGYzNzQ4OTU2NTJiYzY2MWI2ZWQifX19\"}]}}}");
+			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"32cc3adf-2e6c-375e-3aef-9d62d391b587\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMmIyMTYxN2QyNzU1YmMyMGY4ZjdlMzg4ZjQ5ZTQ4NTgyNzQ1ZmVjMTZiYjE0Yzc3NmY3MTE4Zjk4YzU1ZTgifX19\"}]}}}");
 		}
 	};
 
@@ -454,10 +470,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		bookCfg = new ConfigAccessor(this, "book.yml");
 		linksCfg = new ConfigAccessor(this, "links.yml");
 		daleCfg = new ConfigAccessor(this, "dale.yml");
-		//leaderboardCfg = new ConfigAccessor(this, "leaderboard.yml");
-		//diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
+		// leaderboardCfg = new ConfigAccessor(this, "leaderboard.yml");
+		// diamondFoundCfg = new ConfigAccessor(this, "diamonds.yml");
 		voteCfg = new ConfigAccessor(this, "vote.yml");
-		//monsterCfg = new ConfigAccessor(this, "monster.yml");
+		// monsterCfg = new ConfigAccessor(this, "monster.yml");
 		motdsCfg = new ConfigAccessor(this, "motds.yml");
 
 		preppedToProtectArea = new ArrayList<PlayerProtect>();
@@ -785,9 +801,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public void run() {
 				if (Bukkit.getOnlinePlayers().size() > 0) {
-					//int currentDay = new Date().getDay();
+					// int currentDay = new Date().getDay();
 					if (getServer().getOnlinePlayers().size() != 0) {
-						//addScores(currentDay);
+						// addScores(currentDay);
 						checkAndClearAllChunks();
 						unloadChunks();
 					}
@@ -808,6 +824,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				lags.add(now);
 				if (Bukkit.getOnlinePlayers().size() > 0) {
 					PartyLeather();
+
+					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
+						if (sp.isCelebrating())
+							celebrate(sp);
+					}
 
 					if (opParticles) {
 						for (Player p : Bukkit.getOnlinePlayers()) {
@@ -839,9 +860,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			while (rs.next()) {
 				GregorianCalendar gc = new GregorianCalendar();
 				gc.setTimeInMillis(rs.getLong("Time"));
-				PlayerStatus ps = new PlayerStatus(rs.getString("Status").replace('`', '\''), gc,
-						UUID.fromString(rs.getString("UUID")));
-				
+				PlayerStatus ps = new PlayerStatus(rs.getString("Status")
+						.replace('`', '\''), gc, UUID.fromString(rs
+						.getString("UUID")));
+
 				ps.setStatus(ps.getStatus().replace('|', '\"'));
 				playerStatuses.add(ps);
 			}
@@ -938,7 +960,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				int y = rs.getInt("Y");
 				int z = rs.getInt("Z");
 				mb.isPublic = rs.getBoolean("Public");
-				mb.name = rs.getString("Name");
+				if (!mb.isPublic) {
+					mb.name = serenityPlayers.get(mb.uuid).getName();
+				} else {
+					mb.name = rs.getString("Name");
+				}
 				mb.location = new Location(Bukkit.getWorld(world), (double) x,
 						(double) y, (double) z);
 				mailBoxes.add(mb);
@@ -1288,43 +1314,24 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	/*
-	protected void addScores(int currentDay) {
-		for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
-			if (!sp.isOp()) {
-				if (!sp.isAFK()) {
-					int currentScore = leaderboardCfg.getConfig().getInt(
-							sp.getName() + ".Day" + currentDay, 0);
-					leaderboardCfg.getConfig().set(
-							sp.getName() + ".Day" + currentDay,
-							currentScore + 1);
-					for (int i = 0; i < 7; i++) {
-						if (i != currentDay) {
-							leaderboardCfg.getConfig().set(
-									sp.getName() + ".Day" + i,
-									leaderboardCfg.getConfig().get(
-											sp.getName() + ".Day" + i, 0));
-						}
-					}
-				}
-			}
-		}
-		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+	 * protected void addScores(int currentDay) { for (SerenityPlayer sp :
+	 * getOnlineSerenityPlayers()) { if (!sp.isOp()) { if (!sp.isAFK()) { int
+	 * currentScore = leaderboardCfg.getConfig().getInt( sp.getName() + ".Day" +
+	 * currentDay, 0); leaderboardCfg.getConfig().set( sp.getName() + ".Day" +
+	 * currentDay, currentScore + 1); for (int i = 0; i < 7; i++) { if (i !=
+	 * currentDay) { leaderboardCfg.getConfig().set( sp.getName() + ".Day" + i,
+	 * leaderboardCfg.getConfig().get( sp.getName() + ".Day" + i, 0)); } } } } }
+	 * Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+	 * 
+	 * @Override public void run() { leaderboardCfg.saveConfig();
+	 * diamondFoundCfg.saveConfig(); monsterCfg.saveConfig(); } }); }
+	 */
 
-			@Override
-			public void run() {
-				leaderboardCfg.saveConfig();
-				diamondFoundCfg.saveConfig();
-				monsterCfg.saveConfig();
-			}
-		});
-	}*/
-	
 	/*
-	private void addScoreToCfg(ConfigAccessor config, String name) {
-		int currentScore = config.getConfig().getInt(name, 0);
-		currentScore++;
-		config.getConfig().set(name, currentScore);
-	}*/
+	 * private void addScoreToCfg(ConfigAccessor config, String name) { int
+	 * currentScore = config.getConfig().getInt(name, 0); currentScore++;
+	 * config.getConfig().set(name, currentScore); }
+	 */
 
 	@EventHandler
 	public void EatSecretSomethingEvent(PlayerItemConsumeEvent event) {
@@ -1760,35 +1767,72 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 * }
 	 */
 
-	/*
-	 * protected void celebrate(String p) { final Player pf =
-	 * Bukkit.getPlayer(p); if (pf.isOnline()) { final Short num =
-	 * celebrators.get(p); for (int i = 0; i < 10; i++) {
-	 * Bukkit.getScheduler().runTaskLaterAsynchronously(global, new Runnable() {
-	 * 
-	 * @Override public void run() { Location loc = pf.getLocation();
-	 * loc.setY(loc.getY() + .125);
-	 * 
-	 * switch (num) { case 0: ParticleEffect.FIREWORKS_SPARK.display( .25F,
-	 * .125F, .25F, .0001F, 4, loc, 15); break; case 1:
-	 * ParticleEffect.FLAME.display(.25F, .125F, .25F, .0001F, 4, loc, 15);
-	 * break; case 2: ParticleEffect.NOTE.display(.25F, .125F, .25F, 50, 4, loc,
-	 * 15); break; case 3: ParticleEffect.SPELL_MOB.display(.25F, .125F, .25F,
-	 * 50, 4, loc, 15); break;
-	 * 
-	 * case 4: ParticleEffect.HEART.display(.25F, .125F, .25F, 50, 4, loc, 15);
-	 * break; case 5: ParticleEffect.SMOKE_LARGE.display(.25F, .125F, .25F,
-	 * .002F, 4, loc, 15); break; case 6: ParticleEffect.REDSTONE.display(.25F,
-	 * .125F, .25F, 25, 4, loc, 15); break; case 7:
-	 * ParticleEffect.PORTAL.display(.25F, .125F, .25F, .002F, 4, loc, 15);
-	 * break; case 8: ParticleEffect.LAVA.display(.25F, .125F, .25F, .002F, 4,
-	 * loc, 15); break; case 9: ParticleEffect.VILLAGER_HAPPY.display(.25F,
-	 * .125F, .25F, .002F, 4, loc, 15); break; case 10:
-	 * ParticleEffect.SPELL_WITCH.display(.25F, .125F, .25F, .002F, 4, loc, 15);
-	 * break; }
-	 * 
-	 * } }, i * 2L); } } }
-	 */
+	protected void celebrate(SerenityPlayer sp) {
+		final Player pf = Bukkit.getPlayer(sp.getUUID());
+		if (pf.isOnline()) {
+			final Short num = sp.getCelebrateEffect();
+			for (int i = 0; i < 10; i++) {
+				Bukkit.getScheduler().runTaskLaterAsynchronously(global,
+						new Runnable() {
+							@Override
+							public void run() {
+								Location loc = pf.getLocation();
+								loc.setY(loc.getY() + .125);
+
+								switch (num) {
+								case 0:
+									loc.setY(loc.getY() + 3);
+									ParticleEffect.FIREWORKS_SPARK.display(1F,
+											.5F, 1F, .0001F, 4, loc, 15);
+									break;
+								case 1:
+									ParticleEffect.FLAME.display(.25F, .125F,
+											.25F, .0001F, 4, loc, 15);
+									break;
+								case 2:
+									ParticleEffect.NOTE.display(.25F, .125F,
+											.25F, 50, 4, loc, 15);
+									break;
+								case 3:
+									ParticleEffect.SPELL_MOB.display(.25F,
+											.125F, .25F, 50, 4, loc, 15);
+									break;
+
+								case 4:
+									ParticleEffect.HEART.display(.25F, .125F,
+											.25F, 50, 4, loc, 15);
+									break;
+								case 5:
+									ParticleEffect.SMOKE_LARGE.display(.25F,
+											.125F, .25F, .002F, 4, loc, 15);
+									break;
+								case 6:
+									ParticleEffect.REDSTONE.display(.25F,
+											.125F, .25F, 25, 4, loc, 15);
+									break;
+								case 7:
+									ParticleEffect.PORTAL.display(.25F, .125F,
+											.25F, .002F, 4, loc, 15);
+									break;
+								case 8:
+									ParticleEffect.LAVA.display(.25F, .125F,
+											.25F, .002F, 4, loc, 15);
+									break;
+								case 9:
+									ParticleEffect.VILLAGER_HAPPY.display(.25F,
+											.125F, .25F, .002F, 4, loc, 15);
+									break;
+								case 10:
+									ParticleEffect.SPELL_WITCH.display(.25F,
+											.125F, .25F, .002F, 4, loc, 15);
+									break;
+								}
+
+							}
+						}, i * 2L);
+			}
+		}
+	}
 
 	protected void partyPlaid() {
 		final World w = Bukkit.getWorld("world_nether");
@@ -2014,6 +2058,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void checkMilestone(SerenityPlayer pl) {
 
+		if (!pl.isOp()) {
+			if (getPlayerMinutes(pl.getUUID()) % 5 == 0) {
+				putBoneInMailbox(pl.getUUID());
+			}
+		}
 		if (getPlayerMinutes(pl.getUUID()) == 59) {
 			Player p = Bukkit.getPlayer(pl.getUUID());
 			p.sendMessage(getTranslationLanguage(p,
@@ -2714,27 +2763,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	@EventHandler
-	public void onBoneAttack(EntityDamageByEntityEvent event) {
-		if (event.getCause().equals(DamageCause.ENTITY_ATTACK)) {
-			if (event.getDamager() instanceof Player) {
-				Player p = (Player) event.getDamager();
-				if (p.getItemInHand() != null) {
-					if (p.getItemInHand().getType() == Material.BONE) {
-						if (p.getItemInHand().hasItemMeta()
-								&& p.getItemInHand().getItemMeta()
-										.hasDisplayName()) {
-							if (p.getItemInHand().getItemMeta()
-									.getDisplayName().equals("§dSpooky Bone")) {
-								p.sendMessage("§cNice try!  I fixed this :)");
-								event.setDamage(0);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+	/*
+	 * @EventHandler public void onBoneAttack(EntityDamageByEntityEvent event) {
+	 * if (event.getCause().equals(DamageCause.ENTITY_ATTACK)) { if
+	 * (event.getDamager() instanceof Player) { Player p = (Player)
+	 * event.getDamager(); if (p.getItemInHand() != null) { if
+	 * (p.getItemInHand().getType() == Material.BONE) { if
+	 * (p.getItemInHand().hasItemMeta() && p.getItemInHand().getItemMeta()
+	 * .hasDisplayName()) { if (p.getItemInHand().getItemMeta()
+	 * .getDisplayName().equals("§dSpooky Bone")) {
+	 * p.sendMessage("§cNice try!  I fixed this :)"); event.setDamage(0); } } }
+	 * } } } }
+	 */
 
 	@EventHandler
 	public void onSecretVillagerDamage(EntityDamageEvent event) {
@@ -2899,31 +2939,43 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	 * Material.STATIONARY_WATER) { l.setType(Material.AIR); } } } } } } }
 	 */
 
-	/*
-	 * @EventHandler public void onCelebrateFW(PlayerInteractEvent event) { if
-	 * (celebrators.keySet().contains(event.getPlayer().getName())) { if
-	 * (event.getAction().equals(Action.RIGHT_CLICK_BLOCK) ||
-	 * event.getAction().equals(Action.RIGHT_CLICK_AIR)) { if
-	 * (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
-	 * Block target = event.getPlayer().getTargetBlock( (Set<Material>) null,
-	 * MAX_DISTANCE); Location location = target.getLocation();
-	 * 
-	 * doRandomFirework(event.getPlayer().getWorld(), location);
-	 * event.setCancelled(true); } } } }
-	 */
+	@EventHandler
+	public void onCelebrateFW(PlayerInteractEvent event) {
+		SerenityPlayer sp = serenityPlayers
+				.get(event.getPlayer().getUniqueId());
+		if (sp.isCelebrating()) {
+			if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
+					|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
+				if (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
+					Block target = event.getPlayer().getTargetBlock(
+							(Set<Material>) null, MAX_DISTANCE);
+					Location location = target.getLocation();
 
-	/*
-	 * @EventHandler public void onCelebrateSomethingElse(PlayerInteractEvent
-	 * event) { if (celebrators.keySet().contains(event.getPlayer().getName()))
-	 * { if (event.getAction().equals(Action.LEFT_CLICK_AIR) ||
-	 * event.getAction().equals(Action.LEFT_CLICK_BLOCK)) { if
-	 * (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
-	 * event.setCancelled(true); Short num =
-	 * celebrators.get(event.getPlayer().getName());
-	 * celebrators.put(event.getPlayer().getName(), (short) (num + 1)); if
-	 * (celebrators.get(event.getPlayer().getName()) > 11) {
-	 * celebrators.put(event.getPlayer().getName(), (short) 0); } } } } }
-	 */
+					doRandomFirework(event.getPlayer().getWorld(), location);
+					event.setCancelled(true);
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void onCelebrateSomethingElse(PlayerInteractEvent event) {
+		SerenityPlayer sp = serenityPlayers
+				.get(event.getPlayer().getUniqueId());
+		if (sp.isCelebrating()) {
+			if (event.getAction().equals(Action.LEFT_CLICK_AIR)
+					|| event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
+				if (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
+					event.setCancelled(true);
+					Short num = sp.getCelebrateEffect();
+					sp.setCelebrateEffect((short) (num + 1));
+					if (sp.getCelebrateEffect() > 11) {
+						sp.setCelebrateEffect((short) 0);
+					}
+				}
+			}
+		}
+	}
 
 	@EventHandler
 	public void onMailboxOpen(PlayerInteractEvent event) {
@@ -3346,24 +3398,42 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onMailboxDestroy(BlockBreakEvent event) {
 		if (event.getBlock().getType().equals(Material.CHEST)
 				|| event.getBlock().getType().equals(Material.TRAPPED_CHEST)) {
-			for (int i = 0; i < mailBoxes.size(); i++) {
-				Mailbox mb = mailBoxes.get(i);
-				if (mb.uuid == event.getPlayer().getUniqueId()) {
-					String sql = "DELETE FROM Mailbox where Owner = '"
-							+ event.getPlayer().getUniqueId().toString()
-							+ "' AND World = '"
-							+ mb.location.getWorld().getName() + "' AND X = "
-							+ mb.location.getBlockX() + " AND " + " Y = "
-							+ mb.location.getBlockY() + " AND Z = "
-							+ mb.location.getBlockZ();
-					executeSQLAsync(sql);
-					String msg = getTranslationLanguage(event.getPlayer(),
-							stringKeys.MAILDESTROYEDMAILBOX.toString());
-					event.getPlayer().sendMessage(msg);
-					mailBoxes.remove(i);
-					return;
+
+			for (Mailbox mb : mailBoxes) {
+				if (mb.location.equals(event.getBlock().getLocation())) {
+					if (mb.uuid == event.getPlayer().getUniqueId()) {
+						String sql = "DELETE FROM Mailbox where Owner = '"
+								+ event.getPlayer().getUniqueId().toString()
+								+ "' AND World = '"
+								+ mb.location.getWorld().getName()
+								+ "' AND X = " + mb.location.getBlockX()
+								+ " AND " + " Y = " + mb.location.getBlockY()
+								+ " AND Z = " + mb.location.getBlockZ();
+						executeSQLAsync(sql);
+						String msg = getTranslationLanguage(event.getPlayer(),
+								stringKeys.MAILDESTROYEDMAILBOX.toString());
+						event.getPlayer().sendMessage(msg);
+						mailBoxes.remove(mb);
+						return;
+					} else {
+						event.setCancelled(true);
+						return;
+					}
 				}
-			}
+			}/*
+			 * for (int i = 0; i < mailBoxes.size(); i++) { Mailbox mb =
+			 * mailBoxes.get(i); if (mb.uuid == event.getPlayer().getUniqueId())
+			 * { String sql = "DELETE FROM Mailbox where Owner = '" +
+			 * event.getPlayer().getUniqueId().toString() + "' AND World = '" +
+			 * mb.location.getWorld().getName() + "' AND X = " +
+			 * mb.location.getBlockX() + " AND " + " Y = " +
+			 * mb.location.getBlockY() + " AND Z = " + mb.location.getBlockZ();
+			 * executeSQLAsync(sql); String msg =
+			 * getTranslationLanguage(event.getPlayer(),
+			 * stringKeys.MAILDESTROYEDMAILBOX.toString());
+			 * event.getPlayer().sendMessage(msg); mailBoxes.remove(i); return;
+			 * } }
+			 */
 		}
 	}
 
@@ -3460,35 +3530,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							.getSerenityLeader().setDiamondsFound(amt);
 
 					/*
-					final Player p = event.getPlayer();
-					Bukkit.getScheduler().runTaskLaterAsynchronously(this,
-							new Runnable() {
-								@Override
-								public void run() {
-									getLogger().info("§2It counts for score!");
-									int currentDay = new Date().getDay();
-
-									for (int i = 0; i < 7; i++) {
-										if (i != currentDay) {
-											diamondFoundCfg
-													.getConfig()
-													.set(p.getDisplayName()
-															+ ".Day" + i,
-															diamondFoundCfg
-																	.getConfig()
-																	.get(p.getDisplayName()
-																			+ ".Day"
-																			+ i,
-																			0));
-										}
-									}
-
-									addScoreToCfg(diamondFoundCfg,
-											p.getDisplayName() + ".Day"
-													+ currentDay);
-									diamondFoundCfg.saveConfig();
-								}
-							}, 0L);*/
+					 * final Player p = event.getPlayer();
+					 * Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+					 * new Runnable() {
+					 * 
+					 * @Override public void run() {
+					 * getLogger().info("§2It counts for score!"); int
+					 * currentDay = new Date().getDay();
+					 * 
+					 * for (int i = 0; i < 7; i++) { if (i != currentDay) {
+					 * diamondFoundCfg .getConfig() .set(p.getDisplayName() +
+					 * ".Day" + i, diamondFoundCfg .getConfig()
+					 * .get(p.getDisplayName() + ".Day" + i, 0)); } }
+					 * 
+					 * addScoreToCfg(diamondFoundCfg, p.getDisplayName() +
+					 * ".Day" + currentDay); diamondFoundCfg.saveConfig(); } },
+					 * 0L);
+					 */
 				}
 			}
 		}
@@ -3536,28 +3594,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				.getMonstersKilled();
 		amt++;
 		serenityPlayers.get(uuid).getSerenityLeader().setMonstersKilled(amt);
-/*
-		String displayName = Bukkit.getPlayer(uuid).getName();
-
-		Random rand = new Random();
-		final String displayNameF = displayName;
-
-		Calendar now = Calendar.getInstance();
-		int hour = now.get(Calendar.HOUR_OF_DAY);
-		for (int i = 0; i < 24; i++) {
-			if (i != hour) {
-				monsterCfg.getConfig().set(
-						displayNameF + ".Hour" + i,
-						monsterCfg.getConfig().get(displayNameF + ".Hour" + i,
-								0));
-			}
-		}
-
-		int prevScore = monsterCfg.getConfig().getInt(
-				displayNameF + ".Hour" + hour);
-
-		monsterCfg.getConfig()
-				.set(displayNameF + ".Hour" + hour, prevScore + 1);*/
+		/*
+		 * String displayName = Bukkit.getPlayer(uuid).getName();
+		 * 
+		 * Random rand = new Random(); final String displayNameF = displayName;
+		 * 
+		 * Calendar now = Calendar.getInstance(); int hour =
+		 * now.get(Calendar.HOUR_OF_DAY); for (int i = 0; i < 24; i++) { if (i
+		 * != hour) { monsterCfg.getConfig().set( displayNameF + ".Hour" + i,
+		 * monsterCfg.getConfig().get(displayNameF + ".Hour" + i, 0)); } }
+		 * 
+		 * int prevScore = monsterCfg.getConfig().getInt( displayNameF + ".Hour"
+		 * + hour);
+		 * 
+		 * monsterCfg.getConfig() .set(displayNameF + ".Hour" + hour, prevScore
+		 * + 1);
+		 */
 
 	}
 
@@ -3593,28 +3645,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	@EventHandler
-	public void onMailboxBreak(PlayerInteractEvent event) {
-		if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-			if (event.getClickedBlock().getType().equals(Material.CHEST)
-					|| event.getClickedBlock().getType()
-							.equals(Material.TRAPPED_CHEST)) {
-				for (Mailbox mb : mailBoxes) {
-					if (mb.location.equals(event.getClickedBlock()
-							.getLocation())) {
-						if (mb.isPublic) {
-							event.setCancelled(true);
-							return;
-						}
-						if (!mb.uuid.equals(event.getPlayer().getUniqueId())) {
-							event.setCancelled(true);
-							return;
-						}
-					}
-				}
-			}
-		}
-	}
+	/*
+	 * @EventHandler public void onMailboxBreak(PlayerInteractEvent event) { if
+	 * (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) { if
+	 * (event.getClickedBlock().getType().equals(Material.CHEST) ||
+	 * event.getClickedBlock().getType() .equals(Material.TRAPPED_CHEST)) { for
+	 * (Mailbox mb : mailBoxes) { if (mb.location.equals(event.getClickedBlock()
+	 * .getLocation())) { if (mb.isPublic) { event.setCancelled(true); return; }
+	 * if (!mb.uuid.equals(event.getPlayer().getUniqueId())) {
+	 * event.setCancelled(true); return; } } } } } }
+	 */
 
 	@EventHandler
 	public void onPlayerBedLeaveEvent(PlayerBedLeaveEvent event) {
@@ -4483,23 +4523,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void givePlayerARandomSkull(Player p) {
-		Random r = new Random();
-		int rand = r.nextInt(allHalloweenSkulls.size());
+		int r = rand.nextInt(allHolidaySkulls.size());
 		Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + p.getName()
-				+ " " + allHalloweenSkulls.get(rand));
-		p.sendMessage("§6§lHappy Halloween!");
+				+ " " + String.format(allHolidaySkulls.get(r), p.getName()));
+		p.sendMessage("§6§lHappy Holidays!");
 	}
 
-	public void putBoneInMailbox(String name) {
+	public void putBoneInMailbox(UUID uid) {
 		for (Mailbox mb : mailBoxes) {
-			if (mb.uuid.equals(name)) {
+			if (mb.uuid.equals(uid)) {
 				Chest receivingChest = (Chest) mb.location.getBlock()
 						.getState();
 
-				ItemStack bone = new ItemStack(Material.BONE, 1);
+				ItemStack bone = new ItemStack(Material.COOKIE, 1);
 				ItemMeta boneMeta = bone.getItemMeta();
-				boneMeta.setDisplayName("§dSpooky Bone");
-				boneMeta.addEnchant(Enchantment.DAMAGE_UNDEAD, 2015, true);
+				boneMeta.setDisplayName("§dHoliday Cookie");
+				boneMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 2015, true);
 				bone.setItemMeta(boneMeta);
 				receivingChest.getInventory().addItem(bone);
 				doRandomFirework(receivingChest.getWorld(),
@@ -4512,24 +4551,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onPlayerRedeemBone(PlayerInteractEvent event) {
 		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
 				|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
-			if (event.getPlayer().getItemInHand().getType() == Material.BONE) {
+			if (event.getPlayer().getItemInHand().getType() == Material.COOKIE) {
 				if (event.getPlayer().getItemInHand().hasItemMeta()) {
 					if (event.getPlayer().getItemInHand().getItemMeta()
 							.hasDisplayName()) {
 						if (event.getPlayer().getItemInHand().getItemMeta()
-								.getDisplayName().equals("§dSpooky Bone")) {
+								.getDisplayName().equals("§dHoliday Cookie")) {
 
 							Player player = event.getPlayer();
 							if (Math.abs(player.getLocation().getX()) < 150
 									&& Math.abs(player.getLocation().getZ()) < 150) {
 
+								event.setCancelled(true);
 								if (player.getItemInHand().getAmount() != 1) {
 									player.getItemInHand()
 											.setAmount(
 													player.getItemInHand()
 															.getAmount() - 1);
 								} else {
-									player.setItemInHand(null);
+									player.setItemInHand(new ItemStack(
+											Material.AIR));
 								}
 								givePlayerARandomSkull(player);
 								player.getWorld().playSound(
@@ -4538,7 +4579,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								ParticleEffect.SPELL_MOB.display(.5f, .5f, .5f,
 										50, 60, player.getLocation(), 25);
 							} else {
-								player.sendMessage("§cYou can only redeem a §dSpooky Bone §cat spawn!");
+								player.sendMessage("§cYou can only redeem a §dHoliday Cookie §cat spawn!");
 							}
 						}
 					}
@@ -4594,7 +4635,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 			if (arg3[0].equalsIgnoreCase("celebrate")) {
-				// celebrate(sender);
+				celebrate(sender);
 				return true;
 			}
 		}
@@ -4689,6 +4730,19 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return true;
 		}
 		return false;
+	}
+
+	private void celebrate(CommandSender sender) {
+		if (sender instanceof Player) {
+			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
+					.getUniqueId());
+			sp.setCelebrating(!sp.isCelebrating());
+			if (sp.isCelebrating()) {
+				sender.sendMessage("§dHappy Holidays!  §7Left and right click with a §6dandelion!");
+			} else {
+				sender.sendMessage("§7You are no longer celebrating");
+			}
+		}
 	}
 
 	/*
@@ -6229,86 +6283,53 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				/*
-				if (arg3[0].equals("resetdailyscore")) {
-					final int today = new Date().getDay();
-					final OfflinePlayer[] pf = Bukkit.getOfflinePlayers();
-
-					Bukkit.getScheduler().runTaskAsynchronously(this,
-							new Runnable() {
-
-								@Override
-								public void run() {
-									for (OfflinePlayer p : pf) {
-										if (!p.isOp()) {
-											int currentScore = leaderboardCfg
-													.getConfig()
-													.getInt(p.getName()
-															+ ".Day" + today,
-															-1);
-											if (currentScore != -1) {
-												leaderboardCfg.getConfig().set(
-														p.getName() + ".Day"
-																+ today, 0);
-
-											}
-
-											currentScore = diamondFoundCfg
-													.getConfig()
-													.getInt(p.getName()
-															+ ".Day" + today,
-															-1);
-											if (currentScore != -1) {
-												diamondFoundCfg.getConfig()
-														.set(p.getName()
-																+ ".Day"
-																+ today, 0);
-											}
-										}
-									}
-
-									leaderboardCfg.saveConfig();
-									leaderboardCfg.reloadConfig();
-
-								}
-							});
-				}
-
-				if (arg3[0].equals("resethourlyscore")) {
-					Calendar now = Calendar.getInstance();
-					final int thisHour = now.get(Calendar.HOUR_OF_DAY);
-
-					final OfflinePlayer[] pf = Bukkit.getOfflinePlayers();
-
-					Bukkit.getScheduler().runTaskAsynchronously(this,
-							new Runnable() {
-
-								@Override
-								public void run() {
-									for (OfflinePlayer p : pf) {
-										if (!p.isOp()) {
-											int currentScore = monsterCfg
-													.getConfig().getInt(
-															p.getName()
-																	+ ".Hour"
-																	+ thisHour,
-															-1);
-											if (currentScore != -1) {
-												monsterCfg.getConfig().set(
-														p.getName() + ".Hour"
-																+ thisHour, 0);
-
-											}
-
-										}
-									}
-
-									monsterCfg.saveConfig();
-									monsterCfg.reloadConfig();
-
-								}
-							});
-					return true;
-				}*/
+				 * if (arg3[0].equals("resetdailyscore")) { final int today =
+				 * new Date().getDay(); final OfflinePlayer[] pf =
+				 * Bukkit.getOfflinePlayers();
+				 * 
+				 * Bukkit.getScheduler().runTaskAsynchronously(this, new
+				 * Runnable() {
+				 * 
+				 * @Override public void run() { for (OfflinePlayer p : pf) { if
+				 * (!p.isOp()) { int currentScore = leaderboardCfg .getConfig()
+				 * .getInt(p.getName() + ".Day" + today, -1); if (currentScore
+				 * != -1) { leaderboardCfg.getConfig().set( p.getName() + ".Day"
+				 * + today, 0);
+				 * 
+				 * }
+				 * 
+				 * currentScore = diamondFoundCfg .getConfig()
+				 * .getInt(p.getName() + ".Day" + today, -1); if (currentScore
+				 * != -1) { diamondFoundCfg.getConfig() .set(p.getName() +
+				 * ".Day" + today, 0); } } }
+				 * 
+				 * leaderboardCfg.saveConfig(); leaderboardCfg.reloadConfig();
+				 * 
+				 * } }); }
+				 * 
+				 * if (arg3[0].equals("resethourlyscore")) { Calendar now =
+				 * Calendar.getInstance(); final int thisHour =
+				 * now.get(Calendar.HOUR_OF_DAY);
+				 * 
+				 * final OfflinePlayer[] pf = Bukkit.getOfflinePlayers();
+				 * 
+				 * Bukkit.getScheduler().runTaskAsynchronously(this, new
+				 * Runnable() {
+				 * 
+				 * @Override public void run() { for (OfflinePlayer p : pf) { if
+				 * (!p.isOp()) { int currentScore = monsterCfg
+				 * .getConfig().getInt( p.getName() + ".Hour" + thisHour, -1);
+				 * if (currentScore != -1) { monsterCfg.getConfig().set(
+				 * p.getName() + ".Hour" + thisHour, 0);
+				 * 
+				 * }
+				 * 
+				 * } }
+				 * 
+				 * monsterCfg.saveConfig(); monsterCfg.reloadConfig();
+				 * 
+				 * } }); return true; }
+				 */
 
 				if (arg3[0].equals("kill")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
@@ -6539,11 +6560,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
-				/*
-				 * if (arg3[0].equals("givebone")) { for (Player p :
-				 * Bukkit.getOnlinePlayers()) { if (!p.isOp()) { if (!isAfk(p))
-				 * { putBoneInMailbox(p.getDisplayName()); } } } return true; }
-				 */
+				if (arg3[0].equals("giveme")) {
+
+					if (sender instanceof Player) {
+
+						for (int i = 0; i < allHolidaySkulls.size(); i++) {
+							Bukkit.dispatchCommand(
+									Bukkit.getConsoleSender(),
+									"give "
+											+ sender.getName()
+											+ " "
+											+ String.format(
+													allHolidaySkulls.get(i),
+													sender.getName()));
+						}
+
+					}
+				}
 
 				if (arg3[0].equals("unload")) {
 					unloadChunks();
@@ -6551,49 +6584,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				/*
-				if (arg3[0].equals("cleanonline")) {
-					final OfflinePlayer[] ofp = Bukkit.getOfflinePlayers();
-
-					Bukkit.getScheduler().runTaskAsynchronously(this,
-							new Runnable() {
-								@Override
-								public void run() {
-									for (OfflinePlayer op : ofp) {
-										if (!op.isWhitelisted()) {
-											if (!op.isOp()) {
-												if (leaderboardCfg
-														.getConfig()
-														.get(op.getName(), null) != null) {
-													leaderboardCfg.getConfig()
-															.set(op.getName(),
-																	null);
-													getLogger()
-															.info("Cleaning "
-																	+ op.getName()
-																	+ " from leaderboard");
-												}
-
-												if (whoIsOnline
-														.getConfig()
-														.get(op.getName(), null) != null) {
-													whoIsOnline.getConfig()
-															.set(op.getName(),
-																	null);
-													getLogger()
-															.info("Cleaning "
-																	+ op.getName()
-																	+ " from who is online");
-												}
-											}
-										}
-									}
-									whoIsOnline.saveConfig();
-									leaderboardCfg.saveConfig();
-									return;
-								}
-							});
-					return true;
-				}*/
+				 * if (arg3[0].equals("cleanonline")) { final OfflinePlayer[]
+				 * ofp = Bukkit.getOfflinePlayers();
+				 * 
+				 * Bukkit.getScheduler().runTaskAsynchronously(this, new
+				 * Runnable() {
+				 * 
+				 * @Override public void run() { for (OfflinePlayer op : ofp) {
+				 * if (!op.isWhitelisted()) { if (!op.isOp()) { if
+				 * (leaderboardCfg .getConfig() .get(op.getName(), null) !=
+				 * null) { leaderboardCfg.getConfig() .set(op.getName(), null);
+				 * getLogger() .info("Cleaning " + op.getName() +
+				 * " from leaderboard"); }
+				 * 
+				 * if (whoIsOnline .getConfig() .get(op.getName(), null) !=
+				 * null) { whoIsOnline.getConfig() .set(op.getName(), null);
+				 * getLogger() .info("Cleaning " + op.getName() +
+				 * " from who is online"); } } } } whoIsOnline.saveConfig();
+				 * leaderboardCfg.saveConfig(); return; } }); return true; }
+				 */
 
 				if (arg3[0].equals("eff")) {
 					opParticles = !opParticles;
@@ -6700,8 +6709,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					linksCfg.reloadConfig();
 					daleCfg.reloadConfig();
 					// mailboxCfg.reloadConfig();
-					///leaderboardCfg.reloadConfig();
-					//diamondFoundCfg.reloadConfig();
+					// /leaderboardCfg.reloadConfig();
+					// diamondFoundCfg.reloadConfig();
 					motdsCfg.reloadConfig();
 					sender.sendMessage("Reloaded pod, email, books, links, it, dale, mailbox, who is onilne, diamond, leaderboard");
 					updateRandomMotds();
@@ -6835,12 +6844,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				/*
-				if (arg3[0].equals("cleanleaderboard")) {
-					leaderboardCfg.getConfig().set(arg3[1], null);
-					leaderboardCfg.saveConfig();
-					leaderboardCfg.reloadConfig();
-					return true;
-				}*/
+				 * if (arg3[0].equals("cleanleaderboard")) {
+				 * leaderboardCfg.getConfig().set(arg3[1], null);
+				 * leaderboardCfg.saveConfig(); leaderboardCfg.reloadConfig();
+				 * return true; }
+				 */
 
 				if (arg3[0].equals("secret")) {
 					if (sender instanceof Player) {
@@ -7145,7 +7153,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					while (it.hasNext()) {
 						PlayerStatus ps = it.next();
-						messageToSend += serenityPlayers.get(ps.getUuid()).getChatColor() + serenityPlayers.get(ps.getUuid()).getName() + ps.toString();
+						messageToSend += serenityPlayers.get(ps.getUuid())
+								.getChatColor()
+								+ serenityPlayers.get(ps.getUuid()).getName()
+								+ ps.toString();
 					}
 
 					final String messageToSendF = messageToSend;
@@ -7820,20 +7831,24 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			if (arg3[0].toLowerCase().equals("mailbox")) {
 				for (int i = 0; i < mailBoxes.size(); i++) {
-					if (sender.getName().equals(mailBoxes.get(i).uuid)) {
-						Bukkit.getServer().getPlayer(sender.getName())
-								.setCompassTarget(mailBoxes.get(i).location);
-						/*
-						 * Bukkit.getServer() .getPlayer(sender.getName())
-						 * .sendMessage(
-						 * "§2Set compass to point to your mailbox!");
-						 */
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						if (p.getUniqueId() == mailBoxes.get(i).uuid) {
+							Bukkit.getServer()
+									.getPlayer(sender.getName())
+									.setCompassTarget(mailBoxes.get(i).location);
+							/*
+							 * Bukkit.getServer() .getPlayer(sender.getName())
+							 * .sendMessage(
+							 * "§2Set compass to point to your mailbox!");
+							 */
 
-						String msg = getTranslationLanguage(sender,
-								stringKeys.COMPASSMAILBOX.toString());
-						sender.sendMessage(msg);
+							String msg = getTranslationLanguage(sender,
+									stringKeys.COMPASSMAILBOX.toString());
+							sender.sendMessage(msg);
 
-						return true;
+							return true;
+						}
 					}
 				}
 
@@ -8174,30 +8189,31 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void addPlayerStatus(PlayerStatus ps) {
-		
-		for(Iterator<PlayerStatus> iterator = playerStatuses.iterator(); iterator.hasNext();){
+
+		for (Iterator<PlayerStatus> iterator = playerStatuses.iterator(); iterator
+				.hasNext();) {
 			PlayerStatus ps1 = iterator.next();
-			if(ps1.getUuid().equals(ps.getUuid())){
+			if (ps1.getUuid().equals(ps.getUuid())) {
 				iterator.remove();
 			}
 		}
-		
+
 		playerStatuses.add(ps);
 		ps.setStatus(ps.getStatus().replace('\'', '`'));
 		ps.setStatus(ps.getStatus().replace('\"', '|'));
 		String sql = "DELETE From Status where UUID='"
 				+ ps.getUuid().toString() + "';";
 		executeSQLAsync(sql);
-		
+
 		sql = "INSERT INTO Status (UUID, Time, Status) VALUES ('"
 				+ ps.getUuid() + "','" + System.currentTimeMillis() + "','"
 				+ ps.getStatus() + "');";
 		String sqlf = sql;
-		
-		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable(){
+
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
 			@Override
-			public void run(){
-				executeSQLAsync(sqlf);		
+			public void run() {
+				executeSQLAsync(sqlf);
 			}
 		}, 20L);
 		ps.setStatus(ps.getStatus().replace('`', '\''));
