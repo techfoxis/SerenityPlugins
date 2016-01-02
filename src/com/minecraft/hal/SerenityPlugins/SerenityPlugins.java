@@ -378,6 +378,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		createTables();
 		loadSerenityPlayersFromDatabase();
+		setOnlinePlayersOnline();
 		loadSerenityMailboxesFromDatabase();
 		loadMessagesFromDatabase();
 		loadStatusesFromDatabase();
@@ -714,6 +715,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		getLogger().info("Serenity Plugins enabled");
 	}
 
+	private void setOnlinePlayersOnline() {
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			serenityPlayers.get(p.getUniqueId()).setOnline(true);
+		}
+	}
+
 	private void runEveryMinute() {
 		BukkitScheduler scheduler = Bukkit.getScheduler();
 		scheduler.runTaskTimer(this, new Runnable() {
@@ -928,7 +935,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				sp.setWhitelisted(rs.getBoolean("Whitelisted"));
 				sp.setMuted(rs.getBoolean("Muted"));
 				sp.setLocalChatting(rs.getBoolean("LocalChat"));
-				sp.setOnline(rs.getBoolean("Online"));
+				sp.setOnline(false);
 				sp.setDirty(false);
 				serenityPlayers.put(sp.getUUID(), sp);
 			}
@@ -941,6 +948,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
 	}
 
 	private void loadSerenityMailboxesFromDatabase() {
@@ -1054,7 +1062,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					+ "FOREIGN KEY (UUID) REFERENCES Player(UUID), "
 					+ "Online INT, " + "Life Long, " + "Diamonds INT, "
 					+ "Monsters INT," + "Villagers INT," + "Animals INT,"
-							+ "Deaths INT);";
+					+ "Deaths INT);";
 			st.executeUpdate(sql);
 
 			sql = "CREATE TABLE IF NOT EXISTS Status (" + "UUID VARCHAR(40), "
@@ -2147,7 +2155,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}, 0L);
 	}
-
+	
 	protected void saveDirtySerenityPlayersBlocking() {
 		for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers.entrySet()) {
 			SerenityPlayer sp = entry.getValue();
@@ -2167,12 +2175,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		int amt = serenityPlayers.get(uuid).getSerenityLeader().getOnline();
 		amt++;
 		serenityPlayers.get(uuid).getSerenityLeader().setOnline(amt);
-		serenityPlayers
-				.get(uuid)
-				.getSerenityLeader()
-				.setLifeInTicks(
-						Bukkit.getPlayer(uuid).getStatistic(
-								Statistic.TIME_SINCE_DEATH) + 0L);
+
+		Long life = 0L;
+		life += Bukkit.getPlayer(uuid).getStatistic(Statistic.TIME_SINCE_DEATH);
+		serenityPlayers.get(uuid).getSerenityLeader().setLifeInTicks(life);
 	}
 
 	@Override
@@ -3006,8 +3012,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							event.getPlayer().sendMessage(
 									String.format(msg, mb.name));
 
-							if(!event.getPlayer().isOp())
-							event.setCancelled(true);
+							if (!event.getPlayer().isOp())
+								event.setCancelled(true);
 							return;
 						}
 					}
@@ -3403,7 +3409,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			for (Mailbox mb : mailBoxes) {
 				if (mb.location.equals(event.getBlock().getLocation())) {
-					if (mb.uuid.toString().equals(event.getPlayer().getUniqueId().toString())) {
+					if (mb.uuid.toString().equals(
+							event.getPlayer().getUniqueId().toString())) {
 						String sql = "DELETE FROM Mailbox where Owner = '"
 								+ event.getPlayer().getUniqueId().toString()
 								+ "' AND World = '"
@@ -4387,8 +4394,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			sender.sendMessage(fromColor + "§o" + "To [Server]: " + message);
 			getLogger().info(
 					"§cMsg from " + sender.getName() + ": §4" + message);
-			for(Player p: Bukkit.getOnlinePlayers()){
-				if(p.isOp()){
+			for (Player p : Bukkit.getOnlinePlayers()) {
+				if (p.isOp()) {
 					p.sendMessage("§c§oFrom " + sender.getName() + message);
 				}
 			}
@@ -6372,6 +6379,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
+				if (arg3[0].equals("npe")) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						Player pl = Bukkit.getPlayer(p.getUniqueId());
+						int x = pl.getStatistic(Statistic.TIME_SINCE_DEATH);
+						Bukkit.broadcastMessage(x + "");
+
+					}
+				}
+
 				if (arg3[0].equals("updateSPs")) {
 					Bukkit.getScheduler().runTaskLaterAsynchronously(this,
 							new Runnable() {
@@ -7227,7 +7243,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void deleteStatusFromDB(PlayerStatus ps) {
-		String sql = "DELETE FROM Status WHERE UUID='" + ps.getUuid().toString() + "'";
+		String sql = "DELETE FROM Status WHERE UUID='"
+				+ ps.getUuid().toString() + "'";
 		executeSQLAsync(sql);
 	}
 
@@ -8509,13 +8526,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPistonPush(BlockPistonExtendEvent event) {
+		for(Block b: event.getBlocks()){
+			Location l = b.getLocation();
+			for(FireWorkShow fl : fireworkShowLocations){
+				if(fl.getLocation().equals(b.getLocation())){
+					getLogger().info("§cAttempted to push a firework block");
+					event.setCancelled(true);
+				}
+			}
+		}/*
 		for (int i = 0; i < fireworkShowLocations.size(); i++) {
 			Block b = fireworkShowLocations.get(i).getLocation().getBlock();
 			if (event.getBlocks().contains(b)) {
 				getLogger().info("Attempted to push a firework block");
 				event.setCancelled(true);
 			}
-		}
+		}*/
 	}
 
 	@EventHandler
@@ -8769,9 +8795,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void PlayerDeathColor(PlayerDeathEvent event) {
 		event.setDeathMessage(getChatColor(event.getEntity().getUniqueId())
 				+ event.getDeathMessage());
-		SerenityPlayer sp = serenityPlayers.get(event.getEntity().getUniqueId());
-		if(sp!=null){
-			sp.getSerenityLeader().setDeaths(sp.getSerenityLeader().getDeaths()+1);
+		SerenityPlayer sp = serenityPlayers
+				.get(event.getEntity().getUniqueId());
+		if (sp != null) {
+			sp.getSerenityLeader().setDeaths(
+					sp.getSerenityLeader().getDeaths() + 1);
 		}
 	}
 
