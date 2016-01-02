@@ -78,7 +78,7 @@ public class OfflineMessage implements Comparable {
 		Long timeDiff = System.currentTimeMillis() - this.getTime();
 		Long mins = TimeUnit.MILLISECONDS.toMinutes(timeDiff);
 		Long hours = TimeUnit.MILLISECONDS.toHours(timeDiff);
-		Long days = TimeUnit.MILLISECONDS.toHours(timeDiff);
+		Long days = TimeUnit.MILLISECONDS.toDays(timeDiff);
 		
 		if(mins < 100){
 			return mins + " minutes ago";

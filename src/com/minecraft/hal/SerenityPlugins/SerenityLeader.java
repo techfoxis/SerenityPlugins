@@ -7,6 +7,7 @@ public class SerenityLeader {
 	private int monstersKilled;
 	private int villagerTrades;
 	private int animalsBred;
+	private int deaths;
 
 	public SerenityLeader() {
 		online = 0;
@@ -15,6 +16,7 @@ public class SerenityLeader {
 		monstersKilled = 0;
 		villagerTrades = 0;
 		animalsBred = 0;
+		deaths = 0;
 	}
 
 	public int getOnline() {
@@ -63,6 +65,14 @@ public class SerenityLeader {
 
 	public void setAnimalsBred(int animalsBred) {
 		this.animalsBred = animalsBred;
+	}
+
+	public int getDeaths() {
+		return deaths;
+	}
+
+	public void setDeaths(int deaths) {
+		this.deaths = deaths;
 	}
 
 }

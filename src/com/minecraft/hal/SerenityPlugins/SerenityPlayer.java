@@ -77,7 +77,9 @@ public class SerenityPlayer {
 				+ "," + getSerenityLeader().getDiamondsFound()
 				+ "," + getSerenityLeader().getMonstersKilled()
 				+ "," + getSerenityLeader().getVillagerTrades()
-				+ "," + getSerenityLeader().getAnimalsBred() + ");";
+				+ "," + getSerenityLeader().getAnimalsBred()
+				+ ", " + getSerenityLeader().getDeaths() + 
+				");";
 	}
 
 	public UUID getUUID() {

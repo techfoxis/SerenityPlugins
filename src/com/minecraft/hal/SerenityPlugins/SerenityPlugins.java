@@ -1053,7 +1053,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					+ "UUID VARCHAR(40), "
 					+ "FOREIGN KEY (UUID) REFERENCES Player(UUID), "
 					+ "Online INT, " + "Life Long, " + "Diamonds INT, "
-					+ "Monsters INT," + "Villagers INT," + "Animals INT);";
+					+ "Monsters INT," + "Villagers INT," + "Animals INT,"
+							+ "Deaths INT);";
 			st.executeUpdate(sql);
 
 			sql = "CREATE TABLE IF NOT EXISTS Status (" + "UUID VARCHAR(40), "
@@ -2367,8 +2368,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 			specEff = 0;
-			// opParticlesDeb = false;
-			// opParticles = false;
+			opParticlesDeb = false;
+			opParticles = false;
 
 			event.getPlayer().setGameMode(GameMode.CREATIVE);
 			event.getPlayer().setDisplayName("[Server]");
@@ -3005,6 +3006,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							event.getPlayer().sendMessage(
 									String.format(msg, mb.name));
 
+							if(!event.getPlayer().isOp())
 							event.setCancelled(true);
 							return;
 						}
@@ -3401,7 +3403,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			for (Mailbox mb : mailBoxes) {
 				if (mb.location.equals(event.getBlock().getLocation())) {
-					if (mb.uuid == event.getPlayer().getUniqueId()) {
+					if (mb.uuid.toString().equals(event.getPlayer().getUniqueId().toString())) {
 						String sql = "DELETE FROM Mailbox where Owner = '"
 								+ event.getPlayer().getUniqueId().toString()
 								+ "' AND World = '"
@@ -4385,6 +4387,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			sender.sendMessage(fromColor + "§o" + "To [Server]: " + message);
 			getLogger().info(
 					"§cMsg from " + sender.getName() + ": §4" + message);
+			for(Player p: Bukkit.getOnlinePlayers()){
+				if(p.isOp()){
+					p.sendMessage("§c§oFrom " + sender.getName() + message);
+				}
+			}
 			return true;
 		}
 
@@ -7139,7 +7146,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					while (it.hasNext()) {
 						PlayerStatus ps = it.next();
 						if (gc.getTimeInMillis()
-								- ps.getTime().getTimeInMillis() > 259200000) {
+								- ps.getTime().getTimeInMillis() > 604800000) {
 							statusesToDelete.add(ps);
 						}
 					}
@@ -7220,7 +7227,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void deleteStatusFromDB(PlayerStatus ps) {
-		String sql = "DELETE FROM Status WHERE UUID=" + ps.getUuid().toString();
+		String sql = "DELETE FROM Status WHERE UUID='" + ps.getUuid().toString() + "'";
 		executeSQLAsync(sql);
 	}
 
@@ -7433,7 +7440,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void sendRawPacket(Player p, String s) {
 		String json = s;
-		Packet packet = new PacketPlayOutChat(ChatSerializer.a(json));
+		Packet<?> packet = new PacketPlayOutChat(ChatSerializer.a(json));
 
 		((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
 
@@ -8762,6 +8769,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void PlayerDeathColor(PlayerDeathEvent event) {
 		event.setDeathMessage(getChatColor(event.getEntity().getUniqueId())
 				+ event.getDeathMessage());
+		SerenityPlayer sp = serenityPlayers.get(event.getEntity().getUniqueId());
+		if(sp!=null){
+			sp.getSerenityLeader().setDeaths(sp.getSerenityLeader().getDeaths()+1);
+		}
 	}
 
 	@EventHandler
