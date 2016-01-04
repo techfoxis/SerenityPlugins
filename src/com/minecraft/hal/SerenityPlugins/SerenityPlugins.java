@@ -816,7 +816,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 			}
-		}, 0L, 6000L);
+		}, 0L, 12000L);
 	}
 
 	private void runEverySecond() {
@@ -2140,7 +2140,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	protected void saveDirtySerenityPlayers() {
 
-		Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
 			@Override
 			public void run() {
 				for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers
@@ -2155,7 +2155,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}, 0L);
 	}
-	
+
 	protected void saveDirtySerenityPlayersBlocking() {
 		for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers.entrySet()) {
 			SerenityPlayer sp = entry.getValue();
@@ -2396,21 +2396,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				public void run() {
 					Bukkit.getPlayer(uuid)
 							.sendMessage(
-									"§3You have a new message!  §e/msg read §3to check your messages!");
+									"§3Type §e/msg read §3to check your messages! §7(click on them to read)");
 				}
 			}, 40L);
 		}
 
 		setListNames();
 
-		for (Mailbox mb : mailBoxes) {
-			if (mb.uuid.equals(sp.getUUID())) {
-				if (mb.hasMail()) {
-					String msg = getTranslationLanguage(event.getPlayer(),
-							stringKeys.MAILHASMAIL.toString());
-					event.getPlayer().sendMessage(msg);
-					// event.getPlayer().sendMessage("§2You have mail!");
-					return;
+		if (!event.getPlayer().isOp()) {
+			for (Mailbox mb : mailBoxes) {
+				if (mb.uuid.equals(sp.getUUID())) {
+					if (mb.hasMail()) {
+						String msg = getTranslationLanguage(event.getPlayer(),
+								stringKeys.MAILHASMAIL.toString());
+						event.getPlayer().sendMessage(msg);
+						// event.getPlayer().sendMessage("§2You have mail!");
+						return;
+					}
 				}
 			}
 		}
@@ -4093,8 +4095,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				int x = (int) p.getLocation().getX() * 8;
 				int z = (int) p.getLocation().getZ() * 8;
 
-				String html = "http://serenity-mc.org/map/#/" + x + "/64/" + z
-						+ "/max/0/0";
+				String html = "http://serenity-mc.org/map/#map_world/0/10/" + x
+						+ "/" + z + "/64";
 				p.sendMessage("§3If you build a portal, you should exit near this area:  \n§6"
 						+ html);
 				return true;
@@ -4104,8 +4106,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				int x = (int) p.getLocation().getX();
 				int z = (int) p.getLocation().getZ();
 				int y = (int) p.getLocation().getY();
-				String html = "http://serenity-mc.org/map/#/" + x + "/" + y
-						+ "/" + z + "/max/0/0";
+				String html = "http://serenity-mc.org/map/#map_world/0/10/" + x
+						+ "/" + z + "/" + y;
 				p.sendMessage("§3You are here:  \n§6" + html);
 				return true;
 			}
@@ -7064,6 +7066,39 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				Bukkit.dispatchCommand((CommandSender) p, cmd);
 				return true;
 			}
+
+			if (arg3[0].equals("ban")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String name = arg3[1];
+				String banMessage = "";
+				for (int i = 2; i < arg3.length; i++) {
+					banMessage += arg3[i] + " ";
+				}
+				OfflinePlayer p = Bukkit.getOfflinePlayer(name);
+				p.setBanned(true);
+				p.setWhitelisted(false);
+				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+				if (sp != null) {
+					sp.setBanned(true);
+					sp.setWhitelisted(false);
+					sp.setOp(false);
+				}
+
+				if (p.isOnline()) {
+					Player pl = p.getPlayer();
+					pl.kickPlayer("You have been banned for: " + banMessage);
+					pl.setBanned(true);
+					Bukkit.broadcastMessage(pl.getAddress().getAddress()
+							.getHostAddress().toString());
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ban-ip "
+							+ pl.getAddress().getAddress().toString() + " "
+							+ banMessage);
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ban "
+							+ p.getName() + " " + banMessage);
+				}
+			}
 		} else {
 			noPerms(sender);
 			return true;
@@ -7855,13 +7890,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 			if (arg3[0].toLowerCase().equals("mailbox")) {
-				for (int i = 0; i < mailBoxes.size(); i++) {
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						if (p.getUniqueId() == mailBoxes.get(i).uuid) {
-							Bukkit.getServer()
-									.getPlayer(sender.getName())
-									.setCompassTarget(mailBoxes.get(i).location);
+				if (sender instanceof Player) {
+					Player p = (Player) sender;
+					for (Mailbox mb : mailBoxes) {
+						if (p.getUniqueId().equals(mb.uuid)) {
+							Bukkit.getServer().getPlayer(sender.getName())
+									.setCompassTarget(mb.location);
 							/*
 							 * Bukkit.getServer() .getPlayer(sender.getName())
 							 * .sendMessage(
@@ -7874,6 +7908,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 							return true;
 						}
+
 					}
 				}
 
@@ -8526,22 +8561,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPistonPush(BlockPistonExtendEvent event) {
-		for(Block b: event.getBlocks()){
+		for (Block b : event.getBlocks()) {
 			Location l = b.getLocation();
-			for(FireWorkShow fl : fireworkShowLocations){
-				if(fl.getLocation().equals(b.getLocation())){
+			for (FireWorkShow fl : fireworkShowLocations) {
+				if (fl.getLocation().equals(b.getLocation())) {
 					getLogger().info("§cAttempted to push a firework block");
 					event.setCancelled(true);
 				}
 			}
 		}/*
-		for (int i = 0; i < fireworkShowLocations.size(); i++) {
-			Block b = fireworkShowLocations.get(i).getLocation().getBlock();
-			if (event.getBlocks().contains(b)) {
-				getLogger().info("Attempted to push a firework block");
-				event.setCancelled(true);
-			}
-		}*/
+		 * for (int i = 0; i < fireworkShowLocations.size(); i++) { Block b =
+		 * fireworkShowLocations.get(i).getLocation().getBlock(); if
+		 * (event.getBlocks().contains(b)) {
+		 * getLogger().info("Attempted to push a firework block");
+		 * event.setCancelled(true); } }
+		 */
 	}
 
 	@EventHandler
