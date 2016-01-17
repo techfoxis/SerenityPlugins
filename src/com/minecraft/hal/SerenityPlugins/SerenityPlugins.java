@@ -1,5 +1,11 @@
 package com.minecraft.hal.SerenityPlugins;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -27,9 +33,12 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import net.minecraft.server.v1_8_R3.IChatBaseComponent;
 import net.minecraft.server.v1_8_R3.IChatBaseComponent.ChatSerializer;
 import net.minecraft.server.v1_8_R3.Packet;
 import net.minecraft.server.v1_8_R3.PacketPlayOutChat;
+import net.minecraft.server.v1_8_R3.PacketPlayOutPlayerInfo;
+import net.minecraft.server.v1_8_R3.PacketPlayOutPlayerListHeaderFooter;
 
 import org.bukkit.Art;
 import org.bukkit.Bukkit;
@@ -56,7 +65,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.AnimalTamer;
@@ -72,6 +80,7 @@ import org.bukkit.entity.Hanging;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Horse.Style;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.MushroomCow;
 import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Painting;
@@ -122,7 +131,6 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
-import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
@@ -133,6 +141,7 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.material.Dispenser;
 import org.bukkit.material.Wool;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -141,31 +150,27 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
+import com.google.common.collect.Iterables;
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
+
 public final class SerenityPlugins extends JavaPlugin implements Listener,
-		CommandExecutor {
+		CommandExecutor, PluginMessageListener {
 
 	public SerenityPlugins global = this;
-	// public ConfigAccessor mailboxCfg;
-	// public ConfigAccessor statusCfg;
-	// public ConfigAccessor chatcolorCfg;
 	public ConfigAccessor fireworksCfg;
 	public ConfigAccessor protectedAreasCfg;
 	public ConfigAccessor podrickCfg;
 	public ConfigAccessor stringsCfg;
-	// public ConfigAccessor teamsCfg;
 	public ConfigAccessor emailCfg;
 	public ConfigAccessor bookCfg;
 	public ConfigAccessor linksCfg;
 	public ConfigAccessor daleCfg;
-	// public ConfigAccessor leaderboardCfg;
-	// public ConfigAccessor portalAnalytics;
-	// public ConfigAccessor diamondFoundCfg;
 	public ConfigAccessor voteCfg;
-	// public ConfigAccessor monsterCfg;
 	public ConfigAccessor motdsCfg;
 	public boolean opParticles;
 	public boolean opParticlesDeb;
-	// public ConfigAccessor expansionCfg;
 
 	public SimpleDateFormat psdf = new SimpleDateFormat("MM/dd");
 	public SimpleDateFormat sdtf = new SimpleDateFormat(
@@ -174,11 +179,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public List<Mailbox> mailBoxes;
 	public List<Player> preppedToUnProtectChunk;
 	public List<PlayerProtect> preppedToProtectArea;
-	// public List<Player> localChatters;
 	public Set<PlayerStatus> playerStatuses;
 	public List<FireWorkShow> fireworkShowLocations;
 	public String mainMotd = "";
 	public HashMap<UUID, SerenityPlayer> serenityPlayers;
+	public List<String> playersInCreative;
+	public Long lastCreativeList;
 
 	public short specEff = 0;
 
@@ -372,8 +378,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@Override
 	public void onEnable() {
 		sdtf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		lastCreativeList = System.currentTimeMillis();
+		playersInCreative = new ArrayList<String>();
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
+		this.getServer().getMessenger()
+				.registerOutgoingPluginChannel(this, "BungeeCord");
+		this.getServer().getMessenger()
+				.registerIncomingPluginChannel(this, "BungeeCord", this);
 		serenityPlayers = new HashMap<UUID, SerenityPlayer>();
 
 		createTables();
@@ -830,8 +842,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 				lags.add(now);
 				if (Bukkit.getOnlinePlayers().size() > 0) {
-					PartyLeather();
+					sendPlayerListToBungee();
 
+					if (System.currentTimeMillis() - lastCreativeList > 1500) {
+						playersInCreative = new ArrayList<String>();
+					}
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						sendPlayerList(p, "§aSurvival:", "§dCreative:",
+								playersInCreative);
+					}
+
+					PartyLeather();
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						sendPlayerList(p, "§aSurvival:", "§dCreative:",
+								playersInCreative);
+					}
 					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
 						if (sp.isCelebrating())
 							celebrate(sp);
@@ -2067,11 +2092,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void checkMilestone(SerenityPlayer pl) {
 
-		if (!pl.isOp()) {
-			if (getPlayerMinutes(pl.getUUID()) % 5 == 0) {
-				putBoneInMailbox(pl.getUUID());
-			}
-		}
+		/*
+		 * if (!pl.isOp()) { if (getPlayerMinutes(pl.getUUID()) % 5 == 0) {
+		 * putBoneInMailbox(pl.getUUID()); } }
+		 */
 		if (getPlayerMinutes(pl.getUUID()) == 59) {
 			Player p = Bukkit.getPlayer(pl.getUUID());
 			p.sendMessage(getTranslationLanguage(p,
@@ -2187,57 +2211,33 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		getLogger().info("Serenity Plugins disabled");
 	}
 
-	@EventHandler
-	public void onPing(ServerListPingEvent e) {
-		if (!pluginReady)
-			return;
-		String player = "";
-		String ip = e.getAddress().getHostAddress();
-		boolean hasMessage = false;
-		for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers.entrySet()) {
-			if (entry.getValue().getIP().equals(ip)) {
-				player = entry.getValue().getName();
-				hasMessage = hasNewMessages(entry.getValue().getUUID());
-			}
-		}
-
-		if (motdsCfg.getConfig().getBoolean("Pingers", false)) {
-			if (player.length() > 0) {
-				getLogger().info("Pinged by " + player);
-			}
-		}
-
-		if (motdsCfg.getConfig().getBoolean("randomMotd", false)) {
-			String newMotd = getRandomNonBlackColor() + "§lSerenity";
-			if (player.length() > 0) {
-				newMotd += ":§r " + getRandomNonBlackColor();
-				if (!hasMessage) {
-					newMotd += String.format(motdGreetings.get(rand
-							.nextInt(motdGreetings.size())), player);
-				} else {
-					newMotd += "You have a new message!!!";
-				}
-			}
-			newMotd += "\n";
-
-			/*
-			 * if (mainMotd != "") { newMotd += ": §r" +
-			 * getRandomNonBlackColor() + mainMotd + "\n" +
-			 * getRandomNonBlackColor(); }
-			 */
-
-			newMotd += getRandomNonBlackColor();
-			newMotd += allMotds.get(rand.nextInt(allMotds.size()));
-			e.setMotd(newMotd);
-		}
-
-		Iterator<Player> it = e.iterator();
-
-		while (it.hasNext()) {
-			if (it.next().isOp())
-				it.remove();
-		}
-	}
+	/*
+	 * @EventHandler public void onPing(ServerListPingEvent e) { if
+	 * (!pluginReady) return; String player = ""; String ip =
+	 * e.getAddress().getHostAddress(); boolean hasMessage = false; for
+	 * (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers.entrySet()) { if
+	 * (entry.getValue().getIP().equals(ip)) { player =
+	 * entry.getValue().getName(); hasMessage =
+	 * hasNewMessages(entry.getValue().getUUID()); } }
+	 * 
+	 * if (motdsCfg.getConfig().getBoolean("Pingers", false)) { if
+	 * (player.length() > 0) { getLogger().info("Pinged by " + player); } }
+	 * 
+	 * if (motdsCfg.getConfig().getBoolean("randomMotd", false)) { String
+	 * newMotd = getRandomNonBlackColor() + "§lSerenity"; if (player.length() >
+	 * 0) { newMotd += ":§r " + getRandomNonBlackColor(); if (!hasMessage) {
+	 * newMotd += String.format(motdGreetings.get(rand
+	 * .nextInt(motdGreetings.size())), player); } else { newMotd +=
+	 * "You have a new message!!!"; } } newMotd += "\n";
+	 * 
+	 * 
+	 * newMotd += getRandomNonBlackColor(); newMotd +=
+	 * allMotds.get(rand.nextInt(allMotds.size())); e.setMotd(newMotd); }
+	 * 
+	 * Iterator<Player> it = e.iterator();
+	 * 
+	 * while (it.hasNext()) { if (it.next().isOp()) it.remove(); } }
+	 */
 
 	public boolean hasNewMessages(UUID uuid) {
 		SerenityPlayer sp = serenityPlayers.get(uuid);
@@ -2396,12 +2396,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				public void run() {
 					Bukkit.getPlayer(uuid)
 							.sendMessage(
-									"§3Type §e/msg read §3to check your messages! §7(click on them to read)");
+									"§3Type §e/msg read §3to read messages §7(click on them)");
 				}
 			}, 40L);
 		}
 
 		setListNames();
+
+		event.setJoinMessage(null);
 
 		if (!event.getPlayer().isOp()) {
 			for (Mailbox mb : mailBoxes) {
@@ -2459,6 +2461,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		sp.setOnline(false);
 		sp.setLastPlayed(System.currentTimeMillis());
+
+		event.setQuitMessage(null);
+
 	}
 
 	@EventHandler
@@ -2630,6 +2635,60 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				"§r" + getChatColor(sp.getUUID())));
 		event.setMessage(event.getMessage().replace("[/u]",
 				"§r" + getChatColor(sp.getUUID())));
+
+		event.setMessage(event.getMessage().replace(">", "§a>"));
+
+		if (!sp.isMuted())
+			sendChatMessageToBungeeServers(event);
+	}
+
+	private void sendChatMessageToBungeeServers(AsyncPlayerChatEvent event) {
+
+		String sender = "";
+		if (event.getPlayer().isOp()) {
+			sender = "§d" + "[Server]";
+		} else {
+			sender = "<" + getChatColor(event.getPlayer().getUniqueId())
+					+ event.getPlayer().getDisplayName() + "§r>";
+		}
+		String message = event.getMessage();
+
+		sendMessageToBungee(sender, message);
+	}
+
+	private void sendMessageToBungee(String sender, String message) {
+		String fullMessage = "";
+		if (sender.length() > 0) {
+			fullMessage += sender + " " + message;
+		} else {
+			fullMessage = message;
+		}
+
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Forward"); // So BungeeCord knows to forward it
+		out.writeUTF("ALL");
+		out.writeUTF("Chat"); // The channel name to check if this your data
+
+		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
+		DataOutputStream msgout = new DataOutputStream(msgbytes);
+		try {
+			msgout.writeUTF(fullMessage);
+			msgout.writeLong(System.currentTimeMillis());
+
+			out.writeShort(msgbytes.toByteArray().length);
+			out.write(msgbytes.toByteArray());
+
+			// If you don't care about the player
+			Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
+			player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+
+			// msgout.writeShort(123);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} // You can do anything you want with msgout
+		out.writeShort(msgbytes.toByteArray().length);
+		out.write(msgbytes.toByteArray());
 	}
 
 	protected void setPlayerUpForQuest(Player p) {
@@ -4085,7 +4144,65 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return map(sender, arg3);
 		}
 
+		else if (commandLabel.equalsIgnoreCase("move")) {
+			return move(sender, arg3);
+		}
+
 		return false;
+	}
+
+	private boolean move(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player && arg3.length > 0) {
+			Player p = ((Player) sender);
+			String server = arg3[0];
+			sendTo(p, server);
+			return true;
+		}
+		return false;
+	}
+
+	private void sendTo(Player p, String string) {
+		SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+
+		if (sp.isPendingMove()) {
+			p.sendMessage("§cBe patient...");
+			return;
+		}
+		if (!p.isOnGround()) {
+			p.sendMessage("§cYou cannot do that while flying!");
+			return;
+		}
+		int monsterXZDist = 10;
+		for (Entity e : p.getNearbyEntities(monsterXZDist, 6, monsterXZDist)) {
+			if (e instanceof Monster) {
+				p.sendMessage("§cYou cannot do that while monsters are near!");
+				return;
+			}
+		}
+		p.sendMessage("§aPreparing to move to §d" + string
+				+ "§a!  Stand still for a bit");
+		final Location startLoc = p.getLocation();
+		final Player pf = p;
+		sp.setPendingMove(true);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				sp.setPendingMove(false);
+
+				if (pf.getLocation().distance(startLoc) > .5) {
+					p.sendMessage("§cYou did not stand still!");
+				} else {
+					ByteArrayDataOutput out = ByteStreams.newDataOutput();
+					out.writeUTF("ConnectOther");
+					out.writeUTF(pf.getName());
+					out.writeUTF(string);
+					Player player = Iterables.getFirst(
+							Bukkit.getOnlinePlayers(), null);
+					player.sendPluginMessage(global, "BungeeCord",
+							out.toByteArray());
+				}
+			}
+		}, 100L);
 	}
 
 	private boolean map(CommandSender sender, String[] arg3) {
@@ -4530,7 +4647,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean MsgViaText(String rec, String msg) {
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			if (p.getName().toUpperCase().contains(rec.toUpperCase())) {
-				p.sendMessage("§oText from Hal: §r" + msg);
+				p.sendMessage("§d§oText from Hal §7(reply with /text): §r§d"
+						+ msg);
 				sendATextToHal("Received", p.getName() + " received the text!");
 				return true;
 			}
@@ -4574,7 +4692,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							.hasDisplayName()) {
 						if (event.getPlayer().getItemInHand().getItemMeta()
 								.getDisplayName().equals("§dHoliday Cookie")) {
-
 							Player player = event.getPlayer();
 							if (Math.abs(player.getLocation().getX()) < 150
 									&& Math.abs(player.getLocation().getZ()) < 150) {
@@ -4597,6 +4714,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										50, 60, player.getLocation(), 25);
 							} else {
 								player.sendMessage("§cYou can only redeem a §dHoliday Cookie §cat spawn!");
+								event.setCancelled(true);
 							}
 						}
 					}
@@ -4751,14 +4869,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void celebrate(CommandSender sender) {
 		if (sender instanceof Player) {
-			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
-					.getUniqueId());
-			sp.setCelebrating(!sp.isCelebrating());
-			if (sp.isCelebrating()) {
-				sender.sendMessage("§dHappy Holidays!  §7Left and right click with a §6dandelion!");
-			} else {
-				sender.sendMessage("§7You are no longer celebrating");
-			}
+			sender.sendMessage("§cIt's not time to celebrate");
+			/*
+			 * SerenityPlayer sp = serenityPlayers.get(((Player) sender)
+			 * .getUniqueId()); sp.setCelebrating(!sp.isCelebrating()); if
+			 * (sp.isCelebrating()) { sender.sendMessage(
+			 * "§dHappy Holidays!  §7Left and right click with a §6dandelion!");
+			 * } else { sender.sendMessage("§7You are no longer celebrating"); }
+			 */
 		}
 	}
 
@@ -6136,13 +6254,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean server(CommandSender sender, String[] arg3) {
 		if (sender.isOp() || sender instanceof ConsoleCommandSender) {
 			if (arg3[0].equalsIgnoreCase("say")) {
-				String s = "§d[Server] ";
+				String s = "";
 				for (int i = 1; i < arg3.length; i++) {
 					s += arg3[i] + " ";
 				}
 
-				Bukkit.broadcastMessage(s);
-
+				Bukkit.broadcastMessage("§d[Server] " + s);
+				sendMessageToBungee("§d[Server]", s);
 				return true;
 			}
 
@@ -6299,55 +6417,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
-				/*
-				 * if (arg3[0].equals("resetdailyscore")) { final int today =
-				 * new Date().getDay(); final OfflinePlayer[] pf =
-				 * Bukkit.getOfflinePlayers();
-				 * 
-				 * Bukkit.getScheduler().runTaskAsynchronously(this, new
-				 * Runnable() {
-				 * 
-				 * @Override public void run() { for (OfflinePlayer p : pf) { if
-				 * (!p.isOp()) { int currentScore = leaderboardCfg .getConfig()
-				 * .getInt(p.getName() + ".Day" + today, -1); if (currentScore
-				 * != -1) { leaderboardCfg.getConfig().set( p.getName() + ".Day"
-				 * + today, 0);
-				 * 
-				 * }
-				 * 
-				 * currentScore = diamondFoundCfg .getConfig()
-				 * .getInt(p.getName() + ".Day" + today, -1); if (currentScore
-				 * != -1) { diamondFoundCfg.getConfig() .set(p.getName() +
-				 * ".Day" + today, 0); } } }
-				 * 
-				 * leaderboardCfg.saveConfig(); leaderboardCfg.reloadConfig();
-				 * 
-				 * } }); }
-				 * 
-				 * if (arg3[0].equals("resethourlyscore")) { Calendar now =
-				 * Calendar.getInstance(); final int thisHour =
-				 * now.get(Calendar.HOUR_OF_DAY);
-				 * 
-				 * final OfflinePlayer[] pf = Bukkit.getOfflinePlayers();
-				 * 
-				 * Bukkit.getScheduler().runTaskAsynchronously(this, new
-				 * Runnable() {
-				 * 
-				 * @Override public void run() { for (OfflinePlayer p : pf) { if
-				 * (!p.isOp()) { int currentScore = monsterCfg
-				 * .getConfig().getInt( p.getName() + ".Hour" + thisHour, -1);
-				 * if (currentScore != -1) { monsterCfg.getConfig().set(
-				 * p.getName() + ".Hour" + thisHour, 0);
-				 * 
-				 * }
-				 * 
-				 * } }
-				 * 
-				 * monsterCfg.saveConfig(); monsterCfg.reloadConfig();
-				 * 
-				 * } }); return true; }
-				 */
-
 				if (arg3[0].equals("kill")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						if (p.getLocation().getWorld().getName()
@@ -6379,6 +6448,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					s += "Total Area: " + area;
 					sender.sendMessage(s);
 
+				}
+
+				if (arg3[0].equals("play")) {
+
+					if (sender instanceof Player) {
+
+						Player p = ((Player) sender).getPlayer();
+						List<String> names = new ArrayList<String>();
+						// names.add("§cTest");
+						// names.add("§bTest2");
+						sendPlayerList(p, "§aSurvival:", "§dCreative:", names);
+					}
 				}
 
 				if (arg3[0].equals("npe")) {
@@ -6430,46 +6511,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				/*
 				 * if (arg3[0].equals("populateP")) { populatePlayerTable(); }
 				 */
-
-				if (arg3[0].equals("partytest")) {
-
-					if (sender instanceof Player) {
-
-						Player p = (Player) sender;
-						String owner = p.getDisplayName();
-						ItemStack is = new ItemStack(Material.LEATHER_HELMET);
-						ItemMeta im = is.getItemMeta();
-						im.setDisplayName("§dParty Armor");
-						List<String> lore = new ArrayList<String>();
-						lore.add("May only be worn by");
-						lore.add(owner);
-						im.setLore(lore);
-						is.setItemMeta(im);
-						p.getInventory().addItem(is);
-
-						is = new ItemStack(Material.LEATHER_CHESTPLATE);
-						im = is.getItemMeta();
-						im.setDisplayName("§dParty Armor");
-						im.setLore(lore);
-						is.setItemMeta(im);
-						p.getInventory().addItem(is);
-
-						is = new ItemStack(Material.LEATHER_LEGGINGS);
-						im = is.getItemMeta();
-						im.setDisplayName("§dParty Armor");
-						im.setLore(lore);
-						is.setItemMeta(im);
-						p.getInventory().addItem(is);
-
-						is = new ItemStack(Material.LEATHER_BOOTS);
-						im = is.getItemMeta();
-						im.setDisplayName("§dParty Armor");
-						im.setLore(lore);
-						is.setItemMeta(im);
-						p.getInventory().addItem(is);
-
-					}
-				}
 				if (arg3[0].equals("gethash")) {
 					if (sender instanceof Player) {
 
@@ -6512,134 +6553,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					motdsCfg.saveConfig();
 				}
 
-				if (arg3[0].equals("go_old")) {
-
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						Location l = new Location(Bukkit.getWorld("world_old"),
-								-6484, 68, -5944);
-						p.teleport(l);
-					}
-				}
-
-				if (arg3[0].equals("send_old")) {
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						Location l = new Location(Bukkit.getWorld("world_old"),
-								-6484, 68, -5944);
-						for (Entity e : p.getNearbyEntities(5, 5, 5)) {
-
-							CraftEntity ce = (CraftEntity) e;
-							ce.getHandle().teleportTo(l, true);
-						}
-						// p.teleport(l);
-					}
-				}
-
-				if (arg3[0].equals("send_new")) {
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						Location l = new Location(Bukkit.getWorld("world"),
-								-6484, 68, -5944);
-						for (Entity e : p.getNearbyEntities(5, 5, 5)) {
-							if (e instanceof Horse) {
-								Horse h = (Horse) e;
-								p.teleport(l);
-								Horse horseNew = (Horse) p.getWorld()
-										.spawnEntity(p.getLocation(),
-												EntityType.HORSE);
-								horseNew.setAdult();
-								horseNew.setAge(h.getAge());
-								horseNew.setColor(h.getColor());
-								horseNew.setAge(h.getAge());
-								horseNew.setCustomName(h.getCustomName());
-								horseNew.setDomestication(h.getDomestication());
-								horseNew.setJumpStrength(h.getJumpStrength());
-								horseNew.setMaxDomestication(h
-										.getMaxDomestication());
-								horseNew.setMaxHealth(h.getMaxHealth());
-								horseNew.setOwner(h.getOwner());
-								horseNew.setStyle(h.getStyle());
-								horseNew.setVariant(h.getVariant());
-							}
-						}
-						// p.teleport(l);
-					}
-				}
-
-				if (arg3[0].equals("go_new")) {
-
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						Location l = new Location(Bukkit.getWorld("world"),
-								-6484, 68, -5944);
-						p.teleport(l);
-
-					}
-				}
-
-				if (arg3[0].equals("give")) {
-
-					if (sender instanceof Player) {
-						Player p = (Player) sender;
-						givePlayerARandomSkull(p);
-					}
-				}
-
-				if (arg3[0].equals("giveme")) {
-
-					if (sender instanceof Player) {
-
-						for (int i = 0; i < allHolidaySkulls.size(); i++) {
-							Bukkit.dispatchCommand(
-									Bukkit.getConsoleSender(),
-									"give "
-											+ sender.getName()
-											+ " "
-											+ String.format(
-													allHolidaySkulls.get(i),
-													sender.getName()));
-						}
-
-					}
-				}
-
 				if (arg3[0].equals("unload")) {
 					unloadChunks();
 					return true;
 				}
-
-				/*
-				 * if (arg3[0].equals("cleanonline")) { final OfflinePlayer[]
-				 * ofp = Bukkit.getOfflinePlayers();
-				 * 
-				 * Bukkit.getScheduler().runTaskAsynchronously(this, new
-				 * Runnable() {
-				 * 
-				 * @Override public void run() { for (OfflinePlayer op : ofp) {
-				 * if (!op.isWhitelisted()) { if (!op.isOp()) { if
-				 * (leaderboardCfg .getConfig() .get(op.getName(), null) !=
-				 * null) { leaderboardCfg.getConfig() .set(op.getName(), null);
-				 * getLogger() .info("Cleaning " + op.getName() +
-				 * " from leaderboard"); }
-				 * 
-				 * if (whoIsOnline .getConfig() .get(op.getName(), null) !=
-				 * null) { whoIsOnline.getConfig() .set(op.getName(), null);
-				 * getLogger() .info("Cleaning " + op.getName() +
-				 * " from who is online"); } } } } whoIsOnline.saveConfig();
-				 * leaderboardCfg.saveConfig(); return; } }); return true; }
-				 */
 
 				if (arg3[0].equals("eff")) {
 					opParticles = !opParticles;
 					sender.sendMessage("Particles on = " + opParticles);
 					return true;
 				}
-				/*
-				 * if (arg3[0].equals("timings")) { debugTickTimings =
-				 * !debugTickTimings; sender.sendMessage("Timings = " +
-				 * debugTickTimings); return true; }
-				 */
 
 				if (arg3[0].equals("deb")) {
 					opParticlesDeb = !opParticlesDeb;
@@ -6655,15 +6578,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 				}
-
-				/*
-				 * if (arg3[0].equals("golf")) { if (sender instanceof Player) {
-				 * Player p = (Player) sender; ItemStack is = new
-				 * ItemStack(Material.SNOW_BALL); ItemMeta im =
-				 * is.getItemMeta(); im.setDisplayName("§6" + p.getDisplayName()
-				 * + "'s Golf Ball"); is.setItemMeta(im);
-				 * p.getInventory().addItem(is); p.setWalkSpeed(.2F); } }
-				 */
 
 				if (arg3[0].equals("ping")) {
 					for (Player p : Bukkit.getOnlinePlayers()) {
@@ -6843,39 +6757,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 			} else if (arg3.length == 2) {
-				if (arg3[0].equals("showscores")) {
-					Scoreboard board = Bukkit.getScoreboardManager()
-							.getMainScoreboard();
-					Objective objective = (Objective) board.getObjectives()
-							.toArray()[0];
-					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-					objective.setDisplayName("Exploration Challenge");
-
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						p.setScoreboard(board);
-					}
-
-					Bukkit.getScheduler().scheduleSyncDelayedTask(this,
-							new Runnable() {
-								@Override
-								public void run() {
-									for (Player p : Bukkit.getOnlinePlayers()) {
-										p.setScoreboard(Bukkit
-												.getScoreboardManager()
-												.getNewScoreboard());
-									}
-								}
-							}, 20L * Integer.parseInt(arg3[1]));
-					return true;
-				}
-
-				/*
-				 * if (arg3[0].equals("cleanleaderboard")) {
-				 * leaderboardCfg.getConfig().set(arg3[1], null);
-				 * leaderboardCfg.saveConfig(); leaderboardCfg.reloadConfig();
-				 * return true; }
-				 */
-
 				if (arg3[0].equals("secret")) {
 					if (sender instanceof Player) {
 						Player p = (Player) sender;
@@ -7090,8 +6971,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					Player pl = p.getPlayer();
 					pl.kickPlayer("You have been banned for: " + banMessage);
 					pl.setBanned(true);
-					Bukkit.broadcastMessage(pl.getAddress().getAddress()
-							.getHostAddress().toString());
 					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ban-ip "
 							+ pl.getAddress().getAddress().toString() + " "
 							+ banMessage);
@@ -7104,6 +6983,50 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return true;
 		}
 		return false;
+	}
+
+	private void sendPlayerList(Player p, String string, String string2,
+			List<String> names) {
+
+		PacketPlayOutPlayerListHeaderFooter packet = new PacketPlayOutPlayerListHeaderFooter();
+		IChatBaseComponent header;
+
+		header = ChatSerializer.a("{text:\"" + string + "\"}");
+
+		String footerPrep = "";
+
+		footerPrep = "{text:\"" + string2;
+		for (String s : names) {
+			footerPrep += "\n" + s;
+		}
+
+		String timeStamp = new SimpleDateFormat("HH:mm:ss").format(Calendar
+				.getInstance().getTime());
+
+		footerPrep += "\n§7" + timeStamp;
+		footerPrep += "\"}";
+
+		if (names.size() == 0) {
+
+			footerPrep = footerPrep.replace(string2, "");
+		}
+
+		IChatBaseComponent footer = ChatSerializer.a(footerPrep);
+		try {
+			Field a = packet.getClass().getDeclaredField("a");
+			a.setAccessible(true);
+			a.set(packet, header);
+
+			Field b = packet.getClass().getDeclaredField("b");
+			b.setAccessible(true);
+			b.set(packet, footer);
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+
+		((CraftPlayer) p.getPlayer()).getHandle().playerConnection
+				.sendPacket(packet);
+
 	}
 
 	private void updateRandomMotds() {
@@ -11134,5 +11057,94 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		sendSimulatedPrivateMessage(p, Secret.SOMEONESNAME, Secret.HAVEDISC);
+	}
+
+	@Override
+	public void onPluginMessageReceived(String channel, Player player,
+			byte[] message) {
+		if (!channel.equals("BungeeCord")) {
+			return;
+		}
+
+		ByteArrayDataInput in = ByteStreams.newDataInput(message);
+		String subchannel = in.readUTF();
+		if (subchannel.equals("Chat")) {
+
+			short len = in.readShort();
+			byte[] msgbytes = new byte[len];
+			in.readFully(msgbytes);
+
+			DataInputStream msgin = new DataInputStream(
+					new ByteArrayInputStream(msgbytes));
+			try {
+				String somedata = msgin.readUTF();
+				Long time = msgin.readLong();
+				if (System.currentTimeMillis() - time < 50)
+					simulateChat(somedata);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // Read the data in the same way you wrote it
+
+		}
+
+		if (subchannel.equals("PlC")) {
+			short len = in.readShort();
+			byte[] msgbytes = new byte[len];
+			in.readFully(msgbytes);
+
+			DataInputStream msgin = new DataInputStream(
+					new ByteArrayInputStream(msgbytes));
+			try {
+				lastCreativeList = msgin.readLong();
+				int count = msgin.readInt();
+				playersInCreative = new ArrayList<String>();
+				for (int i = 0; i < count; i++) {
+					playersInCreative.add(msgin.readUTF());
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // Read the data in the same way you wrote it
+		}
+	}
+
+	private void simulateChat(String s) {
+		if (Bukkit.getOnlinePlayers().size() > 0)
+			Bukkit.broadcastMessage(s);
+		// todo.. ignore and stuff
+	}
+
+	public void sendPlayerListToBungee() {
+		List<String> players = new ArrayList<String>();
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (!p.isOp()) {
+				SerenityPlayer spc = serenityPlayers.get(p.getUniqueId());
+				players.add(spc.getChatColor() + spc.getName());
+			}
+		}
+
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Forward"); // So BungeeCord knows to forward it
+		out.writeUTF("ALL");
+		out.writeUTF("PlS"); // The channel name to check if this your data
+
+		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
+		DataOutputStream msgout = new DataOutputStream(msgbytes);
+		try {
+			msgout.writeLong(System.currentTimeMillis());
+			msgout.writeInt(players.size());
+			for (String s : players) {
+				msgout.writeUTF(s);
+			}
+
+			out.writeShort(msgbytes.toByteArray().length);
+			out.write(msgbytes.toByteArray());
+			Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
+			player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} // You can do anything you want with msgout
 	}
 }

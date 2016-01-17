@@ -34,6 +34,7 @@ public class SerenityPlayer {
 	private Long lastRandomTP;
 	private SerenityLeader serenityLeader;
 	private Short celebrateEffect;
+	private boolean pendingMove;
 
 	@Override
 	public int hashCode() {
@@ -304,5 +305,13 @@ public class SerenityPlayer {
 	public void setCelebrateEffect(Short celebrateEffect) {
 		this.celebrateEffect = celebrateEffect;
 	}
-	
+
+	public boolean isPendingMove() {
+		return pendingMove;
+	}
+
+	public void setPendingMove(boolean pendingMove) {
+		this.pendingMove = pendingMove;
+	}
+
 }
