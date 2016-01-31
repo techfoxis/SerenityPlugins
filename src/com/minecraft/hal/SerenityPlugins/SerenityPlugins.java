@@ -40,6 +40,13 @@ import net.minecraft.server.v1_8_R3.PacketPlayOutChat;
 import net.minecraft.server.v1_8_R3.PacketPlayOutPlayerInfo;
 import net.minecraft.server.v1_8_R3.PacketPlayOutPlayerListHeaderFooter;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.message.Message;
 import org.bukkit.Art;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -68,6 +75,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.AnimalTamer;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
@@ -210,6 +218,110 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	};
 
+	public static final List<SerenityCommand> allCommands = new ArrayList<SerenityCommand>() {
+		{
+			add(new SerenityCommand("as", "Armor stand manipulation",
+					"Brings up an interface to manipulate armor stands", "/as",
+					2880, true));
+			add(new SerenityCommand(
+					"afk",
+					"Sets you AFK",
+					"See other AFK players in the TAB-list.\n"
+							+ "While you are AFK, your vote for day is automatic",
+					"/afk", 0, false));
+			add(new SerenityCommand("coords", "Broadcasts your coordinates",
+					"This will broadcast your coordinates to the server.\n"
+							+ "It's faster than manually typing them.",
+					"/coords", 0, false));
+			add(new SerenityCommand(
+					"gettime",
+					"Tells you the time",
+					"It will also tell you the server time! (Eastern US time in real life)",
+					"/gettime", 0, false));
+			add(new SerenityCommand(
+					"ignore",
+					"Ignore another player's chats",
+					"Type this to ignore a player.\n"
+							+ "To undo, type the command again.  It's a toggle.",
+					"/ignore <PlayerName>", 0, false));
+			add(new SerenityCommand(
+					"lag",
+					"See if the server is lagging",
+					"This will return the server's Ticks Per Second (TPS).\n"
+							+ "A minecraft server should be running at or close to 20 TPS.\nIt will also calculate your ping.\n"
+							+ "Ping is the time it takes the network to go between your computer and the server.\n"
+							+ "A ping above 200ms might seem like lag!",
+					"/lag", 0, false));
+			add(new SerenityCommand("links", "Server web-links",
+					"Some helpful links to some of our webpages", "/links", 0,
+					false));
+			add(new SerenityCommand("mailto",
+					"Mail your items to someone's mailbox",
+					"Make sure you have a mailbox setup first.\n"
+							+ "A mailbox is a chest on top of a fencepost.",
+					"/mailto <MailboxName>", 0, false));
+			add(new SerenityCommand(
+					"map",
+					"A link to the online map at your location",
+					"This map updates every 30 minutes.\n"
+							+ "To add a marker, type [Point] or [Home] on the first line of a sign\n"
+							+ "followed by any other text you like!", "/map",
+					0, false));
+			add(new SerenityCommand(
+					"move",
+					"Move to another server",
+					"/move creative to get to creative.\n"
+							+ "/move event to go to the event server.\n"
+							+ "These servers are totally seperate from Survival, however, \n"
+							+ "you will be able to chat between Creative and Survival",
+					"/move <ServerName>", 0, false));
+			add(new SerenityCommand(
+					"msg",
+					"Privately message another player",
+					"If he or she is offline, an offline message will be sent.\n"
+							+ "To read offline messages, type /msg read and click each message",
+					"/msg <PlayerName>", 0, false));
+			add(new SerenityCommand("mytime",
+					"See how much time you've spent here",
+					"12 hours for colored chat, 24 to edit spawn,\n"
+							+ "and 48 to manipulate armor stands", "/mytime",
+					0, false));
+			add(new SerenityCommand(
+					"portal",
+					"Calculates a nether portal location",
+					"Divides or multiplies by 8 depending on your world.\n"
+							+ "Helpful for syncing up nether/overworld portals",
+					"/portal", 0, false));
+			add(new SerenityCommand(
+					"protect",
+					"Claim commands",
+					"/protect claim to claim\n/protect unclaim to unclaim\n/protect trust <Player> to trust a player\n/protect untrust <Player> to untrust\n/protect trustlist to see all trusted players\n/protect list to see all claims",
+					"/protect", 60, false));
+			add(new SerenityCommand("setchatcolor", "Set your chat color",
+					"Type just /setchatcolor to see a list of colors",
+					"/setchatcolor <color>", 720, false));
+			add(new SerenityCommand("setcompass",
+					"Set your compass to point somewhere",
+					"Type this command to see all options", "/setcompass", 720,
+					false));
+			add(new SerenityCommand(
+					"status",
+					"Read or update your status",
+					"Your status will also appear on the Serenity Players web page!",
+					"/status <optional_status>", 0, false));
+			add(new SerenityCommand(
+					"text",
+					"Send a text message to the owner's cell phone",
+					"The owner's phone will vibrate with your message.\nUse this if no staff is available."
+							+ "\n/msg [Server] to send a non-urgent message",
+					"/text <message>", 720, false));
+			/*
+			 * add(new SerenityCommand("vote", "Vote for something",
+			 * "Sometimes we have votes for stuff..", "/vote", 720, true));
+			 */
+		}
+	};
+
 	public static final List<Color> allColors = new ArrayList<Color>() {
 		{
 			add(Color.AQUA);
@@ -252,14 +364,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			add(ChatColor.RED);
 			add(ChatColor.GOLD);
 			add(ChatColor.YELLOW);
-			add(ChatColor.DARK_GREEN);
 			add(ChatColor.GREEN);
+			add(ChatColor.DARK_GREEN);
 			add(ChatColor.AQUA);
 			add(ChatColor.DARK_AQUA);
 			add(ChatColor.DARK_BLUE);
 			add(ChatColor.BLUE);
-			add(ChatColor.LIGHT_PURPLE);
 			add(ChatColor.DARK_PURPLE);
+			add(ChatColor.LIGHT_PURPLE);
 			add(ChatColor.BLACK);
 			add(ChatColor.DARK_GRAY);
 			add(ChatColor.GRAY);
@@ -324,6 +436,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public Secrets Secret;
 	public List<Material> possiblePartyArmors;
 
+	public HashMap<String, String> rewardHeads;
+
 	public static List<String> allHolidaySkulls = new ArrayList<String>() {
 		{
 			add("skull 1 3 {SkullOwner:{Name:%s,Id:\"6616a590-e326-442d-8806-b313fca1b5d5\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWM2Mjc0YzIyZDcyNmZjMTIwY2UyNTczNjAzMGNjOGFmMjM4YjQ0YmNiZjU2NjU1MjA3OTUzYzQxNDQyMmYifX19\"}]}}}");
@@ -371,6 +485,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public boolean pluginReady = false;
 	private boolean showingSql;
+	private long lastEventList;
+	private ArrayList<String> playersInEvent;
 
 	// public String[] betters;
 	// public String[] horses;
@@ -380,6 +496,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		sdtf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		lastCreativeList = System.currentTimeMillis();
 		playersInCreative = new ArrayList<String>();
+		lastEventList = System.currentTimeMillis();
+		playersInEvent = new ArrayList<String>();
+
+		ignoreArmor();
+		getRewardHeads();
+
 		stopTheParty();
 		getServer().getPluginManager().registerEvents(this, this);
 		this.getServer().getMessenger()
@@ -727,6 +849,88 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		getLogger().info("Serenity Plugins enabled");
 	}
 
+	private void ignoreArmor() {
+		org.apache.logging.log4j.core.Logger coreLogger = (org.apache.logging.log4j.core.Logger) LogManager
+				.getRootLogger();
+		coreLogger.addFilter(new Filter() {
+			@Override
+			public Result filter(LogEvent arg0) {
+				if (arg0.getMessage().toString().toLowerCase()
+						.contains("command: /as")) {
+					return Result.DENY;
+				}
+				return null;
+			}
+
+			@Override
+			public Result filter(Logger arg0, Level arg1, Marker arg2,
+					String arg3, Object... arg4) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public Result filter(Logger arg0, Level arg1, Marker arg2,
+					Object arg3, Throwable arg4) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public Result filter(Logger arg0, Level arg1, Marker arg2,
+					Message arg3, Throwable arg4) {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public Result getOnMatch() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public Result getOnMismatch() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+		});
+
+	}
+
+	private void getRewardHeads() {
+		rewardHeads = new HashMap<String, String>();
+
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			ResultSet rs = st.executeQuery("Select * FROM Heads");
+			while (rs.next()) {
+				String raw = rs.getString("Head");
+				String name = raw.substring(raw.indexOf('"') + 1,
+						raw.indexOf('}') - 1);
+				String actualCommand = raw.replace("/give @p", "give %s");
+				actualCommand = actualCommand.replaceFirst("\\{.*?\\},", "\\{");
+				actualCommand = actualCommand.replaceFirst("SkullOwner:\\{",
+						"SkullOwner:\\{Name:\"" + name + "\",");
+
+				rewardHeads.put(actualCommand, name);
+
+			}
+			if (conn != null)
+				conn.close();
+			getLogger().info(
+					"Time to get Status: " + (System.currentTimeMillis() - now)
+							+ "ms");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
 	private void setOnlinePlayersOnline() {
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			serenityPlayers.get(p.getUniqueId()).setOnline(true);
@@ -847,16 +1051,19 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (System.currentTimeMillis() - lastCreativeList > 1500) {
 						playersInCreative = new ArrayList<String>();
 					}
+					if (System.currentTimeMillis() - lastEventList > 1500) {
+						playersInEvent = new ArrayList<String>();
+					}
+					if (System.currentTimeMillis() - lastEventList > 1500) {
+						playersInEvent = new ArrayList<String>();
+					}
 					for (Player p : Bukkit.getOnlinePlayers()) {
 						sendPlayerList(p, "§aSurvival:", "§dCreative:",
-								playersInCreative);
+								playersInCreative, "§4Event (no chat):",
+								playersInEvent);
 					}
 
 					PartyLeather();
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						sendPlayerList(p, "§aSurvival:", "§dCreative:",
-								playersInCreative);
-					}
 					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
 						if (sp.isCelebrating())
 							celebrate(sp);
@@ -1095,6 +1302,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					+ "Time Long," + "Status VARCHAR(300));";
 			st.executeUpdate(sql);
 
+			sql = "CREATE TABLE IF NOT EXISTS Heads (Head VARCHAR(500) NOT NULL );";
+			st.executeUpdate(sql);
+
 			if (conn != null)
 				conn.close();
 		} catch (SQLException e) {
@@ -1247,6 +1457,32 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					getPartyEquipment(Material.LEATHER_BOOTS,
 							p.getDisplayName()));
 		}
+
+		for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+			if (e instanceof ArmorStand) {
+				if (isPartyItemStack(((ArmorStand) e).getHelmet(), null)) {
+					((ArmorStand) e).setHelmet(getPartyEquipment(
+							Material.LEATHER_HELMET,
+							getPartyOwner(((ArmorStand) e).getHelmet())));
+				}
+				if (isPartyItemStack(((ArmorStand) e).getChestplate(), null)) {
+					((ArmorStand) e).setChestplate(getPartyEquipment(
+							Material.LEATHER_CHESTPLATE,
+							getPartyOwner(((ArmorStand) e).getChestplate())));
+				}
+				if (isPartyItemStack(((ArmorStand) e).getLeggings(), null)) {
+					((ArmorStand) e).setLeggings(getPartyEquipment(
+							Material.LEATHER_LEGGINGS,
+							getPartyOwner(((ArmorStand) e).getLeggings())));
+				}
+				if (isPartyItemStack(((ArmorStand) e).getBoots(), null)) {
+					((ArmorStand) e).setBoots(getPartyEquipment(
+							Material.LEATHER_BOOTS,
+							getPartyOwner(((ArmorStand) e).getBoots())));
+				}
+			}
+		}
+
 	}
 
 	private ItemStack getPartyEquipment(Material mat, String owner) {
@@ -1290,6 +1526,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (item != null && item.hasItemMeta()
 				&& item.getItemMeta().hasDisplayName()
 				&& item.getItemMeta().getDisplayName().equals("§dParty Armor")) {
+			if (wearer == null) {
+				return true;
+			}
 			if (item.getItemMeta().getLore().get(1)
 					.equals(wearer.getDisplayName())) {
 				return true;
@@ -1298,6 +1537,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 		return false;
+	}
+
+	private String getPartyOwner(ItemStack item) {
+		if (item != null && item.hasItemMeta()
+				&& item.getItemMeta().hasDisplayName()
+				&& item.getItemMeta().getDisplayName().equals("§dParty Armor")) {
+			return item.getItemMeta().getLore().get(1);
+		}
+		return null;
 	}
 
 	/*
@@ -2104,16 +2352,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			doRandomFirework(p.getWorld(), p.getLocation());
 			return;
 		}
-
-		if (getPlayerMinutes(pl.getUUID()) == 179) {
-			Player p = Bukkit.getPlayer(pl.getUUID());
-			p.sendMessage(getTranslationLanguage(p,
-					stringKeys.TIMETHREEHOUR.toString()));
-			// p.sendMessage("§2\nThanks for playing!  \nYou may now vote for server events with /vote !\n");
-			Bukkit.getLogger()
-					.info(p.getDisplayName() + " has reached 3 hours");
-			return;
-		}
+		/*
+		 * 
+		 * if (getPlayerMinutes(pl.getUUID()) == 179) { Player p =
+		 * Bukkit.getPlayer(pl.getUUID());
+		 * p.sendMessage(getTranslationLanguage(p,
+		 * stringKeys.TIMETHREEHOUR.toString())); // p.sendMessage(
+		 * "§2\nThanks for playing!  \nYou may now vote for server events with /vote !\n"
+		 * ); Bukkit.getLogger() .info(p.getDisplayName() +
+		 * " has reached 3 hours"); return; }
+		 */
 
 		if (getPlayerMinutes(pl.getUUID()) == 719) {
 			Player p = Bukkit.getPlayer(pl.getUUID());
@@ -2309,6 +2557,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPLayerJoin(PlayerJoinEvent event) {
+
 		SerenityPlayer sp = serenityPlayers
 				.get(event.getPlayer().getUniqueId());
 		if (sp != null) {
@@ -2570,11 +2819,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			String s = "";
 			switch (r) {
 			case 0:
-				for (int i = 0; i < event.getMessage().length(); i++) {
-					ChatColor col = allChatColors.get(i % 12);
-					s += col;
-					s += event.getMessage().charAt(i);
-				}
+				s = rainbow(event.getMessage());
 				getLogger().info("IT HAPPENED");
 				break;
 			case 1:
@@ -2636,10 +2881,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		event.setMessage(event.getMessage().replace("[/u]",
 				"§r" + getChatColor(sp.getUUID())));
 
-		event.setMessage(event.getMessage().replace(">", "§a>"));
-
 		if (!sp.isMuted())
 			sendChatMessageToBungeeServers(event);
+	}
+
+	private String rainbow(String message) {
+		String ret = "";
+		for (int i = 0; i < message.length(); i++) {
+			ret += allChatColors.get(i % 12);
+			ret += message.charAt(i);
+		}
+		return ret;
 	}
 
 	private void sendChatMessageToBungeeServers(AsyncPlayerChatEvent event) {
@@ -2687,8 +2939,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} // You can do anything you want with msgout
-		out.writeShort(msgbytes.toByteArray().length);
-		out.write(msgbytes.toByteArray());
 	}
 
 	protected void setPlayerUpForQuest(Player p) {
@@ -4086,6 +4336,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return afk(sender, arg3);
 		}
 
+		else if (commandLabel.equalsIgnoreCase("help")) {
+			return help(sender, arg3);
+		}
+
+		else if (commandLabel.equalsIgnoreCase("as")) {
+			return armorStand(sender, arg3);
+		}
+
 		else if (commandLabel.equalsIgnoreCase("vote")) {
 			return vote(sender, arg3);
 		}
@@ -4149,6 +4407,103 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		return false;
+	}
+
+	private boolean help(CommandSender sender, String[] arg3) {
+		if (arg3.length == 0) {
+			String[] newArr = new String[1];
+			newArr[0] = "1";
+			arg3 = newArr;
+		}
+		if (sender instanceof Player) {
+			Player p = ((Player) sender).getPlayer();
+			SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+
+			List<SerenityCommand> thisPlayerCommandList = new ArrayList<SerenityCommand>();
+
+			for (SerenityCommand sc : allCommands) {
+				if (sc.secret) {
+					if (sp.getMinutes() >= sc.timeRequired) {
+						thisPlayerCommandList.add(sc);
+					}
+				} else {
+					thisPlayerCommandList.add(sc);
+				}
+			}
+
+			int maxPage = (thisPlayerCommandList.size() - 1) / 9;
+			maxPage++;
+
+			int page = 0;
+			boolean searching = false;
+			String searchTerm = "";
+			try {
+				page = Integer.parseInt(arg3[0]);
+			} catch (NumberFormatException e) {
+				searching = true;
+				searchTerm = arg3[0];
+			}
+			page--;
+
+			if (!searching) {
+
+				int displayPage = page + 1;
+
+				if (displayPage < maxPage) {
+					String prev = FancyText.GenerateFancyText(
+							"§5§lSerenity Commands §7(hover for info) §dPage "
+									+ (page + 1) + "/" + maxPage + "§5",
+							FancyText.RUN_COMMAND,
+							"/help " + (displayPage + 1), FancyText.SHOW_TEXT,
+							"Go to next page");
+					sendRawPacket(p, prev);
+				} else {
+					String prev = FancyText.GenerateFancyText(
+							"§5§lSerenity Commands §7(hover for info) §dPage "
+									+ (page + 1) + "/" + maxPage + "§5",
+							FancyText.RUN_COMMAND,
+							"/help " + (displayPage - 1), FancyText.SHOW_TEXT,
+							"Go to previous page");
+					sendRawPacket(p, prev);
+				}
+
+				for (int i = page * 9; i < 9 + (page * 9); i++) {
+					if (i < thisPlayerCommandList.size()) {
+						sendCommandHelp(thisPlayerCommandList.get(i), p);
+					} else {
+						p.sendMessage("");
+					}
+
+				}
+			} else {
+				thisPlayerCommandList = new ArrayList<SerenityCommand>();
+				for (SerenityCommand sc : allCommands) {
+					if (sc.command.contains(searchTerm.toLowerCase())) {
+						thisPlayerCommandList.add(sc);
+					}
+				}
+
+				String prev = FancyText.GenerateFancyText(
+						"§5§lSerenity Commands §7(hover for info) §dSearch: §7"
+								+ searchTerm, FancyText.RUN_COMMAND, "/help ",
+						FancyText.SHOW_TEXT, "Hello!");
+				sendRawPacket(p, prev);
+				for (SerenityCommand sc : thisPlayerCommandList) {
+					sendCommandHelp(sc, p);
+				}
+
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private void sendCommandHelp(SerenityCommand sc, Player p) {
+		String ft = FancyText.GenerateFancyText("§a/" + sc.command + ": §7"
+				+ sc.description, FancyText.SUGGEST_COMMAND, "/" + sc.command
+				+ " ", FancyText.SHOW_TEXT, sc.longDescription + "\n\nUsage:\n"
+				+ sc.example);
+		sendRawPacket(p, ft);
 	}
 
 	private boolean move(CommandSender sender, String[] arg3) {
@@ -4680,6 +5035,63 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						receivingChest.getLocation());
 			}
 		}
+	}
+
+	public void putRewardHeadInMailbox(UUID uid, int count) {
+		for (Mailbox mb : mailBoxes) {
+			if (mb.uuid.equals(uid)) {
+				Chest receivingChest = (Chest) mb.location.getBlock()
+						.getState();
+
+				ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH, count);
+				ItemMeta rewardMeta = rewardItem.getItemMeta();
+				rewardMeta.setDisplayName("§dHead Reward!");
+				rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
+				rewardItem.setItemMeta(rewardMeta);
+				receivingChest.getInventory().addItem(rewardItem);
+				doRandomFirework(receivingChest.getWorld(),
+						receivingChest.getLocation());
+			}
+		}
+	}
+
+	@EventHandler
+	public void onPlayerRedeemHead(PlayerInteractEvent event) {
+		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
+				|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
+			if (event.getPlayer().getItemInHand().getType() == Material.DEAD_BUSH) {
+				if (event.getPlayer().getItemInHand().hasItemMeta()) {
+					if (event.getPlayer().getItemInHand().getItemMeta()
+							.hasDisplayName()) {
+						if (event.getPlayer().getItemInHand().getItemMeta()
+								.getDisplayName().equals("§dHead Reward!")) {
+							Player player = event.getPlayer();
+							event.setCancelled(true);
+							if (player.getItemInHand().getAmount() != 1) {
+								player.getItemInHand().setAmount(
+										player.getItemInHand().getAmount() - 1);
+							} else {
+								player.setItemInHand(new ItemStack(Material.AIR));
+							}
+							givePlayerARandomHead(player);
+							player.getWorld().playSound(player.getLocation(),
+									Sound.LEVEL_UP, 10F, .025F);
+							ParticleEffect.SPELL_MOB.display(.5f, .5f, .5f, 50,
+									60, player.getLocation(), 25);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void givePlayerARandomHead(Player player) {
+		List<String> temp = new ArrayList<String>(rewardHeads.keySet());
+		String key = temp.get(rand.nextInt(temp.size()));
+		String name = rewardHeads.get(key);
+		Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+				String.format(key, player.getName()));
+		player.sendMessage("§aYou got §d" + name);
 	}
 
 	@EventHandler
@@ -6051,35 +6463,400 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	@EventHandler
-	private void onBucketEvent(PlayerBucketEmptyEvent event) {
-		for (ProtectedArea pa : areas) {
-			if (pa.equals(event.getBlockClicked().getLocation())
-					|| pa.equals(event.getBlockClicked()
-							.getRelative(BlockFace.EAST).getLocation())
-					|| pa.equals(event.getBlockClicked()
-							.getRelative(BlockFace.NORTH).getLocation())
-					|| pa.equals(event.getBlockClicked()
-							.getRelative(BlockFace.SOUTH).getLocation())
-					|| pa.equals(event.getBlockClicked()
-							.getRelative(BlockFace.WEST).getLocation())) {
-				if (!pa.hasPermission(event.getPlayer().getDisplayName())) {
-					event.setCancelled(true);
-					return;
+	private void SendTranslateLine(String c, String string2, Player p,
+			String command) {
+		String hxp = FancyText.GenerateFancyText("  §a( + )",
+				FancyText.RUN_COMMAND, command + " " + c + "x+",
+				FancyText.SHOW_TEXT, "Move X+");
+		String hxm = FancyText.GenerateFancyText("§c( - )",
+				FancyText.RUN_COMMAND, command + " " + c + "x-",
+				FancyText.SHOW_TEXT, "Move X-");
+		String hyp = FancyText.GenerateFancyText("§a   ( + )",
+				FancyText.RUN_COMMAND, command + " " + c + "y+",
+				FancyText.SHOW_TEXT, "Move Y+");
+		String hym = FancyText.GenerateFancyText("§c( - )",
+				FancyText.RUN_COMMAND, command + " " + c + "y-",
+				FancyText.SHOW_TEXT, "Move Y-");
+		String hzp = FancyText.GenerateFancyText("§a   ( + )",
+				FancyText.RUN_COMMAND, command + " " + c + "z+",
+				FancyText.SHOW_TEXT, "Move Z+");
+		String hzm = FancyText.GenerateFancyText("§c( - )",
+				FancyText.RUN_COMMAND, command + " " + c + "z-",
+				FancyText.SHOW_TEXT, "Move Z-");
+		String head = FancyText.GenerateFancyText("    §7" + string2,
+				FancyText.SHOW_TEXT, "", FancyText.SHOW_TEXT, string2);
+		sendRawPacket(p, "[" + hxp + "," + hxm + "," + hyp + "," + hym + ","
+				+ hzp + "," + hzm + "," + head + "]");
+
+	}
+
+	private void SendRotateLine(String c, String string, String string2,
+			Player p, String command) {
+		String hxp = FancyText.GenerateFancyText("  §a( + )",
+				FancyText.RUN_COMMAND, command + " " + c + "x+",
+				FancyText.SHOW_TEXT, "Rotate X+");
+		String hxm = FancyText.GenerateFancyText("§c( - )",
+				FancyText.RUN_COMMAND, command + " " + c + "x-",
+				FancyText.SHOW_TEXT, "Rotate X-");
+		String hyp = FancyText.GenerateFancyText("§a   ( + )",
+				FancyText.RUN_COMMAND, command + " " + c + "y+",
+				FancyText.SHOW_TEXT, "Rotate Y+");
+		String hym = FancyText.GenerateFancyText("§c( - )",
+				FancyText.RUN_COMMAND, command + " " + c + "y-",
+				FancyText.SHOW_TEXT, "Rotate Y-");
+		String hzp = FancyText.GenerateFancyText("§a   ( + )",
+				FancyText.RUN_COMMAND, command + " " + c + "z+",
+				FancyText.SHOW_TEXT, "Rotate Z+");
+		String hzm = FancyText.GenerateFancyText("§c( - )",
+				FancyText.RUN_COMMAND, command + " " + c + "z-",
+				FancyText.SHOW_TEXT, "Rotate Z-");
+		String head = FancyText.GenerateFancyText("    §7" + string,
+				FancyText.RUN_COMMAND, command + " " + c + "r",
+				FancyText.SHOW_TEXT, string2);
+		sendRawPacket(p, "[" + hxp + "," + hxm + "," + hyp + "," + hym + ","
+				+ hzp + "," + hzm + "," + head + "]");
+
+	}
+
+	private boolean armorStand(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player) {
+
+			Player p = ((Player) sender).getPlayer();
+
+			if (arg3.length == 0) {
+				String command = "/as";
+
+				String arms = FancyText.GenerateFancyText(
+						"§d§lToggle: §7Arms§r | ", FancyText.RUN_COMMAND,
+						command + " a", FancyText.SHOW_TEXT,
+						"Adds or removes arms");
+				String base = FancyText.GenerateFancyText("§7BasePlate§r | ",
+						FancyText.RUN_COMMAND, command + " b",
+						FancyText.SHOW_TEXT, "Adds or removes the baseplate");
+				String grav = FancyText.GenerateFancyText("§7Gravity§r | ",
+						FancyText.RUN_COMMAND, command + " g",
+						FancyText.SHOW_TEXT,
+						"Enables or disables gravity for this");
+				String size = FancyText.GenerateFancyText("§7Size§r | ",
+						FancyText.RUN_COMMAND, command + " s",
+						FancyText.SHOW_TEXT, "Toggles large or small");
+				String visi = FancyText.GenerateFancyText("§7Visible | ",
+						FancyText.RUN_COMMAND, command + " v",
+						FancyText.SHOW_TEXT, "Toggles visibility");
+
+				String item = FancyText.GenerateFancyText("§7Item",
+						FancyText.RUN_COMMAND, command + " i",
+						FancyText.SHOW_TEXT,
+						"Drops item in hand (if available)");
+				sendRawPacket(p, "[" + arms + "," + base + "," + grav + ","
+						+ size + "," + visi + "," + item + "]");
+				p.sendMessage("§d§lRotation:");
+				SendRotateLine(
+						"h",
+						"Head",
+						"Rotate the head by clicking the preceding items.  Click here to reset the rotation",
+						p, command);
+				SendRotateLine(
+						"b",
+						"Body",
+						"Rotate the body by clicking the preceding items. Click here to reset the rotation",
+						p, command);
+				SendRotateLine(
+						"la",
+						"Left Arm",
+						"Rotate the Left Arm by clicking the preceding items. Click here to reset the rotation",
+						p, command);
+				SendRotateLine(
+						"ra",
+						"Right Arm",
+						"Rotate the Right Arm by clicking the preceding items. Click here to reset the rotation",
+						p, command);
+				SendRotateLine(
+						"ll",
+						"Left Leg",
+						"Rotate the Left Leg by clicking the preceding items. Click here to reset the rotation",
+						p, command);
+				SendRotateLine(
+						"rl",
+						"Right Leg",
+						"Rotate the Right Leg by clicking the preceding items. Click here to reset the rotation",
+						p, command);
+				p.sendMessage("§d§lLocation:");
+				SendTranslateLine("m", "Move the armor stand", p, command);
+
+			} else {
+				List<ArmorStand> nearbyArmorStands = new ArrayList<ArmorStand>();
+				for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+					if (e instanceof ArmorStand) {
+						nearbyArmorStands.add((ArmorStand) e);
+					}
+				}
+
+				double distance = 500.0;
+				ArmorStand arm = null;
+				for (ArmorStand am : nearbyArmorStands) {
+					if (am.getLocation().distance(p.getLocation()) < distance) {
+						distance = am.getLocation().distance(p.getLocation());
+						arm = am;
+					}
+				}
+
+				if (arm == null) {
+					sender.sendMessage("§cNo nearby armor stands!");
+					return true;
+				}
+
+				if (arm != null) {
+					if (hasPermissionInThisArea(p, arm.getLocation())) {
+						if (arg3[0].equals("a")) {
+							arm.setArms(!arm.hasArms());
+						}
+						if (arg3[0].equals("b")) {
+							arm.setBasePlate(!arm.hasBasePlate());
+						}
+						if (arg3[0].equals("g")) {
+							arm.setGravity(!arm.hasGravity());
+							p.sendMessage("§dGravity = §7" + arm.hasGravity());
+						}
+						if (arg3[0].equals("s")) {
+							arm.setSmall(!arm.isSmall());
+						}
+						if (arg3[0].equals("v")) {
+							arm.setVisible(!arm.isVisible());
+						}
+						if (arg3[0].equals("i")) {
+							if (arm.getItemInHand().getType() != Material.AIR) {
+								arm.getWorld().dropItem(arm.getLocation(),
+										arm.getItemInHand());
+								arm.setItemInHand(null);
+							}
+						}
+
+						if (arg3[0].equals("hx+")) {
+							arm.setHeadPose(arm.getHeadPose().setX(
+									arm.getHeadPose().getX() + .1));
+						}
+						if (arg3[0].equals("hx-")) {
+							arm.setHeadPose(arm.getHeadPose().setX(
+									arm.getHeadPose().getX() - .1));
+						}
+						if (arg3[0].equals("hz+")) {
+							arm.setHeadPose(arm.getHeadPose().setZ(
+									arm.getHeadPose().getZ() + .1));
+						}
+						if (arg3[0].equals("hz-")) {
+							arm.setHeadPose(arm.getHeadPose().setZ(
+									arm.getHeadPose().getZ() - .1));
+						}
+						if (arg3[0].equals("hy+")) {
+							arm.setHeadPose(arm.getHeadPose().setY(
+									arm.getHeadPose().getY() + .1));
+						}
+						if (arg3[0].equals("hy-")) {
+							arm.setHeadPose(arm.getHeadPose().setY(
+									arm.getHeadPose().getY() - .1));
+						}
+						if (arg3[0].equals("bx+")) {
+							arm.setBodyPose(arm.getBodyPose().setX(
+									arm.getBodyPose().getX() + .1));
+						}
+						if (arg3[0].equals("bx-")) {
+							arm.setBodyPose(arm.getBodyPose().setX(
+									arm.getBodyPose().getX() - .1));
+						}
+						if (arg3[0].equals("bz+")) {
+							arm.setBodyPose(arm.getBodyPose().setZ(
+									arm.getBodyPose().getZ() + .1));
+						}
+						if (arg3[0].equals("bz-")) {
+							arm.setBodyPose(arm.getBodyPose().setZ(
+									arm.getBodyPose().getZ() - .1));
+						}
+						if (arg3[0].equals("by+")) {
+							arm.setBodyPose(arm.getBodyPose().setY(
+									arm.getBodyPose().getY() + .1));
+						}
+						if (arg3[0].equals("by-")) {
+							arm.setBodyPose(arm.getBodyPose().setY(
+									arm.getBodyPose().getY() - .1));
+						}
+
+						if (arg3[0].equals("lax+")) {
+							arm.setLeftArmPose(arm.getLeftArmPose().setX(
+									arm.getLeftArmPose().getX() + .1));
+						}
+						if (arg3[0].equals("lax-")) {
+							arm.setLeftArmPose(arm.getLeftArmPose().setX(
+									arm.getLeftArmPose().getX() - .1));
+						}
+						if (arg3[0].equals("laz+")) {
+							arm.setLeftArmPose(arm.getLeftArmPose().setZ(
+									arm.getLeftArmPose().getZ() + .1));
+						}
+						if (arg3[0].equals("laz-")) {
+							arm.setLeftArmPose(arm.getLeftArmPose().setZ(
+									arm.getLeftArmPose().getZ() - .1));
+						}
+						if (arg3[0].equals("lay+")) {
+							arm.setLeftArmPose(arm.getLeftArmPose().setY(
+									arm.getLeftArmPose().getY() + .1));
+						}
+						if (arg3[0].equals("lay-")) {
+							arm.setLeftArmPose(arm.getLeftArmPose().setY(
+									arm.getLeftArmPose().getY() - .1));
+						}
+
+						if (arg3[0].equals("rax+")) {
+							arm.setRightArmPose(arm.getRightArmPose().setX(
+									arm.getRightArmPose().getX() + .1));
+						}
+						if (arg3[0].equals("rax-")) {
+							arm.setRightArmPose(arm.getRightArmPose().setX(
+									arm.getRightArmPose().getX() - .1));
+						}
+						if (arg3[0].equals("raz+")) {
+							arm.setRightArmPose(arm.getRightArmPose().setZ(
+									arm.getRightArmPose().getZ() + .1));
+						}
+						if (arg3[0].equals("raz-")) {
+							arm.setRightArmPose(arm.getRightArmPose().setZ(
+									arm.getRightArmPose().getZ() - .1));
+						}
+						if (arg3[0].equals("ray+")) {
+							arm.setRightArmPose(arm.getRightArmPose().setY(
+									arm.getRightArmPose().getY() + .1));
+						}
+						if (arg3[0].equals("ray-")) {
+							arm.setRightArmPose(arm.getRightArmPose().setY(
+									arm.getRightArmPose().getY() - .1));
+						}
+
+						if (arg3[0].equals("rlx+")) {
+							arm.setRightLegPose(arm.getRightLegPose().setX(
+									arm.getRightLegPose().getX() + .1));
+						}
+						if (arg3[0].equals("rlx-")) {
+							arm.setRightLegPose(arm.getRightLegPose().setX(
+									arm.getRightLegPose().getX() - .1));
+						}
+						if (arg3[0].equals("rlz+")) {
+							arm.setRightLegPose(arm.getRightLegPose().setZ(
+									arm.getRightLegPose().getZ() + .1));
+						}
+						if (arg3[0].equals("rlz-")) {
+							arm.setRightLegPose(arm.getRightLegPose().setZ(
+									arm.getRightLegPose().getZ() - .1));
+						}
+						if (arg3[0].equals("rly+")) {
+							arm.setRightLegPose(arm.getRightLegPose().setY(
+									arm.getRightLegPose().getY() + .1));
+						}
+						if (arg3[0].equals("rly-")) {
+							arm.setRightLegPose(arm.getRightLegPose().setY(
+									arm.getRightLegPose().getY() - .1));
+						}
+
+						if (arg3[0].equals("llx+")) {
+							arm.setLeftLegPose(arm.getLeftLegPose().setX(
+									arm.getLeftLegPose().getX() + .1));
+						}
+						if (arg3[0].equals("llx-")) {
+							arm.setLeftLegPose(arm.getLeftLegPose().setX(
+									arm.getLeftLegPose().getX() - .1));
+						}
+						if (arg3[0].equals("llz+")) {
+							arm.setLeftLegPose(arm.getLeftLegPose().setZ(
+									arm.getLeftLegPose().getZ() + .1));
+						}
+						if (arg3[0].equals("llz-")) {
+							arm.setLeftLegPose(arm.getLeftLegPose().setZ(
+									arm.getLeftLegPose().getZ() - .1));
+						}
+						if (arg3[0].equals("lly+")) {
+							arm.setLeftLegPose(arm.getLeftLegPose().setY(
+									arm.getLeftLegPose().getY() + .1));
+						}
+						if (arg3[0].equals("lly-")) {
+							arm.setLeftLegPose(arm.getLeftLegPose().setY(
+									arm.getLeftLegPose().getY() - .1));
+						}
+
+						if (arg3[0].equals("mx+")) {
+							Location l = arm.getLocation();
+							l.setX(l.getX() + .1);
+							arm.teleport(l);
+						}
+						if (arg3[0].equals("mx-")) {
+							Location l = arm.getLocation();
+							l.setX(l.getX() - .1);
+							arm.teleport(l);
+						}
+						if (arg3[0].equals("mz+")) {
+							Location l = arm.getLocation();
+							l.setZ(l.getZ() + .1);
+							arm.teleport(l);
+						}
+						if (arg3[0].equals("mz-")) {
+							Location l = arm.getLocation();
+							l.setZ(l.getZ() - .1);
+							arm.teleport(l);
+						}
+						if (arg3[0].equals("my+")) {
+							Location l = arm.getLocation();
+							l.setY(l.getY() + .1);
+							arm.teleport(l);
+						}
+						if (arg3[0].equals("my-")) {
+							Location l = arm.getLocation();
+							l.setY(l.getY() - .1);
+							arm.teleport(l);
+						}
+
+					} else {
+						p.sendMessage("§cYou do not have permission to edit that armor stand");
+						return true;
+					}
 				}
 			}
+		}
+		return true;
+	}
+
+	private boolean hasPermissionInThisArea(Player p, Location location) {
+		String name = p.getDisplayName();
+		for (ProtectedArea pa : areas) {
+			if (pa.equals(location)) {
+				if (pa.hasPermission(name)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@EventHandler
+	private void onBucketEvent(PlayerBucketEmptyEvent event) {
+		if (!hasPermissionInThisArea(event.getPlayer(), event.getBlockClicked()
+				.getRelative(BlockFace.EAST).getLocation())
+				|| !hasPermissionInThisArea(event.getPlayer(), event
+						.getBlockClicked().getRelative(BlockFace.NORTH)
+						.getLocation())
+				|| !hasPermissionInThisArea(event.getPlayer(), event
+						.getBlockClicked().getRelative(BlockFace.SOUTH)
+						.getLocation())
+				|| !hasPermissionInThisArea(event.getPlayer(), event
+						.getBlockClicked().getRelative(BlockFace.WEST)
+						.getLocation())) {
+			event.setCancelled(true);
+			return;
 		}
 	}
 
 	@EventHandler
 	private void onBucketFillEvent(PlayerBucketFillEvent event) {
-		for (ProtectedArea pa : areas) {
-			if (pa.equals(event.getBlockClicked().getLocation())) {
-				if (!pa.hasPermission(event.getPlayer().getDisplayName())) {
-					event.setCancelled(true);
-					return;
-				}
-			}
+		if(!hasPermissionInThisArea(event.getPlayer(), event.getBlockClicked().getLocation())){
+			event.setCancelled(true);
+			return;
 		}
 	}
 
@@ -6450,16 +7227,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				}
 
-				if (arg3[0].equals("play")) {
-
-					if (sender instanceof Player) {
-
-						Player p = ((Player) sender).getPlayer();
-						List<String> names = new ArrayList<String>();
-						// names.add("§cTest");
-						// names.add("§bTest2");
-						sendPlayerList(p, "§aSurvival:", "§dCreative:", names);
-					}
+				if (arg3[0].equals("test")) {
+					if (sender instanceof Player)
+						putRewardHeadInMailbox(((Player) sender).getUniqueId(),
+								20);
 				}
 
 				if (arg3[0].equals("npe")) {
@@ -6985,19 +7756,26 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		return false;
 	}
 
-	private void sendPlayerList(Player p, String string, String string2,
-			List<String> names) {
+	private void sendPlayerList(Player p, String thisServerName,
+			String otherServerName, List<String> otherServerNames,
+			String otherServer2, List<String> otherServerNames2) {
 
 		PacketPlayOutPlayerListHeaderFooter packet = new PacketPlayOutPlayerListHeaderFooter();
 		IChatBaseComponent header;
 
-		header = ChatSerializer.a("{text:\"" + string + "\"}");
+		header = ChatSerializer.a("{text:\"" + thisServerName + "\"}");
 
 		String footerPrep = "";
 
-		footerPrep = "{text:\"" + string2;
-		for (String s : names) {
-			footerPrep += "\n" + s;
+		footerPrep = "{text:\"" + otherServerName;
+		for (String s : otherServerNames) {
+			footerPrep += "\n§r" + s;
+		}
+		if (otherServerNames2.size() > 0) {
+			footerPrep += "\n" + otherServer2;
+		}
+		for (String s : otherServerNames2) {
+			footerPrep += "\n§r" + s;
 		}
 
 		String timeStamp = new SimpleDateFormat("HH:mm:ss").format(Calendar
@@ -7006,9 +7784,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		footerPrep += "\n§7" + timeStamp;
 		footerPrep += "\"}";
 
-		if (names.size() == 0) {
-
-			footerPrep = footerPrep.replace(string2, "");
+		if (otherServerNames.size() == 0) {
+			footerPrep = footerPrep.replace(otherServerName, "");
+		}
+		if (otherServerNames2.size() == 0) {
+			footerPrep = footerPrep.replace(otherServer2, "");
 		}
 
 		IChatBaseComponent footer = ChatSerializer.a(footerPrep);
@@ -7594,6 +8374,19 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		sender.sendMessage("§7Server time: §e" + timeStamp);
 		return true;
 	}
+
+	/*
+	 * private static String getTimeString(){ Long time =
+	 * Bukkit.getWorld("world").getTime(); String msg = "§7Minecraft time: §e" +
+	 * time + " §7(";
+	 * 
+	 * String s = ""; if (time < 800) { s += "§eMorning§7)"; } else if (time <
+	 * 10000) { s += "§6Day§7)"; } else if (time < 12500) { s += "§7Dusk§7)"; }
+	 * else if (time < 22500) { s += "§8Night§7)"; } else { s += "§7Dawn§7)"; }
+	 * sender.sendMessage(msg + s); String timeStamp = new
+	 * SimpleDateFormat("HH:mm MMM dd, YYYY")
+	 * .format(Calendar.getInstance().getTime()); }
+	 */
 
 	private boolean mailTo(CommandSender sender, String[] arg3) {
 		if (arg3.length < 1) {
@@ -11101,6 +11894,52 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				playersInCreative = new ArrayList<String>();
 				for (int i = 0; i < count; i++) {
 					playersInCreative.add(msgin.readUTF());
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // Read the data in the same way you wrote it
+		}
+
+		if (subchannel.equals("PlE")) {
+			short len = in.readShort();
+			byte[] msgbytes = new byte[len];
+			in.readFully(msgbytes);
+
+			DataInputStream msgin = new DataInputStream(
+					new ByteArrayInputStream(msgbytes));
+			try {
+				lastEventList = msgin.readLong();
+				int count = msgin.readInt();
+				playersInEvent = new ArrayList<String>();
+				for (int i = 0; i < count; i++) {
+					playersInEvent.add(msgin.readUTF());
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // Read the data in the same way you wrote it
+		}
+
+		if (subchannel.equals("Victory")) {
+			getLogger().info("Victory received!");
+			short len = in.readShort();
+			byte[] msgbytes = new byte[len];
+			in.readFully(msgbytes);
+
+			DataInputStream msgin = new DataInputStream(
+					new ByteArrayInputStream(msgbytes));
+			try {
+				String uuids = msgin.readUTF();
+				int count = msgin.readInt();
+				UUID uuid = UUID.fromString(uuids);
+				getLogger().info(uuids);
+				getLogger().info(count + "");
+				SerenityPlayer sp = serenityPlayers.get(uuid);
+				sendATextToHal("Ember's Adventure", sp.getName() + " earned "
+						+ count + " heads!");
+				if (count > 0) {
+					putRewardHeadInMailbox(uuid, count);
 				}
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
