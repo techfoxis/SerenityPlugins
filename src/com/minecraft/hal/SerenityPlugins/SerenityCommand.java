@@ -12,7 +12,7 @@ public class SerenityCommand {
 	public SerenityCommand(String cmd, String desc, String longDesc, String example, int timeRequired, boolean secret){
 		command = cmd;
 		description = desc;
-		this.longDescription = longDesc;
+		this.longDescription = longDesc; 
 		this.example = example;
 		this.timeRequired = timeRequired;
 		this.secret = secret;

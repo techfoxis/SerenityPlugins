@@ -94,8 +94,10 @@ import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Painting;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Rabbit;
 import org.bukkit.entity.Sheep;
+import org.bukkit.entity.Snowball;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -120,6 +122,8 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -148,6 +152,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.material.Dispenser;
 import org.bukkit.material.Wool;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.potion.PotionEffect;
@@ -155,7 +161,9 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.util.Vector;
 
 import com.google.common.collect.Iterables;
@@ -193,6 +201,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public HashMap<UUID, SerenityPlayer> serenityPlayers;
 	public List<String> playersInCreative;
 	public Long lastCreativeList;
+
+	public Scoreboard snowScores;
 
 	public short specEff = 0;
 
@@ -491,8 +501,34 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	// public String[] betters;
 	// public String[] horses;
 
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void onSnowball(EntityDamageByEntityEvent event) {
+		Location arena = new Location(Bukkit.getWorld("world"), -5990, 125,
+				-4858);
+		if (event.getEntity().getLocation().getWorld().equals(arena.getWorld())) {
+			if (event.getEntity().getLocation().distanceSquared(arena) < 300) {
+				Entity entity = event.getDamager();
+				if (entity instanceof Snowball) {
+					if (event.getEntity() instanceof Player) {
+						OfflinePlayer op = (OfflinePlayer) ((Snowball) entity)
+								.getShooter();
+						Score score = snowScores.getObjective("snow").getScore(
+								op);
+						score.setScore(score.getScore() + 1);
+						op.getPlayer().setScoreboard(snowScores);
+					}
+				}
+			}
+		}
+	}
+
 	@Override
 	public void onEnable() {
+		snowScores = Bukkit.getScoreboardManager().getNewScoreboard();
+		Objective obj = snowScores.registerNewObjective("snow", "dummy");
+		obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+		obj.setDisplayName("Snowball Fight!");
+
 		sdtf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		lastCreativeList = System.currentTimeMillis();
 		playersInCreative = new ArrayList<String>();
@@ -630,6 +666,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		secretitem2.setIngredient('A', Secret.SECRETITEM1MAT1);
 		secretitem2.setIngredient('B', Secret.SECRETITEM1MAT2);
 		this.getServer().addRecipe(secretitem2);
+
+		ItemStack cupidsBow = new ItemStack(Material.BOW);
+		ItemMeta imc = cupidsBow.getItemMeta();
+		imc.setDisplayName("§4Cupid's Bow");
+		cupidsBow.setItemMeta(imc);
+		ShapedRecipe secretValentines = new ShapedRecipe(cupidsBow);
+		secretValentines.shape("AAA", "ABA", "AAA");
+		secretValentines.setIngredient('A', Material.RED_ROSE);
+		secretValentines.setIngredient('B', Material.BOW);
+		this.getServer().addRecipe(secretValentines);
 
 		ItemStack secretItemSpookyOne = new ItemStack(Secret.SECRETITEM2RESULT,
 				1, (short) 1);
@@ -1086,6 +1132,99 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 
 		}, 0L, 20L);
+	}
+
+	@EventHandler
+	private void valentinesDay(ProjectileLaunchEvent event) {
+		if (event.getEntity() instanceof Arrow) {
+			if (event.getEntity().getShooter() instanceof Player) {
+				Player p = (Player) event.getEntity().getShooter();
+
+				if (p.getItemInHand().hasItemMeta()
+						&& p.getItemInHand().getItemMeta().hasDisplayName()
+						&& p.getItemInHand().getItemMeta().getDisplayName()
+								.equals("§4Cupid's Bow")) {
+					p.getItemInHand().setDurability((short) 0);
+					ItemStack is = new ItemStack(Material.ARROW);
+					p.getInventory().addItem(is);
+					Arrow a = (Arrow) event.getEntity();
+					a.setMetadata("v", new FixedMetadataValue(this, true));
+					doHeartTrail(a);
+					p.updateInventory();
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	private void onVDayArrow(ProjectileHitEvent event) {
+		if (event.getEntity().hasMetadata("v")) {
+			doHeartExplosion(event.getEntity());
+		}
+	}
+
+	private void doHeartExplosion(Entity entity) {
+		List<Player> pl = new ArrayList<Player>();
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			pl.add(p);
+		}
+		for (int i = 0; i < 20; i++) {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+					new Runnable() {
+						@Override
+						public void run() {
+							ParticleEffect.HEART.display(.25f, .25f, .25f, 0, 1,
+									entity.getLocation(), pl);
+						}
+					}, i + 0L);
+		}
+		
+		ParticleEffect.FIREWORKS_SPARK.display(.25f, .25f, .25f, .125f, 25,
+				entity.getLocation(), pl);
+		entity.setMetadata("v", new FixedMetadataValue(this, false));
+		entity.remove();
+	}
+
+	@EventHandler
+	private void valentinesDayHitEvent(EntityDamageByEntityEvent event) {
+		if (event.getDamager().hasMetadata("v")) {
+			event.setCancelled(true);
+			doHeartExplosion(event.getDamager());
+		}
+		if (event.getEntity() instanceof ArmorStand) {
+			if (event.getDamager() instanceof Arrow) {
+				event.setCancelled(true);
+			}
+		}
+	}
+
+	private void doHeartTrail(Arrow a) {
+		final Arrow af = a;
+		for (int i = 0; i < 180; i++) {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this,
+					new Runnable() {
+						@Override
+						public void run() {
+							boolean isV = false;
+							for (MetadataValue mdv : af.getMetadata("v")) {
+								if ((boolean) mdv.value() == true) {
+									isV = true;
+								}
+							}
+							if (af.hasMetadata("v") && isV) {
+								Vector f = af.getVelocity();
+								if (f != new Vector(0, 0, 0)) {
+									List<Player> pl = new ArrayList<Player>();
+									for (Player p : Bukkit.getOnlinePlayers()) {
+										pl.add(p);
+									}
+									ParticleEffect.HEART.display(0f, 0f, 0f,
+											0f, 1, a.getLocation(), pl);
+								}
+							}
+						}
+					}, i + 0L);
+		}
 	}
 
 	private void loadStatusesFromDatabase() {
@@ -2062,7 +2201,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								loc.setY(loc.getY() + .125);
 
 								switch (num) {
-								case 0:
+								case 4:
 									loc.setY(loc.getY() + 3);
 									ParticleEffect.FIREWORKS_SPARK.display(1F,
 											.5F, 1F, .0001F, 4, loc, 15);
@@ -2080,7 +2219,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 											.125F, .25F, 50, 4, loc, 15);
 									break;
 
-								case 4:
+								case 0:
 									ParticleEffect.HEART.display(.25F, .125F,
 											.25F, 50, 4, loc, 15);
 									break;
@@ -2372,6 +2511,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			for (int j = 0; j < 15; j++) {
 				doRandomFirework(p.getWorld(), p.getLocation());
 			}
+			return;
+		}
+
+		if (getPlayerMinutes(pl.getUUID()) == 2879) {
+			Player p = Bukkit.getPlayer(pl.getUUID());
+			p.sendMessage("§dYou can now manipulate armor stands with §6/as §d!  Thanks for being a dedicated player!");
+			Bukkit.getLogger().info(
+					p.getDisplayName() + " has reached 48 hours");
+
+			startFireworkShow(p.getLocation());
+
+			for (int j = 0; j < 15; j++) {
+				doRandomFirework(p.getWorld(), p.getLocation());
+			}
+
 			return;
 		}
 
@@ -2753,7 +2907,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			for (ProtectedArea pa : areas) {
 				if (pa.equals(event.getPlayer().getLocation())) {
 					if (!pa.hasPermission(event.getPlayer().getDisplayName())) {
-
 						String msg = getTranslationLanguage(event.getPlayer(),
 								stringKeys.PROTISSTUCK.toString());
 						event.getPlayer().sendMessage(msg);
@@ -3610,15 +3763,41 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+			if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
+				if (event.getClickedBlock().getX() == -5990
+						&& event.getClickedBlock().getY() == 118
+						&& event.getClickedBlock().getZ() == -4842) {
+					Location l = event.getPlayer().getLocation();
+					snowScores = Bukkit.getScoreboardManager()
+							.getNewScoreboard();
+					Objective obj = snowScores.registerNewObjective("snow",
+							"dummy");
+					obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+					obj.setDisplayName("Snowball Fight!");
 
-			/*
-			 * if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
-			 * if (event.getClickedBlock().getX() == -1314 &&
-			 * event.getClickedBlock().getY() == 64 &&
-			 * event.getClickedBlock().getZ() == -650) {
-			 * Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ncp exempt " +
-			 * event.getPlayer().getDisplayName() + " MOVING_SURVIVALFLY"); } }
-			 */
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (p.getWorld().equals(l.getWorld())) {
+							if (l.distanceSquared(p.getLocation()) < 250) {
+								p.sendMessage(ChatColor.AQUA
+										+ "Snow scores reset!");
+								if (!p.isOp()) {
+									Score score = obj.getScore(p);
+									score.setScore(0);
+								}
+								p.setScoreboard(snowScores);
+							}
+						}
+					}
+				}
+			}
+
+			if (event.getClickedBlock().getType() == Material.STONE_BUTTON) {
+				if (event.getClickedBlock().getX() == -5994
+						&& event.getClickedBlock().getY() == 118
+						&& event.getClickedBlock().getZ() == -4842) {
+					event.getPlayer().setScoreboard(snowScores);
+				}
+			}
 
 			if (event.getClickedBlock().getType() == Material.GOLD_BLOCK) {
 				if (event.getClickedBlock().getX() == -1403
@@ -5282,13 +5461,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private void celebrate(CommandSender sender) {
 		if (sender instanceof Player) {
 			sender.sendMessage("§cIt's not time to celebrate");
-			/*
-			 * SerenityPlayer sp = serenityPlayers.get(((Player) sender)
-			 * .getUniqueId()); sp.setCelebrating(!sp.isCelebrating()); if
-			 * (sp.isCelebrating()) { sender.sendMessage(
-			 * "§dHappy Holidays!  §7Left and right click with a §6dandelion!");
-			 * } else { sender.sendMessage("§7You are no longer celebrating"); }
-			 */
+
+			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
+					.getUniqueId());
+			sp.setCelebrating(!sp.isCelebrating());
+			if (sp.isCelebrating()) {
+				sender.sendMessage("§4Happy Valentine's Day!  §7Left and right click with a §6dandelion!");
+			} else {
+				sender.sendMessage("§7You are no longer celebrating");
+			}
 		}
 	}
 
@@ -6524,6 +6705,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			Player p = ((Player) sender).getPlayer();
 
 			if (arg3.length == 0) {
+				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+				if (sp.getMinutes() < 2880) {
+					p.sendMessage("§cYou need 48 hours of time to manipulate armor stands");
+					return true;
+				}
 				String command = "/as";
 
 				String arms = FancyText.GenerateFancyText(
@@ -6823,15 +7009,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean hasPermissionInThisArea(Player p, Location location) {
-		String name = p.getDisplayName();
 		for (ProtectedArea pa : areas) {
 			if (pa.equals(location)) {
-				if (pa.hasPermission(name)) {
-					return true;
-				}
+				return pa.hasPermission(p.getDisplayName());
 			}
 		}
-		return false;
+		return true;
 	}
 
 	@EventHandler
@@ -6854,7 +7037,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	private void onBucketFillEvent(PlayerBucketFillEvent event) {
-		if(!hasPermissionInThisArea(event.getPlayer(), event.getBlockClicked().getLocation())){
+		if (!hasPermissionInThisArea(event.getPlayer(), event.getBlockClicked()
+				.getLocation())) {
 			event.setCancelled(true);
 			return;
 		}
