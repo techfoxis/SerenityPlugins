@@ -1,5 +1,7 @@
 package com.minecraft.hal.SerenityPlugins;
 
+import java.beans.XMLDecoder;
+import java.beans.XMLEncoder;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -68,11 +70,14 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Skull;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.AnimalTamer;
@@ -1319,7 +1324,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			Connection conn = getConnection();
 			Statement st = conn.createStatement();
 
-			ResultSet rs = st.executeQuery("Select * FROM Player order by LastPlayed desc");
+			ResultSet rs = st
+					.executeQuery("Select * FROM Player order by LastPlayed desc");
 			while (rs.next()) {
 				SerenityPlayer sp = new SerenityPlayer();
 				sp.setChatColor(rs.getString("Color"));
@@ -3817,7 +3823,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						&& event.getClickedBlock().getY() == 118
 						&& event.getClickedBlock().getZ() == -4843) {
 					event.getPlayer().setScoreboard(snowScores);
-					event.getPlayer().sendMessage(ChatColor.AQUA + "You will now see snow-scores!  §7Log out to stop seeing them");
+					event.getPlayer()
+							.sendMessage(
+									ChatColor.AQUA
+											+ "You will now see snow-scores!  §7Log out to stop seeing them");
 				}
 			}
 
@@ -5243,19 +5252,39 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (mb.uuid.equals(uid)) {
 				Chest receivingChest = (Chest) mb.location.getBlock()
 						.getState();
-
-				ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH, count);
-				ItemMeta rewardMeta = rewardItem.getItemMeta();
-				rewardMeta.setDisplayName("§dHead Reward!");
-				rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
-				List<String> lore = new ArrayList<String>();
-				lore.add("Thanks for playing the Event!");
-				lore.add("Right click while holding this for a random head!");
-				rewardMeta.setLore(lore);
-				rewardItem.setItemMeta(rewardMeta);
-				receivingChest.getInventory().addItem(rewardItem);
-				doRandomFirework(receivingChest.getWorld(),
-						receivingChest.getLocation());
+				for (int i = 0; i < count; i++) {
+					if (rand.nextBoolean()) {
+						ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH);
+						ItemMeta rewardMeta = rewardItem.getItemMeta();
+						rewardMeta.setDisplayName("§dHead Reward!");
+						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1,
+								true);
+						List<String> lore = new ArrayList<String>();
+						lore.add("Thanks for playing the Event!");
+						lore.add("Right click while holding this for a random head!");
+						rewardMeta.setLore(lore);
+						rewardItem.setItemMeta(rewardMeta);
+						receivingChest.getInventory().addItem(rewardItem);
+						doRandomFirework(receivingChest.getWorld(),
+								receivingChest.getLocation());
+					} else {
+						ItemStack rewardItem = new ItemStack(
+								Material.DEAD_BUSH, 1);
+						ItemMeta rewardMeta = rewardItem.getItemMeta();
+						rewardMeta
+								.setDisplayName("§dRandom recent player head!");
+						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1,
+								true);
+						List<String> lore = new ArrayList<String>();
+						lore.add("Thanks for playing the Event!");
+						lore.add("Right click while holding this for a random recent player head!");
+						rewardMeta.setLore(lore);
+						rewardItem.setItemMeta(rewardMeta);
+						receivingChest.getInventory().addItem(rewardItem);
+						doRandomFirework(receivingChest.getWorld(),
+								receivingChest.getLocation());
+					}
+				}
 			}
 		}
 	}
@@ -5285,7 +5314,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									60, player.getLocation(), 25);
 							return;
 						}
-						
+
 						if (event.getPlayer().getItemInHand().getItemMeta()
 								.getDisplayName().equals("§dYour head!")) {
 							Player player = event.getPlayer();
@@ -5303,9 +5332,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									60, player.getLocation(), 25);
 							return;
 						}
-						
+
 						if (event.getPlayer().getItemInHand().getItemMeta()
-								.getDisplayName().equals("§dRandom recent player head!")) {
+								.getDisplayName()
+								.equals("§dRandom recent player head!")) {
 							Player player = event.getPlayer();
 							event.setCancelled(true);
 							if (player.getItemInHand().getAmount() != 1) {
@@ -5328,19 +5358,30 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void givePlayerRandomPlayerHead(Player player) {
-		List<SerenityPlayer> sps = new ArrayList<SerenityPlayer>(serenityPlayers.values());
+		List<SerenityPlayer> sps = new ArrayList<SerenityPlayer>(
+				serenityPlayers.values());
 		SerenityPlayer sp = sps.get(rand.nextInt(sps.size()));
-		while(System.currentTimeMillis() - sp.getLastPlayed() > 1296000000 || sp.isBanned() || sp.isOp() || sp.getName().equals(player.getName())){
+		while (System.currentTimeMillis() - sp.getLastPlayed() > 1296000000
+				|| sp.isBanned() || sp.isOp()
+				|| sp.getName().equals(player.getName())) {
 			sp = sps.get(rand.nextInt(sps.size()));
 		}
-		
-		Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + player.getName() + " minecraft:skull 1 3 {SkullOwner:" + sp.getName() + "}");
+
+		Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+				"give " + player.getName()
+						+ " minecraft:skull 1 3 {SkullOwner:" + sp.getName()
+						+ "}");
 		player.sendMessage("§aYou got §d" + sp.getName());
 	}
 
 	private void givePlayerTheirOwnHead(Player player) {
-		player.sendMessage("give " + player.getName() + " minecraft:skull 1 3 {SkullOwner:" + player.getName() + "}");
-		Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + player.getName() + " minecraft:skull 1 3 {SkullOwner:" + player.getName() + "}");
+		player.sendMessage("give " + player.getName()
+				+ " minecraft:skull 1 3 {SkullOwner:" + player.getName() + "}");
+		Bukkit.dispatchCommand(
+				Bukkit.getConsoleSender(),
+				"give " + player.getName()
+						+ " minecraft:skull 1 3 {SkullOwner:"
+						+ player.getName() + "}");
 		player.sendMessage("§aYou got §d" + player.getName());
 	}
 
@@ -5364,9 +5405,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (event.getPlayer().getItemInHand().getItemMeta()
 								.getDisplayName().equals("§dHoliday Cookie")) {
 							Player player = event.getPlayer();
-							if (Math.abs(player.getLocation().getX()) < 150
-									&& Math.abs(player.getLocation().getZ()) < 150) {
-
 								event.setCancelled(true);
 								if (player.getItemInHand().getAmount() != 1) {
 									player.getItemInHand()
@@ -5383,10 +5421,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										10F, .025F);
 								ParticleEffect.SPELL_MOB.display(.5f, .5f, .5f,
 										50, 60, player.getLocation(), 25);
-							} else {
-								player.sendMessage("§cYou can only redeem a §dHoliday Cookie §cat spawn!");
-								event.setCancelled(true);
-							}
 						}
 					}
 				}
@@ -7504,14 +7538,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						lore.add("Right click while holding this for your reward!");
 						rewardMeta.setLore(lore);
 						rewardItem.setItemMeta(rewardMeta);
-						
+
 						((Player) sender).getPlayer().getInventory()
 								.addItem(rewardItem);
-						
-						rewardItem = new ItemStack(
-								Material.DEAD_BUSH, 15);
+
+						rewardItem = new ItemStack(Material.DEAD_BUSH, 15);
 						rewardMeta = rewardItem.getItemMeta();
-						rewardMeta.setDisplayName("§dRandom recent player head!");
+						rewardMeta
+								.setDisplayName("§dRandom recent player head!");
 						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1,
 								true);
 						lore = new ArrayList<String>();
@@ -7521,10 +7555,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						rewardItem.setItemMeta(rewardMeta);
 						((Player) sender).getPlayer().getInventory()
 								.addItem(rewardItem);
+
+						rewardItem = new ItemStack(Material.DEAD_BUSH);
+						rewardMeta = rewardItem.getItemMeta();
+						rewardMeta.setDisplayName("§dHead Reward!");
+						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1,
+								true);
+						lore = new ArrayList<String>();
+						lore.add("Thanks for playing the Event!");
+						lore.add("Right click while holding this for a random head!");
+						rewardMeta.setLore(lore);
+						rewardItem.setItemMeta(rewardMeta);
+						((Player) sender).getPlayer().getInventory()
+								.addItem(rewardItem);
+						
+						ItemStack cupidsBow = new ItemStack(Material.BOW);
+						ItemMeta imc = cupidsBow.getItemMeta();
+						imc.setDisplayName("§4Cupid's Bow");
+						cupidsBow.setItemMeta(imc);
+					    ((Player) sender).getPlayer().getInventory().addItem(cupidsBow);
 					}
 				}
-				
-				
 
 				if (arg3[0].equals("skele")) {
 					if (sender instanceof Player) {
@@ -7543,6 +7594,61 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						s.getEquipment().setHelmet(
 								new ItemStack(Material.LEATHER_HELMET));
 					}
+				}
+
+				if (arg3[0].equals("serialize")) {
+					if (sender instanceof Player) {
+						Player p = ((Player) sender).getPlayer();
+						for (ItemStack is : p.getInventory()) {
+							if (is != null) {
+								if (is.getType() != null) {
+									if (is.getType() == Material.SKULL_ITEM) {
+										SkullMeta sm = (SkullMeta) is
+												.getItemMeta();
+										if (sm.getOwner() == null
+												|| sm.getOwner() == "") {
+											sm.setOwner("Halloween 2015");
+											is.setItemMeta(sm);
+										}
+										moveItemToOther(p, is);
+										p.getInventory().remove(is);
+									}
+
+									if (is.hasItemMeta()) {
+										if (is.getItemMeta().hasDisplayName()) {
+											if (is.getItemMeta()
+													.getDisplayName()
+													.equals("§6The Firework Axe")
+													|| is.getItemMeta()
+															.getDisplayName()
+															.equals("§dParty Armor")
+													|| is.getItemMeta()
+															.getDisplayName().equals("§4Cupid's Bow") ||
+															is.getItemMeta()
+															.getDisplayName().equals("§dForbidden Fruit")) {
+												moveItemToOther(p, is);
+												p.getInventory().remove(is);
+											}
+										}
+									}
+									
+									if(is.getType().equals(Material.WRITTEN_BOOK)){
+										p.getInventory().remove(is);
+										moveItemToOther(p, is);
+									}
+								}
+							}
+						}
+						ByteArrayDataOutput out = ByteStreams.newDataOutput();
+						out.writeUTF("ConnectOther");
+						out.writeUTF(p.getName());
+						out.writeUTF("creative");
+						Player player = Iterables.getFirst(
+								Bukkit.getOnlinePlayers(), null);
+						player.sendPluginMessage(global, "BungeeCord",
+								out.toByteArray());
+					}
+					
 				}
 
 				if (arg3[0].equals("npe")) {
@@ -7850,7 +7956,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.setCustomName("§6" + arg3[1]);
 					}
 				}
-				
+
 				if (arg3[0].equals("fakeMail")) {
 					if (sender instanceof Player) {
 						Player p = (Player) sender;
@@ -7867,18 +7973,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 
 						if (!receivingMailBoxExists) {
-							sender.sendMessage("§cThere is no mailbox with §6\"" + mailto
+							sender.sendMessage("§cThere is no mailbox with §6\""
+									+ mailto
 									+ "\"§c in it.  Check your spelling!");
 							return true;
 						}
 
-						Chest receivingChest = (Chest) receivingMailbox.location.getBlock()
-								.getState();
+						Chest receivingChest = (Chest) receivingMailbox.location
+								.getBlock().getState();
 
-						ItemStack[] sendingItems = p.getInventory().getContents();
-						
-						ItemStack[] receivingItems = receivingChest.getInventory()
+						ItemStack[] sendingItems = p.getInventory()
 								.getContents();
+
+						ItemStack[] receivingItems = receivingChest
+								.getInventory().getContents();
 
 						int sendingItemsCount = 0;
 						int receivingItemsCount = 0;
@@ -7909,7 +8017,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 							String msg = getTranslationLanguage(sender,
 									stringKeys.MAILFULL.toString());
-							sender.sendMessage(String.format(msg, receivingMailbox.name));
+							sender.sendMessage(String.format(msg,
+									receivingMailbox.name));
 
 							/*
 							 * sender.sendMessage("§6" + receivingMailbox.name +
@@ -7922,28 +8031,32 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 							String msg = getTranslationLanguage(sender,
 									stringKeys.MAILNOTENOUGHSPACE.toString());
-							sender.sendMessage(String.format(msg, receivingMailbox.name,
-									((receivingItems.length - receivingItemsCount) - 1)));
+							sender.sendMessage(String
+									.format(msg,
+											receivingMailbox.name,
+											((receivingItems.length - receivingItemsCount) - 1)));
 
 							/*
 							 * sender.sendMessage("§6" + receivingMailbox.name +
-							 * "§2's mailbox can only hold " + ((receivingItems.length -
-							 * receivingItemsCount) - 1) +
-							 * " more slots!  Send less items!");
+							 * "§2's mailbox can only hold " +
+							 * ((receivingItems.length - receivingItemsCount) -
+							 * 1) + " more slots!  Send less items!");
 							 */
 							return true;
 						}
 
 						for (int i = 0; i < sendingItems.length; i++) {
 							if (sendingItems[i] != null) {
-								receivingChest.getInventory().addItem(sendingItems[i]);
+								receivingChest.getInventory().addItem(
+										sendingItems[i]);
 								receivingChest.update();
 							}
 						}
 
 						String msg = getTranslationLanguage(sender,
 								stringKeys.MAILSUCCESS.toString());
-						sender.sendMessage(String.format(msg, receivingMailbox.name));
+						sender.sendMessage(String.format(msg,
+								receivingMailbox.name));
 						doRandomFirework(receivingMailbox.location.getWorld(),
 								receivingMailbox.location);
 					}
@@ -8164,6 +8277,51 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return true;
 		}
 		return false;
+	}
+
+	private void moveItemToOther(Player p, ItemStack is) {
+		p.getInventory().remove(is);
+		p.getWorld().dropItemNaturally(p.getLocation(), deserializeItemStack(serializeItemStack(is)));
+		sendItemStackToSurvival(p.getUniqueId().toString(), serializeItemStack(is));
+	}
+	
+	private void sendItemStackToSurvival(String UUID, String itemstack) {
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Forward"); // So BungeeCord knows to forward it
+		out.writeUTF("ALL");
+		out.writeUTF("Item"); // The channel name to check if this your data
+
+		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
+		DataOutputStream msgout = new DataOutputStream(msgbytes);
+		try {
+			msgout.writeUTF(UUID);
+			msgout.writeUTF(itemstack);
+
+			out.writeShort(msgbytes.toByteArray().length);
+			out.write(msgbytes.toByteArray());
+
+			Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
+			player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static ItemStack deserializeItemStack(String s) {
+		YamlConfiguration config = new YamlConfiguration();
+		try {
+			config.loadFromString(s);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+		return config.getItemStack("i", null);
+	}
+
+	private static String serializeItemStack(ItemStack is) {
+		YamlConfiguration config = new YamlConfiguration();
+		config.set("i", is);
+		return config.saveToString();
 	}
 
 	private void sendPlayerList(Player p, String thisServerName,
