@@ -873,13 +873,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		runEntityCountWatchdog();
 
 		/*
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-
-			@Override
-			public void run() {
-				setListNames();
-			}
-		}, 10L);*/
+		 * Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+		 * 
+		 * @Override public void run() { setListNames(); } }, 10L);
+		 */
 
 		pluginReady = true;
 		getLogger().info("Serenity Plugins enabled");
@@ -1082,7 +1079,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 				lags.add(now);
 				if (Bukkit.getOnlinePlayers().size() > 0) {
-					//sendPlayerListToBungee();
+					// sendPlayerListToBungee();
 
 					if (System.currentTimeMillis() - lastCreativeList > 1500) {
 						playersInCreative = new ArrayList<String>();
@@ -1093,13 +1090,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (System.currentTimeMillis() - lastEventList > 1500) {
 						playersInEvent = new ArrayList<String>();
 					}
-					
+
 					/*
-					for (Player p : Bukkit.getOnlinePlayers()) {
-						sendPlayerList(p, "§aSurvival:", "§dCreative:",
-								playersInCreative, "§4Event (no chat):",
-								playersInEvent);
-					}*/
+					 * for (Player p : Bukkit.getOnlinePlayers()) {
+					 * sendPlayerList(p, "§aSurvival:", "§dCreative:",
+					 * playersInCreative, "§4Event (no chat):", playersInEvent);
+					 * }
+					 */
 
 					PartyLeather();
 					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
@@ -1131,13 +1128,37 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getEntity() instanceof Arrow) {
 			if (event.getEntity().getShooter() instanceof Player) {
 				Player p = (Player) event.getEntity().getShooter();
-				if (p.getItemInHand().hasItemMeta()
-						&& p.getItemInHand().getItemMeta().hasDisplayName()
-						&& p.getItemInHand().getItemMeta().getDisplayName()
-								.equals("§4Cupid's Bow")) {
-					p.getItemInHand().setDurability((short) 0);
-					ItemStack is = new ItemStack(Material.ARROW);
-					p.getInventory().addItem(is);
+
+				if ((p.getEquipment().getItemInMainHand().hasItemMeta()
+						&& p.getEquipment().getItemInMainHand().getItemMeta()
+								.hasDisplayName() && p.getEquipment()
+						.getItemInMainHand().getItemMeta().getDisplayName()
+						.equals("§4Cupid's Bow"))
+						||
+						(p.getEquipment().getItemInOffHand().hasItemMeta()
+								&& p.getEquipment().getItemInOffHand()
+										.getItemMeta().hasDisplayName() && p
+								.getEquipment().getItemInOffHand()
+								.getItemMeta().getDisplayName()
+								.equals("§4Cupid's Bow"))) {
+					ItemStack m = p.getEquipment().getItemInMainHand();
+					ItemStack o = p.getEquipment().getItemInOffHand();
+					
+					if(m!=null && m.hasItemMeta() && m.getItemMeta().hasDisplayName() && m.getItemMeta().getDisplayName().contains("upid")){
+						m.setDurability((short)0);
+					}
+					if(o!=null && o.hasItemMeta() && o.getItemMeta().hasDisplayName() && o.getItemMeta().getDisplayName().contains("upid")){
+						o.setDurability((short)0);
+					}
+					
+					final Player pf = p;
+					Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+						public void run() {
+							ItemStack is = new ItemStack(Material.ARROW, 1);
+							pf.getInventory().addItem(is);
+						}
+					}, 1L);
+
 					Arrow a = (Arrow) event.getEntity();
 					a.setMetadata("v", new FixedMetadataValue(this, true));
 					doHeartTrail(a);
@@ -1586,21 +1607,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	/*
-	protected void setListNames() {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-			@Override
-			public void run() {
-				for (Player p : Bukkit.getOnlinePlayers()) {
-					if (!p.isOp()) {
-						SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
-						p.setPlayerListName(sp.getChatColor() 
-								+ p.getDisplayName()
-								+ (sp.isAFK() ? "§8 (AFK)" : ""));
-					}
-				}
-			}
-		}, 5L);
-	}*/
+	 * protected void setListNames() {
+	 * Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+	 * 
+	 * @Override public void run() { for (Player p : Bukkit.getOnlinePlayers())
+	 * { if (!p.isOp()) { SerenityPlayer sp =
+	 * serenityPlayers.get(p.getUniqueId());
+	 * p.setPlayerListName(sp.getChatColor() + p.getDisplayName() + (sp.isAFK()
+	 * ? "§8 (AFK)" : "")); } } } }, 5L); }
+	 */
 
 	private List<SerenityPlayer> getOnlineSerenityPlayers() {
 		List<SerenityPlayer> sps = new ArrayList<SerenityPlayer>();
@@ -2397,7 +2412,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (p.getLocation().getDirection().hashCode() == sp
 						.getPlayerVectorHash()) {
 					sp.setAFK(true);
-					//setListNames();
+					// setListNames();
 				}
 				sp.setPlayerVectorHash(p.getLocation().getDirection()
 						.hashCode());
@@ -2419,7 +2434,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			p.sendMessage("§7You have been set §8AFK");
 		}
 
-		//setListNames();
+		// setListNames();
 
 		for (Player pl : Bukkit.getOnlinePlayers()) {
 			if (pl.isSleeping()) {
@@ -2436,7 +2451,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		Player p = Bukkit.getPlayer(player.getUUID());
 		if (!votingForDay)
 			p.setSleepingIgnored(false);
-	//	setListNames();
+		// setListNames();
 	}
 
 	protected void updateFireworksBlocks() {
@@ -2849,7 +2864,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}, 40L);
 		}
 
-		//setListNames();
+		// setListNames();
 
 		event.setJoinMessage(null);
 
@@ -4452,8 +4467,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void doRandomFirework(World world, Location location) {
-		return;/*
-		
+
 		final Location l = location;
 		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
 			@Override
@@ -4497,7 +4511,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 							@Override
 							public void run() {
-								Firework fw = (Firework) l.getWorld().spawnEntity(l, EntityType.FIREWORK);
+								Firework fw = (Firework) l.getWorld()
+										.spawnEntity(l, EntityType.FIREWORK);
 								fw.getUniqueId();
 								FireworkEffect effect = FireworkEffect
 										.builder().trail(b1f).flicker(b2f)
@@ -4516,7 +4531,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		});
 
-		return;*/
+		return;
 	}
 
 	private Type getRandType() {
@@ -7595,7 +7610,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				if (arg3[0].equals("skele")) {
 					if (sender instanceof Player) {
-						
+
 						Skeleton s = (Skeleton) ((Player) sender)
 								.getPlayer()
 								.getWorld()
@@ -8402,59 +8417,44 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	/*
-	private void sendPlayerList(Player p, String thisServerName,
-			String otherServerName, List<String> otherServerNames,
-			String otherServer2, List<String> otherServerNames2) {
-
-		PacketPlayOutPlayerListHeaderFooter packet = new PacketPlayOutPlayerListHeaderFooter();
-		IChatBaseComponent header;
-		String s2 = "[ " + "{text:\"" + thisServerName + "\"} ]";
-		//Bukkit.broadcastMessage(s2);
-		header = ChatSerializer.a("{\"text\":\"" + thisServerName + "\"}");
-
-		String footerPrep = "";
-
-		footerPrep = "{\"text\":\"" + otherServerName;
-		for (String s : otherServerNames) {
-			footerPrep += "\n§r" + s;
-		}
-		if (otherServerNames2.size() > 0) {
-			footerPrep += "\n" + otherServer2;
-		}
-		for (String s : otherServerNames2) {
-			footerPrep += "\n§r" + s;
-		}
-
-		String timeStamp = new SimpleDateFormat("HH:mm:ss").format(Calendar
-				.getInstance().getTime());
-
-		footerPrep += "\n§7" + timeStamp;
-		footerPrep += "\"}";
-
-		if (otherServerNames.size() == 0) {
-			footerPrep = footerPrep.replace(otherServerName, "");
-		}
-		if (otherServerNames2.size() == 0) {
-			footerPrep = footerPrep.replace(otherServer2, "");
-		}
-
-		IChatBaseComponent footer = ChatSerializer.a(footerPrep);
-		try {
-			Field a = packet.getClass().getDeclaredField("a");
-			a.setAccessible(true);
-			a.set(packet, header);
-
-			Field b = packet.getClass().getDeclaredField("b");
-			b.setAccessible(true);
-			b.set(packet, footer);
-		} catch (Exception e1) {
-			e1.printStackTrace();
-		}
-
-		((CraftPlayer) p.getPlayer()).getHandle().playerConnection
-				.sendPacket(packet);
-
-	}*/
+	 * private void sendPlayerList(Player p, String thisServerName, String
+	 * otherServerName, List<String> otherServerNames, String otherServer2,
+	 * List<String> otherServerNames2) {
+	 * 
+	 * PacketPlayOutPlayerListHeaderFooter packet = new
+	 * PacketPlayOutPlayerListHeaderFooter(); IChatBaseComponent header; String
+	 * s2 = "[ " + "{text:\"" + thisServerName + "\"} ]";
+	 * //Bukkit.broadcastMessage(s2); header = ChatSerializer.a("{\"text\":\"" +
+	 * thisServerName + "\"}");
+	 * 
+	 * String footerPrep = "";
+	 * 
+	 * footerPrep = "{\"text\":\"" + otherServerName; for (String s :
+	 * otherServerNames) { footerPrep += "\n§r" + s; } if
+	 * (otherServerNames2.size() > 0) { footerPrep += "\n" + otherServer2; } for
+	 * (String s : otherServerNames2) { footerPrep += "\n§r" + s; }
+	 * 
+	 * String timeStamp = new SimpleDateFormat("HH:mm:ss").format(Calendar
+	 * .getInstance().getTime());
+	 * 
+	 * footerPrep += "\n§7" + timeStamp; footerPrep += "\"}";
+	 * 
+	 * if (otherServerNames.size() == 0) { footerPrep =
+	 * footerPrep.replace(otherServerName, ""); } if (otherServerNames2.size()
+	 * == 0) { footerPrep = footerPrep.replace(otherServer2, ""); }
+	 * 
+	 * IChatBaseComponent footer = ChatSerializer.a(footerPrep); try { Field a =
+	 * packet.getClass().getDeclaredField("a"); a.setAccessible(true);
+	 * a.set(packet, header);
+	 * 
+	 * Field b = packet.getClass().getDeclaredField("b"); b.setAccessible(true);
+	 * b.set(packet, footer); } catch (Exception e1) { e1.printStackTrace(); }
+	 * 
+	 * ((CraftPlayer) p.getPlayer()).getHandle().playerConnection
+	 * .sendPacket(packet);
+	 * 
+	 * }
+	 */
 
 	private void updateRandomMotds() {
 		allMotds.clear();
@@ -9419,7 +9419,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (sender instanceof Player) {
 					Player play = (Player) sender;
 					play.sendMessage(sp.getChatColor() + "Chat color set!");
-					//setListNames();
+					// setListNames();
 				}
 
 				return true;
@@ -12578,46 +12578,30 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		/*
-		if (subchannel.equals("PlC")) {
-			short len = in.readShort();
-			byte[] msgbytes = new byte[len];
-			in.readFully(msgbytes);
-
-			DataInputStream msgin = new DataInputStream(
-					new ByteArrayInputStream(msgbytes));
-			try {
-				lastCreativeList = msgin.readLong();
-				int count = msgin.readInt();
-				playersInCreative = new ArrayList<String>();
-				for (int i = 0; i < count; i++) {
-					playersInCreative.add(msgin.readUTF());
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} // Read the data in the same way you wrote it
-		}*/
+		 * if (subchannel.equals("PlC")) { short len = in.readShort(); byte[]
+		 * msgbytes = new byte[len]; in.readFully(msgbytes);
+		 * 
+		 * DataInputStream msgin = new DataInputStream( new
+		 * ByteArrayInputStream(msgbytes)); try { lastCreativeList =
+		 * msgin.readLong(); int count = msgin.readInt(); playersInCreative =
+		 * new ArrayList<String>(); for (int i = 0; i < count; i++) {
+		 * playersInCreative.add(msgin.readUTF()); } } catch (IOException e) {
+		 * // TODO Auto-generated catch block e.printStackTrace(); } // Read the
+		 * data in the same way you wrote it }
+		 */
 
 		/*
-		if (subchannel.equals("PlE")) {
-			short len = in.readShort();
-			byte[] msgbytes = new byte[len];
-			in.readFully(msgbytes);
-
-			DataInputStream msgin = new DataInputStream(
-					new ByteArrayInputStream(msgbytes));
-			try {
-				lastEventList = msgin.readLong();
-				int count = msgin.readInt();
-				playersInEvent = new ArrayList<String>();
-				for (int i = 0; i < count; i++) {
-					playersInEvent.add(msgin.readUTF());
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} // Read the data in the same way you wrote it
-		}*/
+		 * if (subchannel.equals("PlE")) { short len = in.readShort(); byte[]
+		 * msgbytes = new byte[len]; in.readFully(msgbytes);
+		 * 
+		 * DataInputStream msgin = new DataInputStream( new
+		 * ByteArrayInputStream(msgbytes)); try { lastEventList =
+		 * msgin.readLong(); int count = msgin.readInt(); playersInEvent = new
+		 * ArrayList<String>(); for (int i = 0; i < count; i++) {
+		 * playersInEvent.add(msgin.readUTF()); } } catch (IOException e) { //
+		 * TODO Auto-generated catch block e.printStackTrace(); } // Read the
+		 * data in the same way you wrote it }
+		 */
 
 		if (subchannel.equals("Victory")) {
 			getLogger().info("Victory received!");
@@ -12653,36 +12637,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	/*
-	public void sendPlayerListToBungee() {
-		List<String> players = new ArrayList<String>();
-		for (Player p : Bukkit.getOnlinePlayers()) {
-			if (!p.isOp()) {
-				SerenityPlayer spc = serenityPlayers.get(p.getUniqueId());
-				players.add(spc.getChatColor() + spc.getName());
-			}
-		}
-
-		ByteArrayDataOutput out = ByteStreams.newDataOutput();
-		out.writeUTF("Forward"); // So BungeeCord knows to forward it
-		out.writeUTF("ALL");
-		out.writeUTF("PlS"); // The channel name to check if this your data
-
-		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
-		DataOutputStream msgout = new DataOutputStream(msgbytes);
-		try {
-			msgout.writeLong(System.currentTimeMillis());
-			msgout.writeInt(players.size());
-			for (String s : players) {
-				msgout.writeUTF(s);
-			}
-
-			out.writeShort(msgbytes.toByteArray().length);
-			out.write(msgbytes.toByteArray());
-			Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
-			player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} // You can do anything you want with msgout
-	}*/
+	 * public void sendPlayerListToBungee() { List<String> players = new
+	 * ArrayList<String>(); for (Player p : Bukkit.getOnlinePlayers()) { if
+	 * (!p.isOp()) { SerenityPlayer spc = serenityPlayers.get(p.getUniqueId());
+	 * players.add(spc.getChatColor() + spc.getName()); } }
+	 * 
+	 * ByteArrayDataOutput out = ByteStreams.newDataOutput();
+	 * out.writeUTF("Forward"); // So BungeeCord knows to forward it
+	 * out.writeUTF("ALL"); out.writeUTF("PlS"); // The channel name to check if
+	 * this your data
+	 * 
+	 * ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
+	 * DataOutputStream msgout = new DataOutputStream(msgbytes); try {
+	 * msgout.writeLong(System.currentTimeMillis());
+	 * msgout.writeInt(players.size()); for (String s : players) {
+	 * msgout.writeUTF(s); }
+	 * 
+	 * out.writeShort(msgbytes.toByteArray().length);
+	 * out.write(msgbytes.toByteArray()); Player player =
+	 * Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
+	 * player.sendPluginMessage(this, "BungeeCord", out.toByteArray()); } catch
+	 * (IOException e) { // TODO Auto-generated catch block e.printStackTrace();
+	 * } // You can do anything you want with msgout }
+	 */
 }
