@@ -10406,14 +10406,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (event.getEntity().getLocation().getY() < 20) {
 							if (event.getEntity() instanceof Player) {
 								Player p = (Player) event.getEntity();
-								if (!podrickCfg.getConfig().getBoolean(
+								/*if (!podrickCfg.getConfig().getBoolean(
 										p.getDisplayName() + ".ReadyToFight",
 										false)) {
 									p.teleport(DOORWAYTOFINALDUNGEON);
 									p.sendMessage("§cYou must complete the rest of the quest first!");
 									event.setCancelled(true);
 									return;
-								}
+								}*/
 							}
 						}
 						event.setCancelled(true);
