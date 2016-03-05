@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -33,11 +32,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import net.minecraft.server.v1_9_R1.IChatBaseComponent;
 import net.minecraft.server.v1_9_R1.IChatBaseComponent.ChatSerializer;
 import net.minecraft.server.v1_9_R1.Packet;
 import net.minecraft.server.v1_9_R1.PacketPlayOutChat;
-import net.minecraft.server.v1_9_R1.PacketPlayOutPlayerListHeaderFooter;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +55,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.Statistic;
 import org.bukkit.World;
@@ -144,7 +140,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -632,6 +627,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		// statusCfg = new ConfigAccessor(this, "status.yml");
 		fireworksCfg = new ConfigAccessor(this, "fireworks.yml");
 		protectedAreasCfg = new ConfigAccessor(this, "protectedareas.yml");
+
 		// chatcolorCfg = new ConfigAccessor(this, "chatcolor.yml");
 		podrickCfg = new ConfigAccessor(this, "podrick.yml");
 		stringsCfg = new ConfigAccessor(this, "strings.yml");
@@ -654,73 +650,68 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		lags = new ArrayList<Long>();
 		areas = new ArrayList<ProtectedArea>();
 		votingForDay = false;
-		ItemStack stick = Secret.SECRETITEMSTACK1;
-		ItemMeta item = stick.getItemMeta();
-		item.setDisplayName(Secret.SECRETITEM1NAME);
-		item.addEnchant(Enchantment.LURE, -500, true);
-		stick.setItemMeta(item);
+		protectedAreasCfg.saveDefaultConfig();
 
-		ShapedRecipe secretitem2 = new ShapedRecipe(new ItemStack(stick));
-		secretitem2.shape("ABA", "BAB", "ABA");
-		secretitem2.setIngredient('A', Secret.SECRETITEM1MAT1);
-		secretitem2.setIngredient('B', Secret.SECRETITEM1MAT2);
-		this.getServer().addRecipe(secretitem2);
-
-		ItemStack secretItemSpookyOne = new ItemStack(Secret.SECRETITEM2RESULT,
-				1, (short) 1);
-		ItemMeta im = secretItemSpookyOne.getItemMeta();
-		im.setDisplayName(Secret.SECRETITEM2NAME);
-		secretItemSpookyOne.setItemMeta(im);
-
-		ShapedRecipe spookyFruitRecipe = new ShapedRecipe(new ItemStack(
-				secretItemSpookyOne));
-		spookyFruitRecipe.shape("AAA", "ABA", "AAA");
-		spookyFruitRecipe.setIngredient('A', Secret.SECRETITEM2MAT);
-		spookyFruitRecipe.setIngredient('B', secretItemSpookyOne.getType());
-		this.getServer().addRecipe(spookyFruitRecipe);
-
-		ItemStack pHelm = new ItemStack(Material.LEATHER_HELMET);
-		ItemMeta pHMeta = pHelm.getItemMeta();
-		pHMeta.setDisplayName("§dParty Armor");
-		pHelm.setItemMeta(pHMeta);
-
-		ItemStack pChest = new ItemStack(Material.LEATHER_CHESTPLATE);
-		ItemMeta pCMeta = pChest.getItemMeta();
-		pCMeta.setDisplayName("§dParty Armor");
-		pChest.setItemMeta(pCMeta);
-
-		ItemStack pLegs = new ItemStack(Material.LEATHER_LEGGINGS);
-		ItemMeta pLMeta = pLegs.getItemMeta();
-		pLMeta.setDisplayName("§dParty Armor");
-		pLegs.setItemMeta(pLMeta);
-
-		ItemStack pBoots = new ItemStack(Material.LEATHER_BOOTS);
-		ItemMeta pBMeta = pBoots.getItemMeta();
-		pBMeta.setDisplayName("§dParty Armor");
-		pBoots.setItemMeta(pBMeta);
-
-		for (Material m : possiblePartyArmors) {
-			ShapedRecipe helmRecipe = new ShapedRecipe(new ItemStack(pHelm));
-			helmRecipe.shape("AAA", "A A", "   ");
-			helmRecipe.setIngredient('A', m);
-			this.getServer().addRecipe(helmRecipe);
-
-			ShapedRecipe chestRecipe = new ShapedRecipe(new ItemStack(pChest));
-			chestRecipe.shape("A A", "AAA", "AAA");
-			chestRecipe.setIngredient('A', m);
-			this.getServer().addRecipe(chestRecipe);
-
-			ShapedRecipe legRecipe = new ShapedRecipe(new ItemStack(pLegs));
-			legRecipe.shape("AAA", "A A", "A A");
-			legRecipe.setIngredient('A', m);
-			this.getServer().addRecipe(legRecipe);
-
-			ShapedRecipe bootRecipe = new ShapedRecipe(new ItemStack(pBoots));
-			bootRecipe.shape("   ", "A A", "A A");
-			bootRecipe.setIngredient('A', m);
-			this.getServer().addRecipe(bootRecipe);
-
-		}
+		/*
+		 * ItemStack stick = Secret.SECRETITEMSTACK1; ItemMeta item =
+		 * stick.getItemMeta(); item.setDisplayName(Secret.SECRETITEM1NAME);
+		 * item.addEnchant(Enchantment.LURE, -500, true);
+		 * stick.setItemMeta(item);
+		 * 
+		 * ShapedRecipe secretitem2 = new ShapedRecipe(new ItemStack(stick));
+		 * secretitem2.shape("ABA", "BAB", "ABA");
+		 * secretitem2.setIngredient('A', Secret.SECRETITEM1MAT1);
+		 * secretitem2.setIngredient('B', Secret.SECRETITEM1MAT2);
+		 * this.getServer().addRecipe(secretitem2);
+		 * 
+		 * ItemStack secretItemSpookyOne = new
+		 * ItemStack(Secret.SECRETITEM2RESULT, 1, (short) 1); ItemMeta im =
+		 * secretItemSpookyOne.getItemMeta();
+		 * im.setDisplayName(Secret.SECRETITEM2NAME);
+		 * secretItemSpookyOne.setItemMeta(im);
+		 * 
+		 * ShapedRecipe spookyFruitRecipe = new ShapedRecipe(new ItemStack(
+		 * secretItemSpookyOne)); spookyFruitRecipe.shape("AAA", "ABA", "AAA");
+		 * spookyFruitRecipe.setIngredient('A', Secret.SECRETITEM2MAT);
+		 * spookyFruitRecipe.setIngredient('B', secretItemSpookyOne.getType());
+		 * this.getServer().addRecipe(spookyFruitRecipe);
+		 * 
+		 * ItemStack pHelm = new ItemStack(Material.LEATHER_HELMET); ItemMeta
+		 * pHMeta = pHelm.getItemMeta(); pHMeta.setDisplayName("§dParty Armor");
+		 * pHelm.setItemMeta(pHMeta);
+		 * 
+		 * ItemStack pChest = new ItemStack(Material.LEATHER_CHESTPLATE);
+		 * ItemMeta pCMeta = pChest.getItemMeta();
+		 * pCMeta.setDisplayName("§dParty Armor"); pChest.setItemMeta(pCMeta);
+		 * 
+		 * ItemStack pLegs = new ItemStack(Material.LEATHER_LEGGINGS); ItemMeta
+		 * pLMeta = pLegs.getItemMeta(); pLMeta.setDisplayName("§dParty Armor");
+		 * pLegs.setItemMeta(pLMeta);
+		 * 
+		 * ItemStack pBoots = new ItemStack(Material.LEATHER_BOOTS); ItemMeta
+		 * pBMeta = pBoots.getItemMeta();
+		 * pBMeta.setDisplayName("§dParty Armor"); pBoots.setItemMeta(pBMeta);
+		 * 
+		 * for (Material m : possiblePartyArmors) { ShapedRecipe helmRecipe =
+		 * new ShapedRecipe(new ItemStack(pHelm)); helmRecipe.shape("AAA",
+		 * "A A", "   "); helmRecipe.setIngredient('A', m);
+		 * this.getServer().addRecipe(helmRecipe);
+		 * 
+		 * ShapedRecipe chestRecipe = new ShapedRecipe(new ItemStack(pChest));
+		 * chestRecipe.shape("A A", "AAA", "AAA");
+		 * chestRecipe.setIngredient('A', m);
+		 * this.getServer().addRecipe(chestRecipe);
+		 * 
+		 * ShapedRecipe legRecipe = new ShapedRecipe(new ItemStack(pLegs));
+		 * legRecipe.shape("AAA", "A A", "A A"); legRecipe.setIngredient('A',
+		 * m); this.getServer().addRecipe(legRecipe);
+		 * 
+		 * ShapedRecipe bootRecipe = new ShapedRecipe(new ItemStack(pBoots));
+		 * bootRecipe.shape("   ", "A A", "A A"); bootRecipe.setIngredient('A',
+		 * m); this.getServer().addRecipe(bootRecipe);
+		 * 
+		 * }
+		 */
 
 		getLogger().info("Added " + playerStatuses.size() + " statuses");
 
@@ -1025,7 +1016,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						teleportSomeone();
 				}
 			}
-		}, 0L, 50L);
+		}, 0L, 20 * 20L);
 	}
 
 	private void runsaveDirtySerenityPlayersScheduler() {
@@ -1061,7 +1052,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (getServer().getOnlinePlayers().size() != 0) {
 						// addScores(currentDay);
 						checkAndClearAllChunks();
-						unloadChunks();
+						// unloadChunks();
 					}
 				}
 			}
@@ -1134,8 +1125,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.hasDisplayName() && p.getEquipment()
 						.getItemInMainHand().getItemMeta().getDisplayName()
 						.equals("§4Cupid's Bow"))
-						||
-						(p.getEquipment().getItemInOffHand().hasItemMeta()
+						|| (p.getEquipment().getItemInOffHand().hasItemMeta()
 								&& p.getEquipment().getItemInOffHand()
 										.getItemMeta().hasDisplayName() && p
 								.getEquipment().getItemInOffHand()
@@ -1143,14 +1133,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.equals("§4Cupid's Bow"))) {
 					ItemStack m = p.getEquipment().getItemInMainHand();
 					ItemStack o = p.getEquipment().getItemInOffHand();
-					
-					if(m!=null && m.hasItemMeta() && m.getItemMeta().hasDisplayName() && m.getItemMeta().getDisplayName().contains("upid")){
-						m.setDurability((short)0);
+
+					if (m != null
+							&& m.hasItemMeta()
+							&& m.getItemMeta().hasDisplayName()
+							&& m.getItemMeta().getDisplayName()
+									.contains("upid")) {
+						m.setDurability((short) 0);
 					}
-					if(o!=null && o.hasItemMeta() && o.getItemMeta().hasDisplayName() && o.getItemMeta().getDisplayName().contains("upid")){
-						o.setDurability((short)0);
+					if (o != null
+							&& o.hasItemMeta()
+							&& o.getItemMeta().hasDisplayName()
+							&& o.getItemMeta().getDisplayName()
+									.contains("upid")) {
+						o.setDurability((short) 0);
 					}
-					
+
 					final Player pf = p;
 					Bukkit.getScheduler().runTaskLater(this, new Runnable() {
 						public void run() {
@@ -2740,16 +2738,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		 * portalAnalytics.reloadConfig(); }
 		 */
 
-		if (evt.getTo().getWorld().getName().equals("world_the_end")) {
-			String msg = getTranslationLanguage(evt.getPlayer(),
-					stringKeys.PORTENDPORTALWARNING.toString());
-			evt.getPlayer().sendMessage(msg);
-			/*
-			 * evt.getPlayer() .sendMessage(
-			 * "§c-----[WARNING]-----\nI RESET THE END EVERY FRIDAY MORNING (5:00 AM GMT-5)  \nIf you are in here when it is deleted, you may be killed when you re-log in! (fall damage, suffocation, spawn over the edge)  Do not disconnect until you are back in the overworld!  You have been warned!"
-			 * );
-			 */
-		}
+		/*
+		 * if (evt.getTo().getWorld().getName().equals("world_the_end")) {
+		 * String msg = getTranslationLanguage(evt.getPlayer(),
+		 * stringKeys.PORTENDPORTALWARNING.toString());
+		 * evt.getPlayer().sendMessage(msg); /* evt.getPlayer() .sendMessage(
+		 * "§c-----[WARNING]-----\nI RESET THE END EVERY FRIDAY MORNING (5:00 AM GMT-5)  \nIf you are in here when it is deleted, you may be killed when you re-log in! (fall damage, suffocation, spawn over the edge)  Do not disconnect until you are back in the overworld!  You have been warned!"
+		 * );
+		 */
+
 		/*
 		 * else { // evt.getPlayer().sendMessage( //
 		 * "§cYou cannot travel through portals yet!");
@@ -3335,7 +3332,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					|| fenceLoc.getBlock().getType()
 							.equals(Material.DARK_OAK_FENCE)
 					|| fenceLoc.getBlock().getType()
-							.equals(Material.SPRUCE_FENCE)) {
+							.equals(Material.SPRUCE_FENCE)
+					|| fenceLoc.getBlock().getType()
+							.equals(Material.JUNGLE_FENCE)) {
 				if (chestLoc.getBlock().getRelative(BlockFace.NORTH).getType()
 						.equals(Material.CHEST)
 						|| chestLoc.getBlock().getRelative(BlockFace.SOUTH)
@@ -4261,8 +4260,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	}
 
-	@EventHandler
+	@EventHandler (priority=EventPriority.LOWEST)
 	public void onPlayerBedEnterEvent(PlayerBedEnterEvent event) {
+		if(!event.isCancelled()){
+			Location n = event.getBed().getLocation();
+			Location o = event.getPlayer().getBedSpawnLocation();
+			if(o==null){
+				event.getPlayer().setBedSpawnLocation(n, true);
+				event.getPlayer().sendMessage("§aYour respawn location was set");
+			}else if(n.getWorld() == o.getWorld()){
+				if(n.distance(o) > 5){
+					event.getPlayer().setBedSpawnLocation(n, true);
+					event.getPlayer().sendMessage("§aYour respawn location was set");
+				}
+			}
+		}
+		
 		if (Bukkit.getOnlinePlayers().size() > 1) {
 			if (!votingForDay) {
 				for (Player p : Bukkit.getServer().getOnlinePlayers()) {
@@ -5499,10 +5512,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean chat(CommandSender sender, String[] arg3) {
 		if (arg3.length == 1) {
-			if (arg3[0].equals("tp")) {
-				doRandomTeleport(sender);
-				return true;
-			}
+			/*
+			 * if (arg3[0].equals("tp")) { doRandomTeleport(sender); return
+			 * true; }
+			 */
 
 			if (arg3[0].equalsIgnoreCase("celebrate")) {
 				celebrate(sender);
@@ -5604,16 +5617,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void celebrate(CommandSender sender) {
 		if (sender instanceof Player) {
-			sender.sendMessage("§cIt's not time to celebrate");
-			return;
-			/*
-			 * SerenityPlayer sp = serenityPlayers.get(((Player) sender)
-			 * .getUniqueId()); sp.setCelebrating(!sp.isCelebrating()); if
-			 * (sp.isCelebrating()) { sender.sendMessage(
-			 * "§4Happy Valentine's Day!  §7Left and right click with a §6dandelion!"
-			 * ); } else {
-			 * sender.sendMessage("§7You are no longer celebrating"); }
-			 */
+			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
+					.getUniqueId());
+			sp.setCelebrating(!sp.isCelebrating());
+			if (sp.isCelebrating()) {
+				sender.sendMessage("§cIT'S THE END OF THE WORLD!  §eLet's party! \n§7Left and right click with a §6dandelion!");
+			} else {
+				sender.sendMessage("§7You are no longer celebrating");
+			}
 		}
 	}
 
@@ -5748,7 +5759,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private boolean chunk(CommandSender sender, String[] arg3) {
 		if (arg3.length > 0) {
 			if (arg3[0].equalsIgnoreCase("claim")) {
-
 				Player p = Bukkit.getPlayer(sender.getName());
 
 				if (getPlayerMinutes(p.getUniqueId()) < 60) {
@@ -6272,7 +6282,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@EventHandler
 	public void onBlockClick(PlayerInteractEvent event) {
 		Player p = event.getPlayer();
-
 		// todo!!!
 		if (preppedToUnProtectChunk.contains(event.getPlayer())
 				&& preppedToProtectArea.contains(event.getPlayer())) {
@@ -6281,6 +6290,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		for (int i = 0; i < preppedToProtectArea.size(); i++) {
 			if (preppedToProtectArea.get(i).player.equals(event.getPlayer())) {
+				if (p.hasMetadata("lastprot")) {
+					for (MetadataValue mv : p.getMetadata("lastprot")) {
+						if (System.currentTimeMillis() - (Long) mv.value() < 50) {
+							return;
+						}
+					}
+				}
+				p.setMetadata(
+						"lastprot",
+						new FixedMetadataValue(this, System.currentTimeMillis()));
 				event.setCancelled(true);
 				if (event.getPlayer().getLocation().getWorld().getName()
 						.equalsIgnoreCase("world")) {
@@ -6448,7 +6467,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 						if (newProtArea.xDiff() < 10
 								|| newProtArea.zDiff() < 10) {
-
 							String msg = getTranslationLanguage(
 									event.getPlayer(),
 									stringKeys.PROTAREATOOSMALL.toString());
@@ -7530,8 +7548,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 									CENTERBLOCKSINFINALDUNGEON) < 75) {
 								for (Entity e : p.getNearbyEntities(75, 20, 75)) {
 									if (e instanceof LivingEntity) {
-										LivingEntity le = (LivingEntity) e;
-										le.damage(500000);
+										if (!(e instanceof Player)) {
+											LivingEntity le = (LivingEntity) e;
+											le.damage(500000);
+										}
 									}
 								}
 								return true;
@@ -10406,14 +10426,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (event.getEntity().getLocation().getY() < 20) {
 							if (event.getEntity() instanceof Player) {
 								Player p = (Player) event.getEntity();
-								/*if (!podrickCfg.getConfig().getBoolean(
-										p.getDisplayName() + ".ReadyToFight",
-										false)) {
-									p.teleport(DOORWAYTOFINALDUNGEON);
-									p.sendMessage("§cYou must complete the rest of the quest first!");
-									event.setCancelled(true);
-									return;
-								}*/
+								/*
+								 * if (!podrickCfg.getConfig().getBoolean(
+								 * p.getDisplayName() + ".ReadyToFight", false))
+								 * { p.teleport(DOORWAYTOFINALDUNGEON);
+								 * p.sendMessage(
+								 * "§cYou must complete the rest of the quest first!"
+								 * ); event.setCancelled(true); return; }
+								 */
 							}
 						}
 						event.setCancelled(true);
