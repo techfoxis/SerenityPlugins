@@ -55,6 +55,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.Statistic;
 import org.bukkit.World;
@@ -62,6 +63,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Skull;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -158,6 +160,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
 import com.google.common.collect.Iterables;
@@ -226,7 +229,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		{
 			add(new SerenityCommand("as", "Armor stand manipulation",
 					"Brings up an interface to manipulate armor stands", "/as",
-					2880, true));
+					1440, true));
 			add(new SerenityCommand(
 					"afk",
 					"Sets you AFK",
@@ -1633,6 +1636,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						public void run() {
 							for (Player p : Bukkit.getOnlinePlayers()) {
 								tryToParty(p);
+								tryToTrophy(p);
 							}
 
 						}
@@ -1686,7 +1690,273 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}
 		}
+	}
 
+	private void tryToTrophy(Player p) {
+		int range = 15;
+		for (Entity e : p.getNearbyEntities(range, range, range)) {
+			if (e instanceof ArmorStand) {
+				ArmorStand a = (ArmorStand) e;
+				if (a.getEquipment().getHelmet().hasItemMeta()) {
+					if (a.getEquipment().getHelmet().getItemMeta()
+							.hasDisplayName()) {
+						if (a.getEquipment().getHelmet().getItemMeta()
+								.getDisplayName().contains("§6Winner")) {
+							trophy(a);
+						}
+						if (a.getEquipment().getHelmet().getItemMeta()
+								.getDisplayName().contains("§7Participant")) {
+							trophy2(a);
+						}
+						if (a.getEquipment().getHelmet().getItemMeta()
+								.getDisplayName().contains("§9Globe")) {
+							globe(a);
+						}
+
+						if (a.getEquipment().getHelmet().getItemMeta()
+								.getDisplayName().contains("§9Multi-Ore")) {
+							multiOre(a);
+						}
+
+						if (a.getEquipment().getHelmet().getItemMeta()
+								.getDisplayName().contains("§9Snow Globe")) {
+							snowGlobe(a);
+						}
+
+						if (a.getEquipment().getHelmet().getItemMeta()
+								.getDisplayName().contains("§9Money Bag")) {
+							moneyBag(a);
+						}
+						if(a.hasGravity()){
+							a.setGravity(false);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	private void tryToPlaceTrophy(BlockPlaceEvent event) {
+		if (event.getPlayer().getItemInHand().hasItemMeta()) {
+			if (event.getPlayer().getItemInHand().getItemMeta()
+					.hasDisplayName()) {
+				if (event.getPlayer().getItemInHand().getItemMeta()
+						.getDisplayName().contains("§6Winner")
+						|| event.getPlayer().getItemInHand().getItemMeta()
+								.getDisplayName().contains("§7Participant")
+						|| event.getPlayer().getItemInHand().getItemMeta()
+								.getDisplayName().contains("§9")) {
+					event.setCancelled(true);
+					event.getPlayer().sendMessage(
+							"§cThis must be placed on an armor stand!");
+				}
+			}
+		}
+	}
+
+	private void trophy(ArmorStand a) {
+		double y = a.getHeadPose().getY();
+		y -= .05;
+		if (y < 0) {
+			y = y + 6.25;
+		}
+
+		a.setHeadPose(new EulerAngle(0, y, 0));
+		if (a.isCustomNameVisible()) {
+			String raw = a.getEquipment().getHelmet().getItemMeta()
+					.getDisplayName();
+			a.setCustomName(raw);
+		}
+		if (rand.nextDouble() < .1) {
+			a.getWorld().spawnParticle(Particle.FIREWORKS_SPARK,
+					a.getEyeLocation(), 1, .25, .25, .25, 0);
+		}
+		a.getWorld().spawnParticle(Particle.SMOKE_LARGE, a.getEyeLocation(), 1,
+				.005, .005, .005, 0);
+	}
+
+	private void trophy2(ArmorStand a) {
+		double y = a.getHeadPose().getY();
+		y -= .05;
+		if (y < 0) {
+			y = y + 6.25;
+		}
+
+		a.setHeadPose(new EulerAngle(0, y, 0));
+		if (a.isCustomNameVisible()) {
+			String raw = a.getEquipment().getHelmet().getItemMeta()
+					.getDisplayName();
+			a.setCustomName(raw);
+		}
+		if (rand.nextDouble() < .1) {
+			a.getWorld().spawnParticle(Particle.FIREWORKS_SPARK,
+					a.getEyeLocation(), 1, .25, .25, .25, 0);
+		}
+	}
+
+	private void globe(ArmorStand a) {
+		double y = a.getHeadPose().getY();
+		y -= .01;
+
+		if (y < 0) {
+			y = y + 6.25;
+		}
+
+		a.setHeadPose(new EulerAngle(a.getHeadPose().getX(), y, a.getHeadPose()
+				.getZ()));
+
+		if (a.isCustomNameVisible()) {
+			String raw = a.getEquipment().getHelmet().getItemMeta()
+					.getDisplayName();
+			a.setCustomName(raw);
+		}
+		if (rand.nextDouble() < .125) {
+			a.getWorld().spawnParticle(Particle.VILLAGER_HAPPY,
+					a.getEyeLocation(), 1, .75, .75, .75, 0);
+			a.getWorld().spawnParticle(Particle.WATER_WAKE, a.getEyeLocation(),
+					1, .75, .75, .75, 0);
+		}
+	}
+
+	private void multiOre(ArmorStand a) {
+		double y = a.getHeadPose().getY();
+		y += .1;
+
+		if (y > 6.25) {
+			y = y - 6.25;
+		}
+
+		a.setHeadPose(new EulerAngle(a.getHeadPose().getX(), y, a.getHeadPose().getZ()));
+
+		if (a.isCustomNameVisible()) {
+			String raw = a.getEquipment().getHelmet().getItemMeta()
+					.getDisplayName();
+			a.setCustomName(raw);
+		}
+
+		if (rand.nextDouble() < .75) {
+			a.getWorld().spawnParticle(Particle.REDSTONE, a.getEyeLocation(),
+					7, .5, .5, .5, 15);
+		}
+	}
+
+	private void moneyBag(ArmorStand a) {
+		double y = a.getHeadPose().getY();
+		y -= .05;
+
+		if (y < 0) {
+			y = y + 6.25;
+		}
+		a.setGravity(false);
+		Location l = a.getLocation();
+		boolean hasMeta = false;
+		int particle = -1;
+		double range = -1;
+		int intensity = -1;
+		double extra = -1;
+		for (MetadataValue mv : a.getMetadata("up")) {
+			hasMeta = true;
+			if ((boolean) mv.value() == true) {
+				a.setMetadata("up", new FixedMetadataValue(this, false));
+				l.setY(l.getY() + .1);
+			} else {
+				a.setMetadata("up", new FixedMetadataValue(this, true));
+				l.setY(l.getY() - .1);
+			}
+			a.teleport(l);
+		}
+
+		for (MetadataValue mv : a.getMetadata("particle")) {
+			particle = (int) mv.value();
+			break;
+		}
+		for (MetadataValue mv : a.getMetadata("range")) {
+			range = (double) mv.value();
+			break;
+		}
+		for (MetadataValue mv : a.getMetadata("intensity")) {
+			intensity = (int) mv.value();
+			break;
+		}
+		for (MetadataValue mv : a.getMetadata("extra")) {
+			extra = (double) mv.value();
+			break;
+		}
+
+		if (!hasMeta) {
+			a.setMetadata("up", new FixedMetadataValue(this, true));
+		}
+		if (particle == -1) {
+			particle = 0;
+			a.setMetadata("particle", new FixedMetadataValue(this, 0));
+		}
+		if (range == -1) {
+			range = 5;
+			a.setMetadata("range", new FixedMetadataValue(this, range));
+		}
+		if (intensity == -1) {
+			intensity = 5;
+			a.setMetadata("intensity", new FixedMetadataValue(this, intensity));
+		}
+		if (extra == -1) {
+			extra = 0.0;
+			a.setMetadata("extra", new FixedMetadataValue(this, extra));
+		}
+
+		a.setHeadPose(new EulerAngle(0, y, 0));
+
+		if (a.isCustomNameVisible()) {
+			String raw = a.getEquipment().getHelmet().getItemMeta()
+					.getDisplayName();
+			a.setCustomName(raw);
+		}
+
+		a.getWorld().spawnParticle(Particle.values()[particle],
+				a.getEyeLocation(), intensity, range, range, range, extra);
+
+	}
+
+	private void snowGlobe(ArmorStand a) {
+		double y = a.getHeadPose().getY();
+		y -= .05;
+
+		if (y < 0) {
+			y = y + 6.25;
+		}
+
+		Location l = a.getLocation();
+		boolean hasMeta = false;
+		for (MetadataValue mv : a.getMetadata("up")) {
+			hasMeta = true;
+			if ((boolean) mv.value() == true) {
+				a.setMetadata("up", new FixedMetadataValue(this, false));
+				l.setY(l.getY() + .25);
+			} else {
+				a.setMetadata("up", new FixedMetadataValue(this, true));
+				l.setY(l.getY() - .25);
+			}
+			a.teleport(l);
+		}
+
+		if (!hasMeta) {
+			a.setMetadata("up", new FixedMetadataValue(this, true));
+		}
+
+		a.setHeadPose(new EulerAngle(0, y, 0));
+
+		if (a.isCustomNameVisible()) {
+			String raw = a.getEquipment().getHelmet().getItemMeta()
+					.getDisplayName();
+			a.setCustomName(raw);
+		}
+		if (rand.nextDouble() < .5) {
+			a.getWorld().spawnParticle(Particle.SNOW_SHOVEL,
+					a.getEyeLocation(), 1, .05, .05, .05, .09);
+			a.getWorld().spawnParticle(Particle.FIREWORKS_SPARK,
+					a.getEyeLocation(), 50, 10, 10, 10, 0);
+
+		}
 	}
 
 	private ItemStack getPartyEquipment(Material mat, String owner) {
@@ -2510,15 +2780,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void addAMinuteToEachPlayer() {
-
-		Date d = new Date();
-		d.setYear(2552);
-		String date = sdtf.format(d);
 		for (SerenityPlayer p : getOnlineSerenityPlayers()) {
-			/*
-			 * if (!p.isOp()) { whoIsOnline.getConfig().set(p.getName(), date);
-			 * }
-			 */
 			if (!p.isAFK()) {
 				checkMilestone(p);
 				addAMinute(p.getUUID());
@@ -2526,7 +2788,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				int t = p.getAfkTime();
 				t++;
 				p.setAfkTime(t);
-				if (t > 45) {
+				int playerCount = Bukkit.getServer().getOnlinePlayers().size();
+				double idleTimeoutTime = -.1 * (playerCount * playerCount) + 30;
+				if (t > idleTimeoutTime) {
 					p.setAfkTime(0);
 					Player pl = Bukkit.getPlayer(p.getUUID());
 					pl.kickPlayer("You have been idle for too long!");
@@ -2572,21 +2836,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return;
 		}
 
-		if (getPlayerMinutes(pl.getUUID()) == 2879) {
-			Player p = Bukkit.getPlayer(pl.getUUID());
-			p.sendMessage("§dYou can now manipulate armor stands with §6/as §d!  Thanks for being a dedicated player!");
-			Bukkit.getLogger().info(
-					p.getDisplayName() + " has reached 48 hours");
-
-			startFireworkShow(p.getLocation());
-
-			for (int j = 0; j < 15; j++) {
-				doRandomFirework(p.getWorld(), p.getLocation());
-			}
-
-			return;
-		}
-
 		if (getPlayerMinutes(pl.getUUID()) == 1439) {
 			Player p = Bukkit.getPlayer(pl.getUUID());
 			for (ProtectedArea pa : areas) {
@@ -2611,6 +2860,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					protectedAreasCfg.reloadConfig();
 
 					p.sendMessage("§2\nThanks for being a dedicated player!  \nYou may now edit the spawn area!\n");
+					p.sendMessage("§2\nYou can also manipulate armor stands with /as !");
 					getLogger().info(
 							"§c " + p.getDisplayName() + " §6reached 24 hours");
 
@@ -3091,8 +3341,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		event.setMessage(event.getMessage().replace("[/u]",
 				"§r" + getChatColor(sp.getUUID())));
 
-		if (!sp.isMuted())
+		if (!sp.isMuted() && !sp.isLocalChatting()) {
 			sendChatMessageToBungeeServers(event);
+		}
 	}
 
 	private String rainbow(String message) {
@@ -4260,22 +4511,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	}
 
-	@EventHandler (priority=EventPriority.LOWEST)
+	@EventHandler
+	public void onPlayerLeaveBed(PlayerBedLeaveEvent event) {
+		checkIfBedSpawn(event.getPlayer());
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST)
 	public void onPlayerBedEnterEvent(PlayerBedEnterEvent event) {
-		if(!event.isCancelled()){
-			Location n = event.getBed().getLocation();
-			Location o = event.getPlayer().getBedSpawnLocation();
-			if(o==null){
-				event.getPlayer().setBedSpawnLocation(n, true);
-				event.getPlayer().sendMessage("§aYour respawn location was set");
-			}else if(n.getWorld() == o.getWorld()){
-				if(n.distance(o) > 5){
-					event.getPlayer().setBedSpawnLocation(n, true);
-					event.getPlayer().sendMessage("§aYour respawn location was set");
-				}
-			}
-		}
-		
+
 		if (Bukkit.getOnlinePlayers().size() > 1) {
 			if (!votingForDay) {
 				for (Player p : Bukkit.getServer().getOnlinePlayers()) {
@@ -4312,6 +4555,28 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}, 3L);
 		}
+	}
+
+	private void checkIfBedSpawn(Player player) {
+		final Player pf = player;
+		final Location l = pf.getLocation();
+		final Location originalBed = pf.getBedSpawnLocation();
+
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+				if (pf.getBedSpawnLocation() == null) {
+					pf.sendMessage("§cYour respawn location was NOT set!\n§7Is your bed obstructed or on slabs?");
+					return;
+				}
+
+				if (originalBed == null
+						|| pf.getBedSpawnLocation().distance(originalBed) > 1) {
+					pf.sendMessage(ChatColor.GREEN
+							+ "Respawn location set (don't destroy your bed!)");
+				}
+			}
+		}, 5L);
 	}
 
 	private void checkHalfIgnored() {
@@ -5616,16 +5881,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void celebrate(CommandSender sender) {
-		if (sender instanceof Player) {
-			SerenityPlayer sp = serenityPlayers.get(((Player) sender)
-					.getUniqueId());
-			sp.setCelebrating(!sp.isCelebrating());
-			if (sp.isCelebrating()) {
-				sender.sendMessage("§cIT'S THE END OF THE WORLD!  §eLet's party! \n§7Left and right click with a §6dandelion!");
-			} else {
-				sender.sendMessage("§7You are no longer celebrating");
-			}
-		}
+		return;/*
+				 * if (sender instanceof Player) { SerenityPlayer sp =
+				 * serenityPlayers.get(((Player) sender) .getUniqueId());
+				 * sp.setCelebrating(!sp.isCelebrating()); if
+				 * (sp.isCelebrating()) { sender.sendMessage(
+				 * "§cIT'S THE END OF THE WORLD!  §eLet's party! \n§7Left and right click with a §6dandelion!"
+				 * ); } else {
+				 * sender.sendMessage("§7You are no longer celebrating"); } }
+				 */
 	}
 
 	/*
@@ -6289,7 +6553,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 
 		for (int i = 0; i < preppedToProtectArea.size(); i++) {
+
 			if (preppedToProtectArea.get(i).player.equals(event.getPlayer())) {
+				if (Math.abs(p.getLocation().getX()) < 200
+						&& Math.abs(p.getLocation().getZ()) < 200) {
+					p.sendMessage("§cYou cannot claim within 200 blocks of spawn!");
+					preppedToProtectArea.remove(i);
+					return;
+				}
 				if (p.hasMetadata("lastprot")) {
 					for (MetadataValue mv : p.getMetadata("lastprot")) {
 						if (System.currentTimeMillis() - (Long) mv.value() < 50) {
@@ -6863,73 +7134,78 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean armorStand(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player) {
-
 			Player p = ((Player) sender).getPlayer();
+			SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+			if(sp.getMinutes() < 1441){
+				p.sendMessage("§cYou need at least 24 hours to edit armor stands!  /mytime");
+				return true;
+			}
 
 			if (arg3.length == 0) {
-				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
-				if (sp.getMinutes() < 2880) {
-					p.sendMessage("§cYou need 48 hours of time to manipulate armor stands");
-					return true;
-				}
 				String command = "/as";
 
 				String arms = FancyText.GenerateFancyText(
 						"§d§lToggle: §7Arms§r | ", FancyText.RUN_COMMAND,
-						command + " a", FancyText.SHOW_TEXT,
-						"Adds or removes arms");
-				String base = FancyText.GenerateFancyText("§7BasePlate§r | ",
+						command + " a", FancyText.SHOW_TEXT, "Toggle arms");
+				String base = FancyText.GenerateFancyText("§7Base§r | ",
 						FancyText.RUN_COMMAND, command + " b",
-						FancyText.SHOW_TEXT, "Adds or removes the baseplate");
+						FancyText.SHOW_TEXT, "Toggle baseplate");
 				String grav = FancyText.GenerateFancyText("§7Gravity§r | ",
 						FancyText.RUN_COMMAND, command + " g",
-						FancyText.SHOW_TEXT,
-						"Enables or disables gravity for this");
+						FancyText.SHOW_TEXT, "Toggle gravity");
 				String size = FancyText.GenerateFancyText("§7Size§r | ",
 						FancyText.RUN_COMMAND, command + " s",
-						FancyText.SHOW_TEXT, "Toggles large or small");
-				String visi = FancyText.GenerateFancyText("§7Visible | ",
+						FancyText.SHOW_TEXT, "Toggle size");
+				String visi = FancyText.GenerateFancyText("§7Visible§r",
 						FancyText.RUN_COMMAND, command + " v",
 						FancyText.SHOW_TEXT, "Toggles visibility");
 
-				String item = FancyText.GenerateFancyText("§7Item",
+				String item = FancyText.GenerateFancyText("§7Item in Hand",
 						FancyText.RUN_COMMAND, command + " i",
 						FancyText.SHOW_TEXT,
 						"Drops item in hand (if available)");
+
+				String name = FancyText
+						.GenerateFancyText(
+								"§d§lSet: §7Name§r | ",
+								FancyText.SUGGEST_COMMAND,
+								command + " n ",
+								FancyText.SHOW_TEXT,
+								"Set the name of this armor stand (type the name following the command shown.. leave blank for no name)");
+				String helmet = FancyText
+						.GenerateFancyText(
+								"§7Helmet§r | ",
+								FancyText.RUN_COMMAND,
+								command + " helmet",
+								FancyText.SHOW_TEXT,
+								"Set the head item of this armor stand to the item in your hand.  If the item is already set, it will drop from the armor stand");
+
 				sendRawPacket(p, "[" + arms + "," + base + "," + grav + ","
-						+ size + "," + visi + "," + item + "]");
-				p.sendMessage("§d§lRotation:");
-				SendRotateLine(
-						"h",
-						"Head",
-						"Rotate the head by clicking the preceding items.  Click here to reset the rotation",
-						p, command);
-				SendRotateLine(
-						"b",
-						"Body",
-						"Rotate the body by clicking the preceding items. Click here to reset the rotation",
-						p, command);
-				SendRotateLine(
-						"la",
-						"Left Arm",
-						"Rotate the Left Arm by clicking the preceding items. Click here to reset the rotation",
+						+ size + "," + visi + "]");
+				sendRawPacket(p, "[" + name + "," + helmet + "," + item + "]");
+				p.sendMessage("§d§lMove/Rotate:");
+				SendRotateLine("h", "Rotate Head",
+						"Rotate the head by clicking the preceding items.", p,
+						command);
+				SendRotateLine("b", "Rotate Body",
+						"Rotate the body by clicking the preceding items.", p,
+						command);
+				SendRotateLine("la", "Rotate Left Arm",
+						"Rotate the Left Arm by clicking the preceding items.",
 						p, command);
 				SendRotateLine(
 						"ra",
-						"Right Arm",
-						"Rotate the Right Arm by clicking the preceding items. Click here to reset the rotation",
+						"Rotate Right Arm",
+						"Rotate the Right Arm by clicking the preceding items.",
 						p, command);
-				SendRotateLine(
-						"ll",
-						"Left Leg",
-						"Rotate the Left Leg by clicking the preceding items. Click here to reset the rotation",
+				SendRotateLine("ll", "Rotate Left Leg",
+						"Rotate the Left Leg by clicking the preceding items.",
 						p, command);
 				SendRotateLine(
 						"rl",
-						"Right Leg",
-						"Rotate the Right Leg by clicking the preceding items. Click here to reset the rotation",
+						"Rotate Right Leg",
+						"Rotate the Right Leg by clicking the preceding items.",
 						p, command);
-				p.sendMessage("§d§lLocation:");
 				SendTranslateLine("m", "Move the armor stand", p, command);
 
 			} else {
@@ -6955,219 +7231,505 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				if (arm != null) {
-					if (hasPermissionInThisArea(p, arm.getLocation())) {
-						if (arg3[0].equals("a")) {
-							arm.setArms(!arm.hasArms());
+					if (arg3[0].equals("a")) {
+						arm.setArms(!arm.hasArms());
+					}
+					if (arg3[0].equals("b")) {
+						arm.setBasePlate(!arm.hasBasePlate());
+					}
+					if (arg3[0].equals("g")) {
+						arm.setGravity(!arm.hasGravity());
+						p.sendMessage("§dGravity = §7" + arm.hasGravity());
+					}
+					if (arg3[0].equals("s")) {
+						arm.setSmall(!arm.isSmall());
+					}
+					if (arg3[0].equals("v")) {
+						arm.setVisible(!arm.isVisible());
+					}
+
+					if (arg3[0].equals("hx+")) {
+						arm.setHeadPose(arm.getHeadPose().setX(
+								arm.getHeadPose().getX() + .1));
+					}
+					if (arg3[0].equals("hx-")) {
+						arm.setHeadPose(arm.getHeadPose().setX(
+								arm.getHeadPose().getX() - .1));
+					}
+					if (arg3[0].equals("hz+")) {
+						arm.setHeadPose(arm.getHeadPose().setZ(
+								arm.getHeadPose().getZ() + .1));
+					}
+					if (arg3[0].equals("hz-")) {
+						arm.setHeadPose(arm.getHeadPose().setZ(
+								arm.getHeadPose().getZ() - .1));
+					}
+					if (arg3[0].equals("hy+")) {
+						arm.setHeadPose(arm.getHeadPose().setY(
+								arm.getHeadPose().getY() + .1));
+					}
+					if (arg3[0].equals("hy-")) {
+						arm.setHeadPose(arm.getHeadPose().setY(
+								arm.getHeadPose().getY() - .1));
+					}
+					if (arg3[0].equals("bx+")) {
+						arm.setBodyPose(arm.getBodyPose().setX(
+								arm.getBodyPose().getX() + .1));
+					}
+					if (arg3[0].equals("bx-")) {
+						arm.setBodyPose(arm.getBodyPose().setX(
+								arm.getBodyPose().getX() - .1));
+					}
+					if (arg3[0].equals("bz+")) {
+						arm.setBodyPose(arm.getBodyPose().setZ(
+								arm.getBodyPose().getZ() + .1));
+					}
+					if (arg3[0].equals("bz-")) {
+						arm.setBodyPose(arm.getBodyPose().setZ(
+								arm.getBodyPose().getZ() - .1));
+					}
+					if (arg3[0].equals("by+")) {
+						arm.setBodyPose(arm.getBodyPose().setY(
+								arm.getBodyPose().getY() + .1));
+					}
+					if (arg3[0].equals("by-")) {
+						arm.setBodyPose(arm.getBodyPose().setY(
+								arm.getBodyPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("lax+")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setX(
+								arm.getLeftArmPose().getX() + .1));
+					}
+					if (arg3[0].equals("lax-")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setX(
+								arm.getLeftArmPose().getX() - .1));
+					}
+					if (arg3[0].equals("laz+")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setZ(
+								arm.getLeftArmPose().getZ() + .1));
+					}
+					if (arg3[0].equals("laz-")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setZ(
+								arm.getLeftArmPose().getZ() - .1));
+					}
+					if (arg3[0].equals("lay+")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setY(
+								arm.getLeftArmPose().getY() + .1));
+					}
+					if (arg3[0].equals("lay-")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setY(
+								arm.getLeftArmPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("rax+")) {
+						arm.setRightArmPose(arm.getRightArmPose().setX(
+								arm.getRightArmPose().getX() + .1));
+					}
+					if (arg3[0].equals("rax-")) {
+						arm.setRightArmPose(arm.getRightArmPose().setX(
+								arm.getRightArmPose().getX() - .1));
+					}
+					if (arg3[0].equals("raz+")) {
+						arm.setRightArmPose(arm.getRightArmPose().setZ(
+								arm.getRightArmPose().getZ() + .1));
+					}
+					if (arg3[0].equals("raz-")) {
+						arm.setRightArmPose(arm.getRightArmPose().setZ(
+								arm.getRightArmPose().getZ() - .1));
+					}
+					if (arg3[0].equals("ray+")) {
+						arm.setRightArmPose(arm.getRightArmPose().setY(
+								arm.getRightArmPose().getY() + .1));
+					}
+					if (arg3[0].equals("ray-")) {
+						arm.setRightArmPose(arm.getRightArmPose().setY(
+								arm.getRightArmPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("rlx+")) {
+						arm.setRightLegPose(arm.getRightLegPose().setX(
+								arm.getRightLegPose().getX() + .1));
+					}
+					if (arg3[0].equals("rlx-")) {
+						arm.setRightLegPose(arm.getRightLegPose().setX(
+								arm.getRightLegPose().getX() - .1));
+					}
+					if (arg3[0].equals("rlz+")) {
+						arm.setRightLegPose(arm.getRightLegPose().setZ(
+								arm.getRightLegPose().getZ() + .1));
+					}
+					if (arg3[0].equals("rlz-")) {
+						arm.setRightLegPose(arm.getRightLegPose().setZ(
+								arm.getRightLegPose().getZ() - .1));
+					}
+					if (arg3[0].equals("rly+")) {
+						arm.setRightLegPose(arm.getRightLegPose().setY(
+								arm.getRightLegPose().getY() + .1));
+					}
+					if (arg3[0].equals("rly-")) {
+						arm.setRightLegPose(arm.getRightLegPose().setY(
+								arm.getRightLegPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("llx+")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setX(
+								arm.getLeftLegPose().getX() + .1));
+					}
+					if (arg3[0].equals("llx-")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setX(
+								arm.getLeftLegPose().getX() - .1));
+					}
+					if (arg3[0].equals("llz+")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setZ(
+								arm.getLeftLegPose().getZ() + .1));
+					}
+					if (arg3[0].equals("llz-")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setZ(
+								arm.getLeftLegPose().getZ() - .1));
+					}
+					if (arg3[0].equals("lly+")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setY(
+								arm.getLeftLegPose().getY() + .1));
+					}
+					if (arg3[0].equals("lly-")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setY(
+								arm.getLeftLegPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("mx+")) {
+						Location l = arm.getLocation();
+						l.setX(l.getX() + .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("mx-")) {
+						Location l = arm.getLocation();
+						l.setX(l.getX() - .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("mz+")) {
+						Location l = arm.getLocation();
+						l.setZ(l.getZ() + .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("mz-")) {
+						Location l = arm.getLocation();
+						l.setZ(l.getZ() - .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("my+")) {
+						Location l = arm.getLocation();
+						l.setY(l.getY() + .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("my-")) {
+						Location l = arm.getLocation();
+						l.setY(l.getY() - .1);
+						arm.teleport(l);
+					}
+
+					if (arg3[0].equals("p+")) {
+						int particle = -1;
+						for (MetadataValue mv : arm.getMetadata("particle")) {
+							particle = (int) mv.value() + 1;
 						}
-						if (arg3[0].equals("b")) {
-							arm.setBasePlate(!arm.hasBasePlate());
+						if (particle == -1) {
+							particle = 0;
 						}
-						if (arg3[0].equals("g")) {
-							arm.setGravity(!arm.hasGravity());
-							p.sendMessage("§dGravity = §7" + arm.hasGravity());
+						if (particle > Particle.values().length - 1) {
+							particle = 0;
 						}
-						if (arg3[0].equals("s")) {
-							arm.setSmall(!arm.isSmall());
+
+						arm.setMetadata("particle", new FixedMetadataValue(
+								this, particle));
+						((Player) sender).sendTitle("",
+								Particle.values()[particle].name());
+					}
+					if (arg3[0].equals("p-")) {
+						int particle = -1;
+						for (MetadataValue mv : arm.getMetadata("particle")) {
+							particle = (int) mv.value();
+							particle--;
 						}
-						if (arg3[0].equals("v")) {
-							arm.setVisible(!arm.isVisible());
+						if (particle < 0) {
+							particle = Particle.values().length - 1;
 						}
-						if (arg3[0].equals("i")) {
-							if (arm.getItemInHand().getType() != Material.AIR) {
-								arm.getWorld().dropItem(arm.getLocation(),
-										arm.getItemInHand());
-								arm.setItemInHand(null);
+						arm.setMetadata("particle", new FixedMetadataValue(
+								this, particle));
+						((Player) sender).sendTitle("",
+								Particle.values()[particle].name());
+					}
+					if (arg3[0].equals("e+")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() + .1;
+						}
+						if (extra == -1) {
+							extra = 0;
+						}
+						if (extra > 5) {
+							extra = 5;
+						}
+
+						arm.setMetadata("extra", new FixedMetadataValue(this,
+								extra));
+						((Player) sender).sendTitle("", "Extra: " + extra);
+					}
+					if (arg3[0].equals("e-")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() - .1;
+						}
+						if (extra < 0) {
+							extra = 0;
+						}
+						arm.setMetadata("extra", new FixedMetadataValue(this,
+								extra));
+
+						((Player) sender).sendTitle("", "Extra: "
+								+ new DecimalFormat("#.##").format(extra));
+					}
+					if (arg3[0].equals("e++")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() + 1;
+						}
+						if (extra == -1) {
+							extra = 0;
+						}
+						if (extra > 5) {
+							extra = 5;
+						}
+
+						arm.setMetadata("extra", new FixedMetadataValue(this,
+								extra));
+						((Player) sender).sendTitle("", "Extra: " + extra);
+					}
+					if (arg3[0].equals("e--")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() - 1;
+						}
+						if (extra < 0) {
+							extra = 0;
+						}
+						arm.setMetadata("extra", new FixedMetadataValue(this,
+								extra));
+						((Player) sender).sendTitle("", "Extra: "
+								+ new DecimalFormat("#.##").format(extra));
+					}
+
+					if (arg3[0].equals("r+")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() + .1;
+						}
+						if (range == -1) {
+							range = 0;
+						}
+						if (range > 5) {
+							range = 5;
+						}
+
+						arm.setMetadata("range", new FixedMetadataValue(this,
+								range));
+						((Player) sender).sendTitle("", "range: " + range);
+					}
+					if (arg3[0].equals("r-")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() - .1;
+						}
+						if (range < 0) {
+							range = 0;
+						}
+						arm.setMetadata("range", new FixedMetadataValue(this,
+								range));
+						((Player) sender).sendTitle("", "Range: "
+								+ new DecimalFormat("#.##").format(range));
+					}
+
+					if (arg3[0].equals("r++")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() + 1;
+						}
+						if (range == -1) {
+							range = 0;
+						}
+						if (range > 5) {
+							range = 5;
+						}
+
+						arm.setMetadata("range", new FixedMetadataValue(this,
+								range));
+						((Player) sender).sendTitle("", "range: " + range);
+					}
+					if (arg3[0].equals("r--")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() - 1;
+						}
+						if (range < 0) {
+							range = 0;
+						}
+						arm.setMetadata("range", new FixedMetadataValue(this,
+								range));
+						((Player) sender).sendTitle("", "Range: "
+								+ new DecimalFormat("#.##").format(range));
+					}
+
+					if (arg3[0].equals("i+")) {
+						int intensity = -1;
+						for (MetadataValue mv : arm.getMetadata("intensity")) {
+							intensity = (int) mv.value() + 1;
+						}
+						if (intensity > 50) {
+							intensity = 50;
+						}
+						arm.setMetadata("intensity", new FixedMetadataValue(
+								this, intensity));
+						((Player) sender).sendTitle("", "Intensity: "
+								+ intensity);
+					}
+					if (arg3[0].equals("i-")) {
+						int intensity = -1;
+						for (MetadataValue mv : arm.getMetadata("intensity")) {
+							intensity = (int) mv.value() - 1;
+						}
+						if (intensity < 0) {
+							intensity = 0;
+						}
+						arm.setMetadata("intensity", new FixedMetadataValue(
+								this, intensity));
+						((Player) sender).sendTitle("", "Intensity: "
+								+ intensity);
+					}
+
+					if (arg3.length > 0) {
+						if (arg3[0].equals("n")) {
+							String name = "";
+							for (int i = 1; i < arg3.length; i++) {
+								name += arg3[i] + " ";
 							}
+							if (name.equals("")) {
+								arm.setCustomNameVisible(false);
+								return true;
+							}
+							name = name.substring(0, name.length() - 1);
+							arm.setCustomName(name);
+							arm.setCustomNameVisible(true);
+							getLogger().info(
+									sender.getName() + " set name as " + name);
 						}
+					}
 
-						if (arg3[0].equals("hx+")) {
-							arm.setHeadPose(arm.getHeadPose().setX(
-									arm.getHeadPose().getX() + .1));
+					if (arg3[0].equals("i")) {
+						if (arm.getItemInHand().getType() == Material.AIR) {
+							ItemStack is = ((Player) sender).getPlayer()
+									.getItemInHand();
+							is.setAmount(1);
+							((Player) sender).getPlayer().getInventory()
+									.removeItem(is);
+							arm.setItemInHand(is);
+						} else {
+							arm.getWorld().dropItem(arm.getLocation(),
+									arm.getItemInHand());
+							arm.getEquipment().setItemInHand(null);
 						}
-						if (arg3[0].equals("hx-")) {
-							arm.setHeadPose(arm.getHeadPose().setX(
-									arm.getHeadPose().getX() - .1));
-						}
-						if (arg3[0].equals("hz+")) {
-							arm.setHeadPose(arm.getHeadPose().setZ(
-									arm.getHeadPose().getZ() + .1));
-						}
-						if (arg3[0].equals("hz-")) {
-							arm.setHeadPose(arm.getHeadPose().setZ(
-									arm.getHeadPose().getZ() - .1));
-						}
-						if (arg3[0].equals("hy+")) {
-							arm.setHeadPose(arm.getHeadPose().setY(
-									arm.getHeadPose().getY() + .1));
-						}
-						if (arg3[0].equals("hy-")) {
-							arm.setHeadPose(arm.getHeadPose().setY(
-									arm.getHeadPose().getY() - .1));
-						}
-						if (arg3[0].equals("bx+")) {
-							arm.setBodyPose(arm.getBodyPose().setX(
-									arm.getBodyPose().getX() + .1));
-						}
-						if (arg3[0].equals("bx-")) {
-							arm.setBodyPose(arm.getBodyPose().setX(
-									arm.getBodyPose().getX() - .1));
-						}
-						if (arg3[0].equals("bz+")) {
-							arm.setBodyPose(arm.getBodyPose().setZ(
-									arm.getBodyPose().getZ() + .1));
-						}
-						if (arg3[0].equals("bz-")) {
-							arm.setBodyPose(arm.getBodyPose().setZ(
-									arm.getBodyPose().getZ() - .1));
-						}
-						if (arg3[0].equals("by+")) {
-							arm.setBodyPose(arm.getBodyPose().setY(
-									arm.getBodyPose().getY() + .1));
-						}
-						if (arg3[0].equals("by-")) {
-							arm.setBodyPose(arm.getBodyPose().setY(
-									arm.getBodyPose().getY() - .1));
-						}
+					}
 
-						if (arg3[0].equals("lax+")) {
-							arm.setLeftArmPose(arm.getLeftArmPose().setX(
-									arm.getLeftArmPose().getX() + .1));
+					if (arg3[0].equals("helmet")) {
+						if (arm.getEquipment().getHelmet().getType() == Material.AIR) {
+							ItemStack is = ((Player) sender).getPlayer()
+									.getItemInHand();
+							is.setAmount(1);
+							((Player) sender).getPlayer().getInventory()
+									.removeItem(is);
+							arm.getEquipment().setHelmet(is);
+						} else {
+							arm.getWorld().dropItem(arm.getLocation(),
+									arm.getEquipment().getHelmet());
+							arm.getEquipment().setHelmet(null);
 						}
-						if (arg3[0].equals("lax-")) {
-							arm.setLeftArmPose(arm.getLeftArmPose().setX(
-									arm.getLeftArmPose().getX() - .1));
-						}
-						if (arg3[0].equals("laz+")) {
-							arm.setLeftArmPose(arm.getLeftArmPose().setZ(
-									arm.getLeftArmPose().getZ() + .1));
-						}
-						if (arg3[0].equals("laz-")) {
-							arm.setLeftArmPose(arm.getLeftArmPose().setZ(
-									arm.getLeftArmPose().getZ() - .1));
-						}
-						if (arg3[0].equals("lay+")) {
-							arm.setLeftArmPose(arm.getLeftArmPose().setY(
-									arm.getLeftArmPose().getY() + .1));
-						}
-						if (arg3[0].equals("lay-")) {
-							arm.setLeftArmPose(arm.getLeftArmPose().setY(
-									arm.getLeftArmPose().getY() - .1));
-						}
-
-						if (arg3[0].equals("rax+")) {
-							arm.setRightArmPose(arm.getRightArmPose().setX(
-									arm.getRightArmPose().getX() + .1));
-						}
-						if (arg3[0].equals("rax-")) {
-							arm.setRightArmPose(arm.getRightArmPose().setX(
-									arm.getRightArmPose().getX() - .1));
-						}
-						if (arg3[0].equals("raz+")) {
-							arm.setRightArmPose(arm.getRightArmPose().setZ(
-									arm.getRightArmPose().getZ() + .1));
-						}
-						if (arg3[0].equals("raz-")) {
-							arm.setRightArmPose(arm.getRightArmPose().setZ(
-									arm.getRightArmPose().getZ() - .1));
-						}
-						if (arg3[0].equals("ray+")) {
-							arm.setRightArmPose(arm.getRightArmPose().setY(
-									arm.getRightArmPose().getY() + .1));
-						}
-						if (arg3[0].equals("ray-")) {
-							arm.setRightArmPose(arm.getRightArmPose().setY(
-									arm.getRightArmPose().getY() - .1));
-						}
-
-						if (arg3[0].equals("rlx+")) {
-							arm.setRightLegPose(arm.getRightLegPose().setX(
-									arm.getRightLegPose().getX() + .1));
-						}
-						if (arg3[0].equals("rlx-")) {
-							arm.setRightLegPose(arm.getRightLegPose().setX(
-									arm.getRightLegPose().getX() - .1));
-						}
-						if (arg3[0].equals("rlz+")) {
-							arm.setRightLegPose(arm.getRightLegPose().setZ(
-									arm.getRightLegPose().getZ() + .1));
-						}
-						if (arg3[0].equals("rlz-")) {
-							arm.setRightLegPose(arm.getRightLegPose().setZ(
-									arm.getRightLegPose().getZ() - .1));
-						}
-						if (arg3[0].equals("rly+")) {
-							arm.setRightLegPose(arm.getRightLegPose().setY(
-									arm.getRightLegPose().getY() + .1));
-						}
-						if (arg3[0].equals("rly-")) {
-							arm.setRightLegPose(arm.getRightLegPose().setY(
-									arm.getRightLegPose().getY() - .1));
-						}
-
-						if (arg3[0].equals("llx+")) {
-							arm.setLeftLegPose(arm.getLeftLegPose().setX(
-									arm.getLeftLegPose().getX() + .1));
-						}
-						if (arg3[0].equals("llx-")) {
-							arm.setLeftLegPose(arm.getLeftLegPose().setX(
-									arm.getLeftLegPose().getX() - .1));
-						}
-						if (arg3[0].equals("llz+")) {
-							arm.setLeftLegPose(arm.getLeftLegPose().setZ(
-									arm.getLeftLegPose().getZ() + .1));
-						}
-						if (arg3[0].equals("llz-")) {
-							arm.setLeftLegPose(arm.getLeftLegPose().setZ(
-									arm.getLeftLegPose().getZ() - .1));
-						}
-						if (arg3[0].equals("lly+")) {
-							arm.setLeftLegPose(arm.getLeftLegPose().setY(
-									arm.getLeftLegPose().getY() + .1));
-						}
-						if (arg3[0].equals("lly-")) {
-							arm.setLeftLegPose(arm.getLeftLegPose().setY(
-									arm.getLeftLegPose().getY() - .1));
-						}
-
-						if (arg3[0].equals("mx+")) {
-							Location l = arm.getLocation();
-							l.setX(l.getX() + .1);
-							arm.teleport(l);
-						}
-						if (arg3[0].equals("mx-")) {
-							Location l = arm.getLocation();
-							l.setX(l.getX() - .1);
-							arm.teleport(l);
-						}
-						if (arg3[0].equals("mz+")) {
-							Location l = arm.getLocation();
-							l.setZ(l.getZ() + .1);
-							arm.teleport(l);
-						}
-						if (arg3[0].equals("mz-")) {
-							Location l = arm.getLocation();
-							l.setZ(l.getZ() - .1);
-							arm.teleport(l);
-						}
-						if (arg3[0].equals("my+")) {
-							Location l = arm.getLocation();
-							l.setY(l.getY() + .1);
-							arm.teleport(l);
-						}
-						if (arg3[0].equals("my-")) {
-							Location l = arm.getLocation();
-							l.setY(l.getY() - .1);
-							arm.teleport(l);
-						}
-
-					} else {
-						p.sendMessage("§cYou do not have permission to edit that armor stand");
-						return true;
 					}
 				}
 			}
 		}
 		return true;
+	}
+
+	private void sendSecretArmorStand(Player p) {
+		String command = "/as";
+		String particleminus = FancyText.GenerateFancyText(" §c( - )",
+				FancyText.RUN_COMMAND, command + " p-", FancyText.SHOW_TEXT,
+				"Previous Particle effect");
+		String particleplus = FancyText.GenerateFancyText(
+				" §a( + )                   §7Change particle effect",
+				FancyText.RUN_COMMAND, command + " p-", FancyText.SHOW_TEXT,
+				"Next Particle effect");
+
+		sendRawPacket(p, "[" + particleminus + "," + particleplus + "]");
+
+		String intensityminus = FancyText.GenerateFancyText(" §c( - )",
+				FancyText.RUN_COMMAND, command + " i-", FancyText.SHOW_TEXT,
+				"Fewer particles");
+		String intensityplus = FancyText.GenerateFancyText(
+				" §a( + )                   §7Change intensity",
+				FancyText.RUN_COMMAND, command + " i+", FancyText.SHOW_TEXT,
+				"More particles");
+
+		sendRawPacket(p, "[" + intensityminus + "," + intensityplus + "]");
+
+		String rangeminus = FancyText.GenerateFancyText(" §c( - )",
+				FancyText.RUN_COMMAND, command + " r-", FancyText.SHOW_TEXT,
+				"Less Range (-.1 meter)");
+		String rangeplus = FancyText.GenerateFancyText(" §a( + )",
+				FancyText.RUN_COMMAND, command + " r+", FancyText.SHOW_TEXT,
+				"More Range (+.1 meter)");
+
+		String rangeminusminus = FancyText.GenerateFancyText(" §c( -- )",
+				FancyText.RUN_COMMAND, command + " r--", FancyText.SHOW_TEXT,
+				"Less Range (-1 meter)");
+		String rangeplusplus = FancyText.GenerateFancyText(
+				" §a( ++ )  §7Change range", FancyText.RUN_COMMAND, command
+						+ " r++", FancyText.SHOW_TEXT, "More Range (+1 meter)");
+
+		sendRawPacket(p, "[" + rangeminus + "," + rangeplus + ","
+				+ rangeminusminus + "," + rangeplusplus + "]");
+
+		String extraminus = FancyText
+				.GenerateFancyText(
+						" §c( - )",
+						FancyText.RUN_COMMAND,
+						command + " e-",
+						FancyText.SHOW_TEXT,
+						"Extra -.1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+		String extraplus = FancyText
+				.GenerateFancyText(
+						" §c( + )",
+						FancyText.RUN_COMMAND,
+						command + " e+",
+						FancyText.SHOW_TEXT,
+						"Extra +.1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+
+		String extraminusminus = FancyText
+				.GenerateFancyText(
+						" §c( -- )",
+						FancyText.RUN_COMMAND,
+						command + " e--",
+						FancyText.SHOW_TEXT,
+						"Extra -1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+		String extraplusplus = FancyText
+				.GenerateFancyText(
+						" §c( ++ )  §7Change extra",
+						FancyText.RUN_COMMAND,
+						command + " e++",
+						FancyText.SHOW_TEXT,
+						"Extra +1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+
+		sendRawPacket(p, "[" + extraminus + "," + extraplus + ","
+				+ extraminusminus + "," + extraplusplus + "]");
 	}
 
 	private boolean hasPermissionInThisArea(Player p, Location location) {
@@ -7573,6 +8135,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					s += "Total Area: " + area;
 					sender.sendMessage(s);
 
+				}
+
+				if (arg3[0].equals("spawnt")) {
+					for (SerenityPlayer sp : serenityPlayers.values()) {
+						if (sp.getMinutes() > 1439) {
+							Bukkit.dispatchCommand(sender,
+									"trust " + sp.getName());
+						}
+					}
 				}
 
 				if (arg3[0].equals("reward")) {
@@ -8322,6 +8893,101 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				return true;
 			}
 
+			if (arg3[0].equals("trophy")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§6Winner: " + thisName;
+				String command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"dbf38443-2d8b-435e-991e-4bdbd2505df9\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWViMWVjMTEyZjY4ZDE4NDk3NTQxNDk1ODkzYTM3NWMzMTdhNzc3ZTAxM2JiZjEzNTg5YjFkODg1MzJjYyJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("trophy2")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§7Participant: " + thisName;
+				String command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("omg")) {
+				if (sender instanceof Player) {
+					sendSecretArmorStand(((Player) sender).getPlayer());
+				}
+			}
+
+			if (arg3[0].equals("donator")) {
+				String thisName = "§9Globe";
+				String command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"f26a2360-0158-4f76-8a34-f487883f2b04\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzljODg4MWU0MjkxNWE5ZDI5YmI2MWExNmZiMjZkMDU5OTEzMjA0ZDI2NWRmNWI0MzliM2Q3OTJhY2Q1NiJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("donator2")) {
+				String thisName = "§9Multi-Ore";
+				String command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"06398930-27bf-4fe3-ba67-e63cb5e066d9\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODExMmY4N2NlZTU3ODg5NGUyZDA3MjUzYWJiMTQ2NjI0N2NlZTQ4ZjE3MjdiYjlkMWVhYzUzZjhlMDU3MTAxMiJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("donator3")) {
+				String thisName = "§9Snow Globe";
+				String command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"be6b6cbc-223a-4c98-b205-b00b7c545579\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmRkNjYzMTM2Y2FmYTExODA2ZmRiY2E2YjU5NmFmZDg1MTY2YjRlYzAyMTQyYzhkNWFjODk0MWQ4OWFiNyJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("donator4")) {
+				String thisName = "§9Money Bag";
+				String command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"da608428-e220-435c-9669-2fe3c0575458\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTM2ZTk0ZjZjMzRhMzU0NjVmY2U0YTkwZjJlMjU5NzYzODllYjk3MDlhMTIyNzM1NzRmZjcwZmQ0ZGFhNjg1MiJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
 			if (arg3[0].equals("ban")) {
 				if (arg3.length < 2) {
 					return true;
@@ -8498,7 +9164,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		} catch (Exception e) {
 			getLogger().info("Exception thrown while trying to add MOTD main");
 		}
-
 	}
 
 	private void safelyDropItemStack(Location location,
@@ -9586,97 +10251,69 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private boolean vote(CommandSender sender, String[] arg3) {
-		if (arg3.length == 0) {
-			sender.sendMessage("§3Minecraft 1.9 is right around the corner.  Please read the post here:  §7http://tinyurl.com/SerenityUpdate\n");
-			sender.sendMessage("§7(Click below to vote)");
-			String s = FancyText.GenerateFancyText(
-					"- §eVOTE TO §4RESET THE WORLD", FancyText.RUN_COMMAND,
-					"/vote yes", FancyText.SHOW_TEXT,
-					"Vote to §creset§r the world for 1.9");
-			String s2 = FancyText.GenerateFancyText(
-					"- §eVOTE TO §4KEEP THE WORLD", FancyText.RUN_COMMAND,
-					"/vote no", FancyText.SHOW_TEXT,
-					"Vote to §2keep§r the world for 1.9");
-			String s3 = FancyText.GenerateFancyText("§2See results",
-					FancyText.RUN_COMMAND, "/vote results",
-					FancyText.SHOW_TEXT, "Show the current votes");
-			if (sender instanceof Player) {
-				Player p = ((Player) sender).getPlayer();
-				sendRawPacket(p, s);
-				sendRawPacket(p, s2);
-				sendRawPacket(p, s3);
-			}
-			return true;
-		}
-
-		if (arg3.length > 0) {
-			if (arg3[0].equalsIgnoreCase("yes")) {
-				if (sender instanceof Player) {
-					SerenityPlayer sp = serenityPlayers.get(((Player) sender)
-							.getUniqueId());
-					if (sp.getMinutes() < 1440) {
-						sender.sendMessage("§cSorry only players with >24 hours of time can vote for this");
-						return true;
-					}
-				}
-				sender.sendMessage("§aYour vote was cast!");
-				voteCfg.getConfig().set("Vote." + sender.getName(), "yes");
-				voteCfg.saveConfig();
-				voteCfg.reloadConfig();
-				return true;
-			}
-			if (arg3[0].equalsIgnoreCase("no")) {
-				if (sender instanceof Player) {
-					SerenityPlayer sp = serenityPlayers.get(((Player) sender)
-							.getUniqueId());
-					if (sp.getMinutes() < 1440) {
-						sender.sendMessage("§cSorry only players with >24 hours of time can vote for this");
-						return true;
-					}
-				}
-				sender.sendMessage("§aYour vote was cast!");
-				voteCfg.getConfig().set("Vote." + sender.getName(), "no");
-				voteCfg.saveConfig();
-				voteCfg.reloadConfig();
-				return true;
-			}
-			if (arg3[0].equalsIgnoreCase("results")) {
-				ConfigurationSection votesFromConfig = voteCfg.getConfig()
-						.getConfigurationSection("Vote");
-				ArrayList<String> votes = new ArrayList<String>();
-				for (String key : votesFromConfig.getKeys(false)) {
-					votes.add(votesFromConfig.getString(key));
-				}
-
-				int votesToReset = 0;
-				int votesToKeep = 0;
-				for (int i = 0; i < votes.size(); i++) {
-					if (votes.get(i).equalsIgnoreCase("yes")) {
-						votesToReset++;
-					}
-					if (votes.get(i).equalsIgnoreCase("no")) {
-						votesToKeep++;
-					}
-				}
-
-				sender.sendMessage("§3Total votes: §b"
-						+ (votesToReset + votesToKeep)
-						+ "\n§5Reset world: §2"
-						+ new DecimalFormat("##.##")
-								.format((double) ((double) votesToReset
-										/ (double) (votesToKeep + votesToReset) * 100.00))
-						+ "%"
-						+ "\n§5Keep world:  §2"
-						+ new DecimalFormat("##.##")
-								.format((double) ((double) votesToKeep
-										/ (double) (votesToKeep + votesToReset) * 100.00))
-						+ "%");
-				return true;
-			}
-
-			return true;
-		}
-		return false;
+		return true;/*
+					 * if (arg3.length == 0) { sender.sendMessage(
+					 * "§3Minecraft 1.9 is right around the corner.  Please read the post here:  §7http://tinyurl.com/SerenityUpdate\n"
+					 * ); sender.sendMessage("§7(Click below to vote)"); String
+					 * s = FancyText.GenerateFancyText(
+					 * "- §eVOTE TO §4RESET THE WORLD", FancyText.RUN_COMMAND,
+					 * "/vote yes", FancyText.SHOW_TEXT,
+					 * "Vote to §creset§r the world for 1.9"); String s2 =
+					 * FancyText.GenerateFancyText(
+					 * "- §eVOTE TO §4KEEP THE WORLD", FancyText.RUN_COMMAND,
+					 * "/vote no", FancyText.SHOW_TEXT,
+					 * "Vote to §2keep§r the world for 1.9"); String s3 =
+					 * FancyText.GenerateFancyText("§2See results",
+					 * FancyText.RUN_COMMAND, "/vote results",
+					 * FancyText.SHOW_TEXT, "Show the current votes"); if
+					 * (sender instanceof Player) { Player p = ((Player)
+					 * sender).getPlayer(); sendRawPacket(p, s);
+					 * sendRawPacket(p, s2); sendRawPacket(p, s3); } return
+					 * true; }
+					 * 
+					 * if (arg3.length > 0) { if
+					 * (arg3[0].equalsIgnoreCase("yes")) { if (sender instanceof
+					 * Player) { SerenityPlayer sp =
+					 * serenityPlayers.get(((Player) sender) .getUniqueId()); if
+					 * (sp.getMinutes() < 1440) { sender.sendMessage(
+					 * "§cSorry only players with >24 hours of time can vote for this"
+					 * ); return true; } }
+					 * sender.sendMessage("§aYour vote was cast!");
+					 * voteCfg.getConfig().set("Vote." + sender.getName(),
+					 * "yes"); voteCfg.saveConfig(); voteCfg.reloadConfig();
+					 * return true; } if (arg3[0].equalsIgnoreCase("no")) { if
+					 * (sender instanceof Player) { SerenityPlayer sp =
+					 * serenityPlayers.get(((Player) sender) .getUniqueId()); if
+					 * (sp.getMinutes() < 1440) { sender.sendMessage(
+					 * "§cSorry only players with >24 hours of time can vote for this"
+					 * ); return true; } }
+					 * sender.sendMessage("§aYour vote was cast!");
+					 * voteCfg.getConfig().set("Vote." + sender.getName(),
+					 * "no"); voteCfg.saveConfig(); voteCfg.reloadConfig();
+					 * return true; } if (arg3[0].equalsIgnoreCase("results")) {
+					 * ConfigurationSection votesFromConfig =
+					 * voteCfg.getConfig() .getConfigurationSection("Vote");
+					 * ArrayList<String> votes = new ArrayList<String>(); for
+					 * (String key : votesFromConfig.getKeys(false)) {
+					 * votes.add(votesFromConfig.getString(key)); }
+					 * 
+					 * int votesToReset = 0; int votesToKeep = 0; for (int i =
+					 * 0; i < votes.size(); i++) { if
+					 * (votes.get(i).equalsIgnoreCase("yes")) { votesToReset++;
+					 * } if (votes.get(i).equalsIgnoreCase("no")) {
+					 * votesToKeep++; } }
+					 * 
+					 * sender.sendMessage("§3Total votes: §b" + (votesToReset +
+					 * votesToKeep) + "\n§5Reset world: §2" + new
+					 * DecimalFormat("##.##") .format((double) ((double)
+					 * votesToReset / (double) (votesToKeep + votesToReset) *
+					 * 100.00)) + "%" + "\n§5Keep world:  §2" + new
+					 * DecimalFormat("##.##") .format((double) ((double)
+					 * votesToKeep / (double) (votesToKeep + votesToReset) *
+					 * 100.00)) + "%"); return true; }
+					 * 
+					 * return true; } return false;
+					 */
 	}
 
 	private void addPlayerStatus(PlayerStatus ps) {
@@ -9783,125 +10420,81 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
-	@EventHandler
-	public void onFireworksBlockPlace(BlockPlaceEvent event) {
-		if (event.getBlock().getType().equals(Material.GOLD_BLOCK)) {
-			if (event.getBlock().getRelative(BlockFace.DOWN).getType()
-					.equals(Material.OBSIDIAN)) {
-				Boolean exists = false;
-				for (int i = 0; i < fireworkShowLocations.size(); i++) {
-					if (fireworkShowLocations.get(i).name.equals(event
-							.getPlayer().getDisplayName())) {
-						exists = true;
-					}
-				}
-				if (!exists) {
-					String path = "Fireworks."
-							+ event.getPlayer().getDisplayName();
-					int x = (int) event.getBlock().getLocation().getX();
-					int y = (int) event.getBlock().getLocation().getY();
-					int z = (int) event.getBlock().getLocation().getZ();
-					String[] loc = { event.getBlock().getWorld().getName(),
-							"" + x, "" + y, "" + z };
+	/*
+	 * @EventHandler public void onFireworksBlockPlace(BlockPlaceEvent event) {
+	 * if (event.getBlock().getType().equals(Material.GOLD_BLOCK)) { if
+	 * (event.getBlock().getRelative(BlockFace.DOWN).getType()
+	 * .equals(Material.OBSIDIAN)) { Boolean exists = false; for (int i = 0; i <
+	 * fireworkShowLocations.size(); i++) { if
+	 * (fireworkShowLocations.get(i).name.equals(event
+	 * .getPlayer().getDisplayName())) { exists = true; } } if (!exists) {
+	 * String path = "Fireworks." + event.getPlayer().getDisplayName(); int x =
+	 * (int) event.getBlock().getLocation().getX(); int y = (int)
+	 * event.getBlock().getLocation().getY(); int z = (int)
+	 * event.getBlock().getLocation().getZ(); String[] loc = {
+	 * event.getBlock().getWorld().getName(), "" + x, "" + y, "" + z };
+	 * 
+	 * fireworksCfg.getConfig().set(path, loc); fireworksCfg.saveConfig();
+	 * fireworksCfg.reloadConfig(); FireWorkShow fw = new
+	 * FireWorkShow(event.getPlayer() .getDisplayName(),
+	 * event.getBlock().getLocation()); fireworkShowLocations.add(fw);
+	 * 
+	 * String msg = getTranslationLanguage(event.getPlayer(),
+	 * stringKeys.FIREWORKSCREATE.toString());
+	 * event.getPlayer().sendMessage(msg);
+	 * 
+	 * /* event.getPlayer() .sendMessage(
+	 * "§2You made a fireworks show block!  \nWhen it is gold, right click it for a show!"
+	 * );
+	 * 
+	 * } else { FireWorkShow fws = new FireWorkShow(
+	 * "Something went terribly wrong", event.getBlock() .getLocation()); for
+	 * (int i = 0; i < fireworkShowLocations.size(); i++) { if
+	 * (fireworkShowLocations.get(i).name.equals(event
+	 * .getPlayer().getDisplayName())) { fws = fireworkShowLocations.get(i); } }
+	 * Location l = fws.getLocation();
+	 * 
+	 * String msg = getTranslationLanguage(event.getPlayer(),
+	 * stringKeys.FIREWORKSEXISTS.toString()); event.getPlayer().sendMessage(
+	 * String.format(msg, fws.getLocation().getWorld() .getName(), (int)
+	 * l.getX(), (int) l.getY(), (int) l.getZ())); /*
+	 * event.getPlayer().sendMessage(
+	 * "§cYou already have a fireworks show block in the §3" +
+	 * fws.getLocation().getWorld().getName() + "§c at: " + "\n§3X:§2 " +
+	 * l.getX() + "\n§3Y:§2 " + l.getY() + "\n§3Z:§2 " + l.getZ() +
+	 * "\n§cPlease destroy that one first!");
+	 * 
+	 * event.setCancelled(true); } } } }
+	 */
 
-					fireworksCfg.getConfig().set(path, loc);
-					fireworksCfg.saveConfig();
-					fireworksCfg.reloadConfig();
-					FireWorkShow fw = new FireWorkShow(event.getPlayer()
-							.getDisplayName(), event.getBlock().getLocation());
-					fireworkShowLocations.add(fw);
-
-					String msg = getTranslationLanguage(event.getPlayer(),
-							stringKeys.FIREWORKSCREATE.toString());
-					event.getPlayer().sendMessage(msg);
-
-					/*
-					 * event.getPlayer() .sendMessage(
-					 * "§2You made a fireworks show block!  \nWhen it is gold, right click it for a show!"
-					 * );
-					 */
-				} else {
-					FireWorkShow fws = new FireWorkShow(
-							"Something went terribly wrong", event.getBlock()
-									.getLocation());
-					for (int i = 0; i < fireworkShowLocations.size(); i++) {
-						if (fireworkShowLocations.get(i).name.equals(event
-								.getPlayer().getDisplayName())) {
-							fws = fireworkShowLocations.get(i);
-						}
-					}
-					Location l = fws.getLocation();
-
-					String msg = getTranslationLanguage(event.getPlayer(),
-							stringKeys.FIREWORKSEXISTS.toString());
-					event.getPlayer().sendMessage(
-							String.format(msg, fws.getLocation().getWorld()
-									.getName(), (int) l.getX(), (int) l.getY(),
-									(int) l.getZ()));
-					/*
-					 * event.getPlayer().sendMessage(
-					 * "§cYou already have a fireworks show block in the §3" +
-					 * fws.getLocation().getWorld().getName() + "§c at: " +
-					 * "\n§3X:§2 " + l.getX() + "\n§3Y:§2 " + l.getY() +
-					 * "\n§3Z:§2 " + l.getZ() +
-					 * "\n§cPlease destroy that one first!");
-					 */
-					event.setCancelled(true);
-				}
-			}
-		}
-	}
-
-	@EventHandler
-	public void onFireworkBlockClick(PlayerInteractEvent event) {
-		if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-			if (event.getClickedBlock().getType().equals(Material.GOLD_BLOCK)
-					|| event.getClickedBlock().getType()
-							.equals(Material.REDSTONE_BLOCK)) {
-				boolean thisIsAShowBlock = false;
-				FireWorkShow fw = new FireWorkShow();
-				Location showLoc = new Location(Bukkit.getWorld("world"), 0, 0,
-						0);
-				for (int i = 0; i < fireworkShowLocations.size(); i++) {
-					if (fireworkShowLocations.get(i).getLocation()
-							.equals(event.getClickedBlock().getLocation())) {
-						thisIsAShowBlock = true;
-						showLoc = fireworkShowLocations.get(i).getLocation();
-						if (fireworkShowLocations.get(i).isActive) {
-							String s = "§cIt's cooling down!";
-							Long lastShow = fireworkShowLocations.get(i).lastShow
-									.getTimeInMillis();
-							Long now = new GregorianCalendar()
-									.getTimeInMillis();
-							if (600000 - (now - lastShow) < 60000) {
-								s += "  Please wait "
-										+ (600000 - (now - lastShow)) / 1000
-										+ " seconds!";
-							} else {
-								s += "  Please wait "
-										+ (600000 - (now - lastShow)) / 60000
-										+ " minutes!";
-							}
-
-							event.getPlayer().sendMessage(s);
-							return;
-						}
-						fireworkShowLocations.get(i).setActive(true);
-						getLogger().info(
-								event.getPlayer().getDisplayName()
-										+ " started a fireworks show!");
-						fireworkShowLocations.get(i).setLastShow(
-								new GregorianCalendar());
-					}
-				}
-
-				if (thisIsAShowBlock) {
-					startFireworkShow(showLoc);
-
-				}
-			}
-		}
-	}
+	/*
+	 * @EventHandler public void onFireworkBlockClick(PlayerInteractEvent event)
+	 * { if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) { if
+	 * (event.getClickedBlock().getType().equals(Material.GOLD_BLOCK) ||
+	 * event.getClickedBlock().getType() .equals(Material.REDSTONE_BLOCK)) {
+	 * boolean thisIsAShowBlock = false; FireWorkShow fw = new FireWorkShow();
+	 * Location showLoc = new Location(Bukkit.getWorld("world"), 0, 0, 0); for
+	 * (int i = 0; i < fireworkShowLocations.size(); i++) { if
+	 * (fireworkShowLocations.get(i).getLocation()
+	 * .equals(event.getClickedBlock().getLocation())) { thisIsAShowBlock =
+	 * true; showLoc = fireworkShowLocations.get(i).getLocation(); if
+	 * (fireworkShowLocations.get(i).isActive) { String s =
+	 * "§cIt's cooling down!"; Long lastShow =
+	 * fireworkShowLocations.get(i).lastShow .getTimeInMillis(); Long now = new
+	 * GregorianCalendar() .getTimeInMillis(); if (600000 - (now - lastShow) <
+	 * 60000) { s += "  Please wait " + (600000 - (now - lastShow)) / 1000 +
+	 * " seconds!"; } else { s += "  Please wait " + (600000 - (now - lastShow))
+	 * / 60000 + " minutes!"; }
+	 * 
+	 * event.getPlayer().sendMessage(s); return; }
+	 * fireworkShowLocations.get(i).setActive(true); getLogger().info(
+	 * event.getPlayer().getDisplayName() + " started a fireworks show!");
+	 * fireworkShowLocations.get(i).setLastShow( new GregorianCalendar()); } }
+	 * 
+	 * if (thisIsAShowBlock) { startFireworkShow(showLoc);
+	 * 
+	 * } } } }
+	 */
 
 	private void startFireworkShow(Location showLoc) {
 		showLoc.getWorld().playSound(showLoc, Sound.ENTITY_LIGHTNING_THUNDER,
@@ -9989,26 +10582,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}, counter + 0L);
 		}
 
-	}
-
-	@EventHandler
-	public void onPistonPush(BlockPistonExtendEvent event) {
-		for (Block b : event.getBlocks()) {
-			Location l = b.getLocation();
-			for (FireWorkShow fl : fireworkShowLocations) {
-				if (fl.getLocation().equals(b.getLocation())) {
-					getLogger().info("§cAttempted to push a firework block");
-					event.setCancelled(true);
-				}
-			}
-		}/*
-		 * for (int i = 0; i < fireworkShowLocations.size(); i++) { Block b =
-		 * fireworkShowLocations.get(i).getLocation().getBlock(); if
-		 * (event.getBlocks().contains(b)) {
-		 * getLogger().info("Attempted to push a firework block");
-		 * event.setCancelled(true); } }
-		 */
-	}
+	}/*
+	 * 
+	 * @EventHandler public void onPistonPush(BlockPistonExtendEvent event) {
+	 * for (Block b : event.getBlocks()) { Location l = b.getLocation(); for
+	 * (FireWorkShow fl : fireworkShowLocations) { if
+	 * (fl.getLocation().equals(b.getLocation())) {
+	 * getLogger().info("§cAttempted to push a firework block");
+	 * event.setCancelled(true); } } }/* for (int i = 0; i <
+	 * fireworkShowLocations.size(); i++) { Block b =
+	 * fireworkShowLocations.get(i).getLocation().getBlock(); if
+	 * (event.getBlocks().contains(b)) {
+	 * getLogger().info("Attempted to push a firework block");
+	 * event.setCancelled(true); } }
+	 * 
+	 * }
+	 */
 
 	@EventHandler
 	public void onPlayerFireworksBlockLeftClick(BlockBreakEvent event) {
@@ -10020,11 +10609,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					String msg = getTranslationLanguage(event.getPlayer(),
 							stringKeys.FIREWORKSEARLYBREAKATTEMPT.toString());
 					event.getPlayer().sendMessage(msg);
-					/*
-					 * event.getPlayer() .sendMessage(
-					 * "§cYou may not break a fireworks block that is cooling down!"
-					 * );
-					 */
+
 					event.setCancelled(true);
 					return;
 				}
@@ -12588,7 +13173,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			try {
 				String somedata = msgin.readUTF();
 				Long time = msgin.readLong();
-				if (System.currentTimeMillis() - time < 50)
+				if (System.currentTimeMillis() - time < 500)
 					simulateChat(somedata);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
