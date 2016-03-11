@@ -1727,7 +1727,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.getDisplayName().contains("§9Money Bag")) {
 							moneyBag(a);
 						}
-						if(a.hasGravity()){
+						if (a.hasGravity()) {
 							a.setGravity(false);
 						}
 					}
@@ -1827,7 +1827,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			y = y - 6.25;
 		}
 
-		a.setHeadPose(new EulerAngle(a.getHeadPose().getX(), y, a.getHeadPose().getZ()));
+		a.setHeadPose(new EulerAngle(a.getHeadPose().getX(), y, a.getHeadPose()
+				.getZ()));
 
 		if (a.isCustomNameVisible()) {
 			String raw = a.getEquipment().getHelmet().getItemMeta()
@@ -7136,7 +7137,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (sender instanceof Player) {
 			Player p = ((Player) sender).getPlayer();
 			SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
-			if(sp.getMinutes() < 1441){
+			if (sp.getMinutes() < 1441) {
 				p.sendMessage("§cYou need at least 24 hours to edit armor stands!  /mytime");
 				return true;
 			}
@@ -8145,6 +8146,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 				}
+				
+				if (arg3[0].equals("ss")) {
+					if(sender instanceof Player){
+						ItemStack is = new ItemStack(Material.SOUL_SAND);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName(Secret.DSS);
+						is.setItemMeta(im);
+						is.setAmount(64);
+						((Player) sender).getPlayer().getInventory().addItem(is);
+					}
+				}
 
 				if (arg3[0].equals("reward")) {
 					if (sender instanceof Player) {
@@ -8242,64 +8254,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				if (arg3[0].equals("serialize")) {
 					if (sender instanceof Player) {
 						Player p = ((Player) sender).getPlayer();
-						ItemStack air = new ItemStack(Material.AIR);
-						for (int i = 0; i < p.getInventory().getSize(); i++) {
-							ItemStack is = p.getInventory().getItem(i);
-							if (is != null) {
-								if (is.getType() != null) {
-									if (is.getType() == Material.SKULL_ITEM) {
-										SkullMeta sm = (SkullMeta) is
-												.getItemMeta();
-										if (sm.getOwner() == null
-												|| sm.getOwner() == "") {
-											sm.setOwner("Halloween 2015");
-											is.setItemMeta(sm);
-										}
-										moveItemToOther(p, is);
-										p.getInventory().setItem(i, air);
-									}
-
-									if (is.hasItemMeta()) {
-										if (is.getItemMeta().hasDisplayName()) {
-											if (is.getItemMeta()
-													.getDisplayName()
-													.equals("§6The Firework Axe")
-													|| is.getItemMeta()
-															.getDisplayName()
-															.equals("§dParty Armor")
-													|| is.getItemMeta()
-															.getDisplayName()
-															.equals("§4Cupid's Bow")
-													|| is.getItemMeta()
-															.getDisplayName()
-															.equals("§dForbidden Fruit")) {
-												moveItemToOther(p, is);
-												p.getInventory()
-														.setItem(i, air);
-											}
-										}
-									}
-
-									if (is.getType().equals(
-											Material.WRITTEN_BOOK)) {
-										p.getInventory().remove(is);
-										p.getInventory().setItem(i, air);
-									}
-								}
-							}
-
-						}
+						serializeAndSendInventory(p);
 
 						ByteArrayDataOutput out = ByteStreams.newDataOutput();
 						out.writeUTF("ConnectOther");
 						out.writeUTF(p.getName());
-						out.writeUTF("creative");
+						out.writeUTF("survival");
 						Player player = Iterables.getFirst(
 								Bukkit.getOnlinePlayers(), null);
 						player.sendPluginMessage(global, "BungeeCord",
 								out.toByteArray());
 					}
-
 				}
 
 				if (arg3[0].equals("npe")) {
@@ -9025,22 +8990,127 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		return false;
 	}
 
+	private void serializeAndSendInventory(Player p) {
+		ItemStack air = new ItemStack(Material.AIR);
+
+		for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+			if (e.isCustomNameVisible() && e.getCustomName().contains("§6")) {
+				moveEntityToOther(p, e);
+
+			}
+		}
+		for (int i = 0; i < p.getInventory().getSize(); i++) {
+			ItemStack is = p.getInventory().getItem(i);
+			if (is != null) {
+				if (is.getType() != null) {
+					if (is.getType() == Material.SKULL_ITEM) {
+						SkullMeta sm = (SkullMeta) is.getItemMeta();
+						if (sm.getOwner() == null || sm.getOwner() == "") {
+							sm.setOwner("Halloween 2015");
+							is.setItemMeta(sm);
+						}
+						moveItemToOther(p, is);
+						p.getInventory().remove(is);
+					}
+
+					if (is.hasItemMeta()) {
+						if (is.getItemMeta().hasDisplayName()) {
+							if (is.getItemMeta().getDisplayName()
+									.equals("§6The Firework Axe")
+									|| is.getItemMeta().getDisplayName()
+											.equals("§dParty Armor")
+									|| is.getItemMeta().getDisplayName()
+											.equals("§4Cupid's Bow")
+									|| is.getItemMeta().getDisplayName()
+											.equals("§dForbidden Fruit")) {
+								moveItemToOther(p, is);
+								p.getInventory().removeItem(is);
+							}
+						}
+					}
+
+					if (is.getType().equals(Material.WRITTEN_BOOK)
+							|| is.getType().equals(Material.BANNER)) {
+						moveItemToOther(p, is);
+						p.getInventory().removeItem(is);
+					}
+				}
+			}
+		}
+	}
+
+	/*
+	 * cow, pig, mush, chicken,sheep
+	 * 
+	 * special: rabbit, horse, cat
+	 */
+
 	private void moveEntityToOther(Player p, Entity e) {
-		sendEntityToSurvival(p.getUniqueId().toString(), serializeEntity(e));
+		EntityType et = e.getType();
+		if (et.equals(EntityType.COW) || et.equals(EntityType.PIG)
+				|| et.equals(EntityType.CHICKEN) || et.equals(EntityType.SHEEP) || et.equals(EntityType.MUSHROOM_COW)) {
+			sendEntityToSurvival(p.getUniqueId().toString(), e.getCustomName(),
+					e.getType().toString());
+		}
+		if (et.equals(EntityType.RABBIT)) {
+			Rabbit r = (Rabbit) e;
+			sendRabbitHorseCatToSurvival(p.getUniqueId().toString(),
+					e.getCustomName(), e.getType().toString(), r
+							.getRabbitType().toString());
+		}
+		if (et.equals(EntityType.HORSE)) {
+			Horse h = (Horse) e;
+			sendRabbitHorseCatToSurvival(p.getUniqueId().toString(),
+					e.getCustomName(), e.getType().toString(), h.getColor()
+							.toString());
+		}
+		if (et.equals(EntityType.OCELOT)) {
+			Ocelot o = (Ocelot) e;
+			sendRabbitHorseCatToSurvival(p.getUniqueId().toString(),
+					e.getCustomName(), e.getType().toString(), o.getCatType()
+							.toString());
+		}
+		p.sendMessage(e.getCustomName() + " §7was sent to the new world!");
 		e.remove();
 	}
 
-	private void sendEntityToSurvival(String UUID, String serializeEntity) {
+	private void sendRabbitHorseCatToSurvival(String UUID, String name,
+			String type, String type2) {
 		ByteArrayDataOutput out = ByteStreams.newDataOutput();
 		out.writeUTF("Forward"); // So BungeeCord knows to forward it
-		out.writeUTF("ALL");
+		out.writeUTF("survival");
+		out.writeUTF("rhc"); // The channel name to check if this your data
+
+		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
+		DataOutputStream msgout = new DataOutputStream(msgbytes);
+		try {
+			msgout.writeUTF(UUID);
+			msgout.writeUTF(name);
+			msgout.writeUTF(type);
+			msgout.writeUTF(type2);
+
+			out.writeShort(msgbytes.toByteArray().length);
+			out.write(msgbytes.toByteArray());
+
+			Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
+			player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void sendEntityToSurvival(String UUID, String name, String type) {
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Forward"); // So BungeeCord knows to forward it
+		out.writeUTF("survival");
 		out.writeUTF("Entity"); // The channel name to check if this your data
 
 		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
 		DataOutputStream msgout = new DataOutputStream(msgbytes);
 		try {
 			msgout.writeUTF(UUID);
-			msgout.writeUTF(serializeEntity);
+			msgout.writeUTF(name);
+			msgout.writeUTF(type);
 
 			out.writeShort(msgbytes.toByteArray().length);
 			out.write(msgbytes.toByteArray());
@@ -9060,7 +9130,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private void sendItemStackToSurvival(String UUID, String itemstack) {
 		ByteArrayDataOutput out = ByteStreams.newDataOutput();
 		out.writeUTF("Forward"); // So BungeeCord knows to forward it
-		out.writeUTF("ALL");
+		out.writeUTF("survival");
 		out.writeUTF("Item"); // The channel name to check if this your data
 
 		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
@@ -9088,12 +9158,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			return null;
 		}
 		return config.getItemStack("i", null);
-	}
-
-	private static String serializeEntity(Entity e) {
-		YamlConfiguration config = new YamlConfiguration();
-		config.set("a", e);
-		return config.saveToString();
 	}
 
 	private static String serializeItemStack(ItemStack is) {
@@ -11244,7 +11308,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPlayerSSA(BlockPlaceEvent event) {
-
 		if (event.getBlock().getType() == Material.SOUL_SAND) {
 			if (event.getPlayer().getItemInHand().hasItemMeta()) {
 				ItemStack is = event.getPlayer().getItemInHand();
@@ -13233,6 +13296,142 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				e.printStackTrace();
 			} // Read the data in the same way you wrote it
 		}
+
+		if (subchannel.equals("Item")) {
+			short len = in.readShort();
+			byte[] msgbytes = new byte[len];
+			in.readFully(msgbytes);
+
+			DataInputStream msgin = new DataInputStream(
+					new ByteArrayInputStream(msgbytes));
+			try {
+				String uuids = msgin.readUTF();
+				String item = msgin.readUTF();
+
+				UUID uuid = UUID.fromString(uuids);
+				putItemInMailbox(uuid, deserializeItemStack(item));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // Read the data in the same way you wrote it
+		}
+
+		if (subchannel.equals("Entity")) {
+			short len = in.readShort();
+			byte[] msgbytes = new byte[len];
+			in.readFully(msgbytes);
+
+			DataInputStream msgin = new DataInputStream(
+					new ByteArrayInputStream(msgbytes));
+			try {
+				String uuids = msgin.readUTF();
+				String name = msgin.readUTF();
+				String type = msgin.readUTF();
+
+				UUID uuid = UUID.fromString(uuids);
+
+				EntityType e = EntityType.CHICKEN;
+				for (EntityType es : EntityType.values()) {
+					if (es.toString().equals(type)) {
+						e = es;
+					}
+				}
+
+				spawnEntity(uuid, name, e);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // Read the data in the same way you wrote it
+		}
+
+		if (subchannel.equals("rhc")) {
+			short len = in.readShort();
+			byte[] msgbytes = new byte[len];
+			in.readFully(msgbytes);
+
+			DataInputStream msgin = new DataInputStream(
+					new ByteArrayInputStream(msgbytes));
+			try {
+				String uuids = msgin.readUTF();
+				String name = msgin.readUTF();
+				String type = msgin.readUTF();
+				String type2 = msgin.readUTF();
+
+				UUID uuid = UUID.fromString(uuids);
+
+				spawnSpecialEntity(uuid, name, type, type2);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // Read the data in the same way you wrote it
+		}
+	}
+
+	private void spawnSpecialEntity(UUID uuid, String name, String type,
+			String type2) {
+		
+		World w = Bukkit.getWorld("world");
+		Player p = Bukkit.getOfflinePlayer(uuid).getPlayer();
+		p.loadData();
+		
+		EntityType e = EntityType.CHICKEN;
+		for (EntityType es : EntityType.values()) {
+			if (es.toString().equals(type.toString())) {
+				e = es;
+				break;
+			}
+		}
+		
+		if(e.equals(EntityType.HORSE)){
+			Horse horse = (Horse)w.spawnEntity(p.getLocation(), e);
+			horse.setCustomName(name);
+			horse.setBaby();
+			horse.setAgeLock(true);
+			for(Horse.Color color: Horse.Color.values()){
+				if(color.toString().equals(type2)){
+					horse.setColor(color);
+				}
+			}
+		}
+		
+		if(e.equals(EntityType.OCELOT)){
+			Ocelot oce = (Ocelot)w.spawnEntity(p.getLocation(), e);
+			oce.setCustomName(name);
+			oce.setBaby();
+			oce.setAgeLock(true);
+			for(Ocelot.Type color: Ocelot.Type.values()){
+				if(color.toString().equals(type2)){
+					oce.setCatType(color);
+				}
+			}
+		}
+		
+		if(e.equals(EntityType.RABBIT)){
+			Rabbit rab = (Rabbit)w.spawnEntity(p.getLocation(), e);
+			rab.setCustomName(name);
+			rab.setBaby();
+			rab.setAgeLock(true);
+			for(Rabbit.Type color: Rabbit.Type.values()){
+				if(color.toString().equals(type2)){
+					rab.setRabbitType(color);
+				}
+			}
+		}
+
+	}
+
+	private void spawnEntity(UUID uuid, String name, EntityType e) {
+		World w = Bukkit.getWorld("world");
+		Player p = Bukkit.getOfflinePlayer(uuid).getPlayer();
+		p.loadData();
+		w.spawnEntity(p.getLocation(), e).setCustomName(name);
+	}
+
+	private void putItemInMailbox(UUID uuid, ItemStack deserializeItemStack) {
+		World w = Bukkit.getWorld("world");
+		Player p = Bukkit.getOfflinePlayer(uuid).getPlayer();
+		p.loadData();
+		w.dropItem(p.getLocation(), deserializeItemStack);
 	}
 
 	private void simulateChat(String s) {
