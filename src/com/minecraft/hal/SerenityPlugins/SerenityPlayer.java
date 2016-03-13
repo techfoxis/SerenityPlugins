@@ -35,6 +35,7 @@ public class SerenityPlayer {
 	private SerenityLeader serenityLeader;
 	private Short celebrateEffect;
 	private boolean pendingMove;
+	private List<UUID> ignoreList;
 
 	@Override
 	public int hashCode() {
@@ -52,6 +53,7 @@ public class SerenityPlayer {
 	
 	public SerenityPlayer(){
 		offlineMessages = new ArrayList<OfflineMessage>();
+		ignoreList = new ArrayList<UUID>();
 		serenityLeader = new SerenityLeader();
 		celebrateEffect = (short)0;
 	}
@@ -313,5 +315,14 @@ public class SerenityPlayer {
 	public void setPendingMove(boolean pendingMove) {
 		this.pendingMove = pendingMove;
 	}
+
+	public List<UUID> getIgnoreList() {
+		return ignoreList;
+	}
+
+	public void setIgnoreList(List<UUID> ignoreList) {
+		this.ignoreList = ignoreList;
+	}
+	
 
 }
