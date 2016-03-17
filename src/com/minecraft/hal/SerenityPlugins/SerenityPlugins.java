@@ -2352,7 +2352,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (!p.isAFK()) {
 				checkMilestone(p);
 				addAMinute(p.getUUID());
-				p.setAfkTime(p.getAfkTime() - 3);
+				p.setAfkTime(p.getAfkTime() - 1);
 				if (p.getAfkTime() < 0)
 					p.setAfkTime(0);
 			} else {
