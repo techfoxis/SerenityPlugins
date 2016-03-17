@@ -439,6 +439,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public boolean pluginReady = false;
 	private boolean showingSql;
+
 	// public String[] betters;
 	// public String[] horses;
 
@@ -2297,7 +2298,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void unAfk(SerenityPlayer player) {
 		player.setAFK(false);
-		player.setAfkTime(0);
 		player.setPlayerVectorHash(0);
 		Player p = Bukkit.getPlayer(player.getUUID());
 		if (!votingForDay)
@@ -2352,6 +2352,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (!p.isAFK()) {
 				checkMilestone(p);
 				addAMinute(p.getUUID());
+				p.setAfkTime(p.getAfkTime() - 3);
+				if (p.getAfkTime() < 0)
+					p.setAfkTime(0);
 			} else {
 				int t = p.getAfkTime();
 				t++;
@@ -2359,7 +2362,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				int playerCount = Bukkit.getServer().getOnlinePlayers().size();
 				double idleTimeoutTime = -.1 * (playerCount * playerCount) + 30;
 				if (t > idleTimeoutTime) {
-					p.setAfkTime(0);
+					p.setAfkTime(10);
 					Player pl = Bukkit.getPlayer(p.getUUID());
 					pl.kickPlayer("You have been idle for too long!");
 				}
@@ -2544,9 +2547,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	@EventHandler
 	public void onPortal(PlayerPortalEvent evt) {
 		getLogger().info("§d" + evt.getPlayer().getName() + " §5used a portal");
-		if(evt.getTo().getWorld().getName().equals("world_the_end")){
+		if (evt.getTo().getWorld().getName().equals("world_the_end")) {
 			evt.setCancelled(true);
-			Location l = new Location(Bukkit.getWorld("world_the_end"), 100, 51, 0);
+			Location l = new Location(Bukkit.getWorld("world_the_end"), 100,
+					51, 0);
 			evt.getPlayer().teleport(l);
 		}
 	}
@@ -2795,14 +2799,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			SerenityPlayer sp2 = serenityPlayers.get(p.getUniqueId());
-			if(ignoring(sp, sp2)){
+			if (ignoring(sp, sp2)) {
 				event.getRecipients().remove(p);
 			}
 		}
 	}
 
 	private void doFunChatStuff(AsyncPlayerChatEvent event) {
-		SerenityPlayer sp = serenityPlayers.get(event.getPlayer().getUniqueId());
+		SerenityPlayer sp = serenityPlayers
+				.get(event.getPlayer().getUniqueId());
 		if (rand.nextInt(1000) == 0 && event.getMessage().length() > 10) {
 			int r = rand.nextInt(3);
 			String s = "";
@@ -3162,7 +3167,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 	}
-	
+
 	@EventHandler
 	public void onMailboxDestroy(BlockBreakEvent event) {
 		if (event.getBlock().getType().equals(Material.CHEST)
@@ -4628,10 +4633,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean chat(CommandSender sender, String[] arg3) {
 		if (arg3.length == 1) {
-			/*
-			 * if (arg3[0].equals("tp")) { doRandomTeleport(sender); return
-			 * true; }
-			 */
+
+			if (arg3[0].equals("tp")) {
+				doRandomTeleport(sender);
+				return true;
+			}
 
 			if (arg3[0].equalsIgnoreCase("celebrate")) {
 				celebrate(sender);
@@ -4811,8 +4817,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						boolean safe = false;
 						do {
 							teleLoc = new Location(Bukkit.getWorld("world"),
-									(double) rand.nextInt(15000) - 7500, 5.0,
-									(double) rand.nextInt(15000) - 7500);
+									(double) rand.nextInt(10000) - 5000, 5.0,
+									(double) rand.nextInt(10000) - 5000);
 
 							if (teleLoc.getWorld().getHighestBlockAt(teleLoc)
 									.getRelative(BlockFace.DOWN).getType() != Material.WATER
@@ -4862,7 +4868,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				return;
 			}
 		}
-
 	}
 
 	private boolean chunk(CommandSender sender, String[] arg3) {
@@ -6813,7 +6818,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 				}
 
-
 				if (arg3[0].equals("chunks")) {
 
 					int area = 0;
@@ -6842,7 +6846,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (sender instanceof Player) {
 						ItemStack is = new ItemStack(Material.SOUL_SAND);
 						ItemMeta im = is.getItemMeta();
-						
+
 						is.setItemMeta(im);
 						is.setAmount(64);
 						((Player) sender).getPlayer().getInventory()
@@ -6995,11 +6999,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					sender.sendMessage("Showing sql = " + showingSql);
 				}
 
-
 				if (arg3[0].equals("afktimes")) {
 					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
 						sender.sendMessage(sp.getName() + ": "
-								+ sp.getAfkTime() + " minutes");
+								+ sp.getAfkTime() + "");
 					}
 				}
 
@@ -9456,8 +9459,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		return check.after(min) && check.before(max);
 	}
 
-
-
 	private void sendSimulatedPrivateMessage(Player player, String displayName,
 			String message) {
 		player.sendMessage("§oFrom §6§o§l" + displayName + ": §r" + message);
@@ -9530,7 +9531,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} // Read the data in the same way you wrote it
-
 		}
 
 		/*
@@ -9768,8 +9768,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void simulateChat(String s) {
-		for (Player p : Bukkit.getOnlinePlayers()) {
-
-		}
+		Bukkit.broadcastMessage(s);
 	}
 }
