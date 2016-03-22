@@ -139,6 +139,7 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -270,7 +271,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							+ "/move event to go to the event server.\n"
 							+ "These servers are totally seperate from Survival, however, \n"
 							+ "you will be able to chat between Creative and Survival",
-					"/move <ServerName>", 0, false));
+					"/move <ServerName>", 360, false));
 			add(new SerenityCommand(
 					"msg",
 					"Privately message another player",
@@ -1298,7 +1299,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void PartyLeather() {
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 20; i++) {
 			Bukkit.getServer().getScheduler()
 					.runTaskLaterAsynchronously(this, new Runnable() {
 						@Override
@@ -1309,7 +1310,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							}
 
 						}
-					}, i * 2L);
+					}, i + 1L);
 		}
 	}
 
@@ -1337,28 +1338,35 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		for (Entity e : p.getNearbyEntities(5, 5, 5)) {
 			if (e instanceof ArmorStand) {
-				if (isPartyItemStack(((ArmorStand) e).getHelmet(), null)) {
-					((ArmorStand) e).setHelmet(getPartyEquipment(
-							Material.LEATHER_HELMET,
-							getPartyOwner(((ArmorStand) e).getHelmet())));
-				}
-				if (isPartyItemStack(((ArmorStand) e).getChestplate(), null)) {
-					((ArmorStand) e).setChestplate(getPartyEquipment(
-							Material.LEATHER_CHESTPLATE,
-							getPartyOwner(((ArmorStand) e).getChestplate())));
-				}
-				if (isPartyItemStack(((ArmorStand) e).getLeggings(), null)) {
-					((ArmorStand) e).setLeggings(getPartyEquipment(
-							Material.LEATHER_LEGGINGS,
-							getPartyOwner(((ArmorStand) e).getLeggings())));
-				}
-				if (isPartyItemStack(((ArmorStand) e).getBoots(), null)) {
-					((ArmorStand) e).setBoots(getPartyEquipment(
-							Material.LEATHER_BOOTS,
-							getPartyOwner(((ArmorStand) e).getBoots())));
-				}
+				ArmorStand as = (ArmorStand) e;
+
+				ArmorParty(as, as.getEquipment().getHelmet(), 0);
+				ArmorParty(as, as.getEquipment().getChestplate(), 1);
+				ArmorParty(as, as.getEquipment().getLeggings(), 2);
+				ArmorParty(as, as.getEquipment().getBoots(), 3);
 			}
 		}
+	}
+
+	private void ArmorParty(ArmorStand as, ItemStack helmet, int type) {
+		return;/*
+				 * if (isPartyItemStack(helmet)) { LeatherArmorMeta meta =
+				 * (LeatherArmorMeta) helmet.getItemMeta(); float prog =
+				 * (Bukkit.getWorld("world").getTime() % 100); prog /= 100;
+				 * Color c = Rainbow(prog); meta.setColor(c); ItemStack is =
+				 * null;
+				 * 
+				 * switch (type) { case 0: {
+				 * is.setType(Material.LEATHER_HELMET); as.getEquipment().sethe
+				 * break; } case 1: { is.setType(Material.LEATHER_BOOTS); break;
+				 * } case 2: { is.setType(Material.LEATHER_LEGGINGS); break; }
+				 * default: { is.setType(Material.LEATHER_CHESTPLATE); break; }
+				 * }
+				 * 
+				 * 
+				 * 
+				 * }
+				 */
 	}
 
 	private void tryToTrophy(Player p) {
@@ -1426,7 +1434,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void trophy(ArmorStand a) {
 		double y = a.getHeadPose().getY();
-		y -= .05;
+		y -= .025;
 		if (y < 0) {
 			y = y + 6.25;
 		}
@@ -1447,7 +1455,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void trophy2(ArmorStand a) {
 		double y = a.getHeadPose().getY();
-		y -= .05;
+		y -= .025;
 		if (y < 0) {
 			y = y + 6.25;
 		}
@@ -1466,7 +1474,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void globe(ArmorStand a) {
 		double y = a.getHeadPose().getY();
-		y -= .01;
+		y -= .005;
 
 		if (y < 0) {
 			y = y + 6.25;
@@ -1490,7 +1498,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void multiOre(ArmorStand a) {
 		double y = a.getHeadPose().getY();
-		y += .1;
+		y += .05;
 
 		if (y > 6.25) {
 			y = y - 6.25;
@@ -1513,7 +1521,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void moneyBag(ArmorStand a) {
 		double y = a.getHeadPose().getY();
-		y -= .05;
+		y -= .025;
 
 		if (y < 0) {
 			y = y + 6.25;
@@ -1589,7 +1597,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private void snowGlobe(ArmorStand a) {
 		double y = a.getHeadPose().getY();
-		y -= .05;
+		y -= .025;
 
 		if (y < 0) {
 			y = y + 6.25;
@@ -1679,6 +1687,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			} else {
 				wearer.damage(0);
 			}
+		}
+		return false;
+	}
+
+	private boolean isPartyItemStack(ItemStack item) {
+		if (item != null && item.hasItemMeta()
+				&& item.getItemMeta().hasDisplayName()
+				&& item.getItemMeta().getDisplayName().equals("§dParty Armor")) {
+			return true;
 		}
 		return false;
 	}
@@ -2635,7 +2652,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 			event.getPlayer().setGameMode(GameMode.CREATIVE);
 			event.getPlayer().setDisplayName("[Server]");
-			event.setJoinMessage(null);
+			if (event.getPlayer().hasPlayedBefore()) {
+				event.setJoinMessage(null);
+			}
 		}
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
@@ -2659,6 +2678,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 		// setListNames();
 
+		if(event.getPlayer().hasPlayedBefore())
 		event.setJoinMessage(null);
 
 		if (!event.getPlayer().isOp()) {
@@ -3920,6 +3940,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean move(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player && arg3.length > 0) {
+			if(sender instanceof Player){
+				Player p = ((Player) sender).getPlayer();
+				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+				if(sp.getMinutes() < 360){
+					p.sendMessage("§cSorry, only players with more than 6 hours can move between Serenity Servers");
+					return true;
+				}
+			}
+			
 			Player p = ((Player) sender);
 			String server = arg3[0];
 			sendTo(p, server);
@@ -4223,6 +4252,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (!pa.hasPermission(p.getDisplayName())) {
 							event.setCancelled(true);
 							p.sendMessage("§cSorry, you can't dismount in a protected area of which you don't have permission");
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void onHorseMountEvent(VehicleEnterEvent event) {
+		if (event.getEntered() instanceof Player) {
+			Player p = (Player) event.getEntered();
+
+			if (event.getVehicle().getType() == EntityType.HORSE
+					|| event.getVehicle().getType() == EntityType.PIG
+					|| event.getVehicle().getType() == EntityType.BOAT) {
+				for (ProtectedArea pa : areas) {
+					if (pa.equals(p.getLocation())) {
+						if (!pa.hasPermission(p.getDisplayName())) {
+							event.setCancelled(true);
 						}
 					}
 				}
@@ -6769,7 +6817,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					msg += arg3[i] + " ";
 				}
 
-				Bukkit.getPlayer(rec).sendTitle(msg, msg);
+				// Bukkit.getPlayer(rec).sendTitle(msg, msg);
+				Player p = Bukkit.getPlayer(rec);
+
+				String msg2 = getTranslationLanguage(p.getPlayer(),
+						stringKeys.BEDSOMEONEENTEREDABED.toString());
+				p.sendTitle("", msg2);
+
 				return true;
 			}
 
@@ -7120,9 +7174,24 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				if (arg3[0].equals("party")) {
-
-					party();
-					return true;
+					if (sender instanceof Player) {
+						Player p = ((Player) sender).getPlayer();
+						ItemStack is = new ItemStack(Material.LEATHER_HELMET);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						List<String> lore = new ArrayList<String>();
+						lore.add("May only be worn by");
+						lore.add(p.getDisplayName());
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getEquipment().setHelmet(is);
+						is.setType(Material.LEATHER_BOOTS);
+						p.getEquipment().setBoots(is);
+						is.setType(Material.LEATHER_CHESTPLATE);
+						p.getEquipment().setChestplate(is);
+						is.setType(Material.LEATHER_LEGGINGS);
+						p.getEquipment().setLeggings(is);
+					}
 				}
 
 				if (arg3[0].equals("reload")) {
@@ -8287,6 +8356,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							stringKeys.BEDVOTING.toString());
 
 					sender.sendMessage(msg + "§6" + result + "%");
+
+					((Player) sender).getPlayer().resetTitle();
 
 					/*
 					 * sender.sendMessage("§9" +
@@ -9757,14 +9828,12 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			ets.setBaby();
 			ets.setAgeLock(true);
 		}
-
 	}
 
 	private void putItemInMailbox(UUID uuid, ItemStack deserializeItemStack) {
-		World w = Bukkit.getWorld("world");
 		Player p = Bukkit.getOfflinePlayer(uuid).getPlayer();
 		p.loadData();
-		w.dropItem(p.getLocation(), deserializeItemStack);
+		p.getLocation().getWorld().dropItem(p.getLocation(), deserializeItemStack);
 	}
 
 	private void simulateChat(String s) {
