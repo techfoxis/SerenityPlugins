@@ -3448,6 +3448,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										p.getPlayer(),
 										stringKeys.BEDSOMEONEENTEREDABED
 												.toString());
+								
 								p.sendMessage(msg);
 							}
 						}
@@ -5994,7 +5995,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				FancyText.SHOW_TEXT, "Rotate Z-");
 		String head = FancyText.GenerateFancyText("    §7" + string,
 				FancyText.RUN_COMMAND, command + " " + c + "r",
-				FancyText.SHOW_TEXT, string2);
+				FancyText.SHOW_TEXT, string2 + ".  Click to reset rotation!");
 		sendRawPacket(p, "[" + hxp + "," + hxm + "," + hyp + "," + hym + ","
 				+ hzp + "," + hzm + "," + head + "]");
 
@@ -6002,10 +6003,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean armorStand(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player) {
+
 			Player p = ((Player) sender).getPlayer();
-			SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
-			if (sp.getMinutes() < 1441) {
-				p.sendMessage("§cYou need at least 24 hours to edit armor stands!  /mytime");
+			if (!p.isOp()) {
 				return true;
 			}
 
@@ -6028,10 +6028,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						FancyText.RUN_COMMAND, command + " v",
 						FancyText.SHOW_TEXT, "Toggles visibility");
 
-				String item = FancyText.GenerateFancyText("§7Item in Hand",
-						FancyText.RUN_COMMAND, command + " i",
-						FancyText.SHOW_TEXT,
-						"Drops item in hand (if available)");
+				String item = FancyText.GenerateFancyText(
+						"§7Item in Right Hand §r| ", FancyText.RUN_COMMAND,
+						command + " i", FancyText.SHOW_TEXT,
+						"Sets or drops item in right hand (if available)");
+
+				String item2 = FancyText.GenerateFancyText(
+						"§7Item in Left Hand", FancyText.RUN_COMMAND, command
+								+ " il", FancyText.SHOW_TEXT,
+						"Sets or drops item in left hand (if available)");
 
 				String name = FancyText
 						.GenerateFancyText(
@@ -6050,7 +6055,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 				sendRawPacket(p, "[" + arms + "," + base + "," + grav + ","
 						+ size + "," + visi + "]");
-				sendRawPacket(p, "[" + name + "," + helmet + "," + item + "]");
+				sendRawPacket(p, "[" + name + "," + helmet + "," + item + ","
+						+ item2 + "]");
 				p.sendMessage("§d§lMove/Rotate:");
 				SendRotateLine("h", "Rotate Head",
 						"Rotate the head by clicking the preceding items.", p,
@@ -6107,7 +6113,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					}
 					if (arg3[0].equals("g")) {
 						arm.setGravity(!arm.hasGravity());
-						p.sendMessage("§dGravity = §7" + arm.hasGravity());
+						p.sendTitle("", "§dGravity = §7" + arm.hasGravity());
 					}
 					if (arg3[0].equals("s")) {
 						arm.setSmall(!arm.isSmall());
@@ -6296,182 +6302,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						arm.teleport(l);
 					}
 
-					if (arg3[0].equals("p+")) {
-						int particle = -1;
-						for (MetadataValue mv : arm.getMetadata("particle")) {
-							particle = (int) mv.value() + 1;
-						}
-						if (particle == -1) {
-							particle = 0;
-						}
-						if (particle > Particle.values().length - 1) {
-							particle = 0;
-						}
-
-						arm.setMetadata("particle", new FixedMetadataValue(
-								this, particle));
-						((Player) sender).sendTitle("",
-								Particle.values()[particle].name());
+					if (arg3[0].equals("hr")) {
+						arm.setHeadPose(new EulerAngle(0, 0, 0));
 					}
-					if (arg3[0].equals("p-")) {
-						int particle = -1;
-						for (MetadataValue mv : arm.getMetadata("particle")) {
-							particle = (int) mv.value();
-							particle--;
-						}
-						if (particle < 0) {
-							particle = Particle.values().length - 1;
-						}
-						arm.setMetadata("particle", new FixedMetadataValue(
-								this, particle));
-						((Player) sender).sendTitle("",
-								Particle.values()[particle].name());
+					if (arg3[0].equals("br")) {
+						arm.setBodyPose(new EulerAngle(0, 0, 0));
 					}
-					if (arg3[0].equals("e+")) {
-						double extra = -1;
-						for (MetadataValue mv : arm.getMetadata("extra")) {
-							extra = (double) mv.value() + .1;
-						}
-						if (extra == -1) {
-							extra = 0;
-						}
-						if (extra > 5) {
-							extra = 5;
-						}
-
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
-						((Player) sender).sendTitle("", "Extra: " + extra);
+					if (arg3[0].equals("lar")) {
+						arm.setLeftArmPose(new EulerAngle(0, 0, 0));
 					}
-					if (arg3[0].equals("e-")) {
-						double extra = -1;
-						for (MetadataValue mv : arm.getMetadata("extra")) {
-							extra = (double) mv.value() - .1;
-						}
-						if (extra < 0) {
-							extra = 0;
-						}
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
-
-						((Player) sender).sendTitle("", "Extra: "
-								+ new DecimalFormat("#.##").format(extra));
+					if (arg3[0].equals("rar")) {
+						arm.setRightArmPose(new EulerAngle(0, 0, 0));
 					}
-					if (arg3[0].equals("e++")) {
-						double extra = -1;
-						for (MetadataValue mv : arm.getMetadata("extra")) {
-							extra = (double) mv.value() + 1;
-						}
-						if (extra == -1) {
-							extra = 0;
-						}
-						if (extra > 5) {
-							extra = 5;
-						}
-
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
-						((Player) sender).sendTitle("", "Extra: " + extra);
+					if (arg3[0].equals("llr")) {
+						arm.setLeftLegPose(new EulerAngle(0, 0, 0));
 					}
-					if (arg3[0].equals("e--")) {
-						double extra = -1;
-						for (MetadataValue mv : arm.getMetadata("extra")) {
-							extra = (double) mv.value() - 1;
-						}
-						if (extra < 0) {
-							extra = 0;
-						}
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
-						((Player) sender).sendTitle("", "Extra: "
-								+ new DecimalFormat("#.##").format(extra));
-					}
-
-					if (arg3[0].equals("r+")) {
-						double range = -1;
-						for (MetadataValue mv : arm.getMetadata("range")) {
-							range = (double) mv.value() + .1;
-						}
-						if (range == -1) {
-							range = 0;
-						}
-						if (range > 5) {
-							range = 5;
-						}
-
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
-						((Player) sender).sendTitle("", "range: " + range);
-					}
-					if (arg3[0].equals("r-")) {
-						double range = -1;
-						for (MetadataValue mv : arm.getMetadata("range")) {
-							range = (double) mv.value() - .1;
-						}
-						if (range < 0) {
-							range = 0;
-						}
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
-						((Player) sender).sendTitle("", "Range: "
-								+ new DecimalFormat("#.##").format(range));
-					}
-
-					if (arg3[0].equals("r++")) {
-						double range = -1;
-						for (MetadataValue mv : arm.getMetadata("range")) {
-							range = (double) mv.value() + 1;
-						}
-						if (range == -1) {
-							range = 0;
-						}
-						if (range > 5) {
-							range = 5;
-						}
-
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
-						((Player) sender).sendTitle("", "range: " + range);
-					}
-					if (arg3[0].equals("r--")) {
-						double range = -1;
-						for (MetadataValue mv : arm.getMetadata("range")) {
-							range = (double) mv.value() - 1;
-						}
-						if (range < 0) {
-							range = 0;
-						}
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
-						((Player) sender).sendTitle("", "Range: "
-								+ new DecimalFormat("#.##").format(range));
-					}
-
-					if (arg3[0].equals("i+")) {
-						int intensity = -1;
-						for (MetadataValue mv : arm.getMetadata("intensity")) {
-							intensity = (int) mv.value() + 1;
-						}
-						if (intensity > 50) {
-							intensity = 50;
-						}
-						arm.setMetadata("intensity", new FixedMetadataValue(
-								this, intensity));
-						((Player) sender).sendTitle("", "Intensity: "
-								+ intensity);
-					}
-					if (arg3[0].equals("i-")) {
-						int intensity = -1;
-						for (MetadataValue mv : arm.getMetadata("intensity")) {
-							intensity = (int) mv.value() - 1;
-						}
-						if (intensity < 0) {
-							intensity = 0;
-						}
-						arm.setMetadata("intensity", new FixedMetadataValue(
-								this, intensity));
-						((Player) sender).sendTitle("", "Intensity: "
-								+ intensity);
+					if (arg3[0].equals("rlr")) {
+						arm.setRightLegPose(new EulerAngle(0, 0, 0));
 					}
 
 					if (arg3.length > 0) {
@@ -6496,10 +6343,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (arm.getItemInHand().getType() == Material.AIR) {
 							ItemStack is = ((Player) sender).getPlayer()
 									.getItemInHand();
-							is.setAmount(1);
-							((Player) sender).getPlayer().getInventory()
-									.removeItem(is);
-							arm.setItemInHand(is);
+							if(is.getAmount()-1 == 0){
+								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
+							}else{
+								is.setAmount(is.getAmount()-1);
+							}
+							
+							ItemStack is2 = is.clone();
+							is2.setAmount(1);
+							arm.setItemInHand(is2);
 						} else {
 							arm.getWorld().dropItem(arm.getLocation(),
 									arm.getItemInHand());
@@ -6507,14 +6359,39 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						}
 					}
 
+					if (arg3[0].equals("il")) {
+						if (arm.getEquipment().getItemInOffHand().getType() == Material.AIR) {
+							ItemStack is = ((Player) sender).getPlayer()
+									.getItemInHand();
+							if(is.getAmount()-1 == 0){
+								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
+							}else{
+								is.setAmount(is.getAmount()-1);
+							}
+							
+							ItemStack is2 = is.clone();
+							is2.setAmount(1);
+							arm.getEquipment().setItemInOffHand(is2);
+						} else {
+							arm.getWorld().dropItem(arm.getLocation(),
+									arm.getEquipment().getItemInOffHand());
+							arm.getEquipment().setItemInOffHand(null);
+						}
+					}
+
 					if (arg3[0].equals("helmet")) {
 						if (arm.getEquipment().getHelmet().getType() == Material.AIR) {
 							ItemStack is = ((Player) sender).getPlayer()
 									.getItemInHand();
-							is.setAmount(1);
-							((Player) sender).getPlayer().getInventory()
-									.removeItem(is);
-							arm.getEquipment().setHelmet(is);
+							if(is.getAmount()-1 == 0){
+								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
+							}else{
+								is.setAmount(is.getAmount()-1);
+							}
+							
+							ItemStack is2 = is.clone();
+							is2.setAmount(1);
+							arm.getEquipment().setHelmet(is2);
 						} else {
 							arm.getWorld().dropItem(arm.getLocation(),
 									arm.getEquipment().getHelmet());
@@ -7280,6 +7157,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.spawnEntity(p.getLocation(),
 										EntityType.VILLAGER)
 								.setCustomName("§6" + arg3[1]);
+					}
+				}
+				
+				if (arg3[0].equals("cow")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						Cow c = (Cow)p.getLocation()
+								.getWorld()
+								.spawnEntity(p.getLocation(),
+										EntityType.COW);
+						
+								c.setCustomName("§6" + arg3[1]);
+								c.setBaby();
+								c.setAgeLock(true);
+								
 					}
 				}
 
