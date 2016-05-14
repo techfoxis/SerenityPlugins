@@ -32,6 +32,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import javax.sound.midi.MidiDevice.Info;
+
 import net.minecraft.server.v1_9_R2.EntityPlayer;
 import net.minecraft.server.v1_9_R2.IChatBaseComponent;
 import net.minecraft.server.v1_9_R2.IChatBaseComponent.ChatSerializer;
@@ -9514,6 +9516,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			sp.getSerenityLeader().setDeaths(
 					sp.getSerenityLeader().getDeaths() + 1);
 		}
+	}
+	
+	@EventHandler
+	public void PlayerDeath(PlayerDeathEvent event) {
+		if(event.getEntity().isOp()){
+			event.setDeathMessage(null);
+			event.setKeepInventory(true);
+			event.setDroppedExp(0);
+		}
+		Location l = event.getEntity().getLocation();
+		getLogger().info(event.getEntity().getName() + ": " + l.getWorld().getName() + " " + l.getBlockX() + " " + l.getBlockY() + " " + l.getBlockZ());
+		
 	}
 
 	@EventHandler
