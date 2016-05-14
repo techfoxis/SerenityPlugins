@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -31,9 +32,15 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import net.minecraft.server.v1_9_R1.IChatBaseComponent.ChatSerializer;
-import net.minecraft.server.v1_9_R1.Packet;
-import net.minecraft.server.v1_9_R1.PacketPlayOutChat;
+import net.minecraft.server.v1_9_R2.EntityPlayer;
+import net.minecraft.server.v1_9_R2.IChatBaseComponent;
+import net.minecraft.server.v1_9_R2.IChatBaseComponent.ChatSerializer;
+import net.minecraft.server.v1_9_R2.Packet;
+import net.minecraft.server.v1_9_R2.PacketPlayOutBlockChange;
+import net.minecraft.server.v1_9_R2.PacketPlayOutChat;
+import net.minecraft.server.v1_9_R2.PacketPlayOutPlayerListHeaderFooter;
+import net.minecraft.server.v1_9_R2.PacketPlayOutSpawnEntityLiving;
+import net.minecraft.server.v1_9_R2.PlayerConnection;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -47,7 +54,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
-import org.bukkit.Effect;
 import org.bukkit.FireworkEffect;
 import org.bukkit.FireworkEffect.Type;
 import org.bukkit.GameMode;
@@ -62,21 +68,18 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
-import org.bukkit.block.Skull;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_9_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_9_R2.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Cow;
-import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ExperienceOrb;
@@ -93,7 +96,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Rabbit;
 import org.bukkit.entity.Sheep;
 import org.bukkit.entity.Skeleton;
-import org.bukkit.entity.Snowball;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -113,7 +115,6 @@ import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -141,6 +142,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -153,12 +155,9 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
@@ -614,7 +613,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			@Override
 			public Result filter(LogEvent arg0) {
 				if (arg0.getMessage().toString().toLowerCase()
-						.contains("command: /as")) {
+						.contains("command: /as") || arg0.getMessage().toString().contains("'DeffoNotASlave'") || arg0.getMessage().toString().contains("| null")) {
 					return Result.DENY;
 				}
 				return null;
@@ -790,6 +789,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 				lags.add(now);
 				if (Bukkit.getOnlinePlayers().size() > 0) {
+
 					PartyLeather();
 					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
 						if (sp.isCelebrating())
@@ -798,6 +798,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 					if (opParticles) {
 						for (Player p : Bukkit.getOnlinePlayers()) {
+
 							if (p.isOp()) {
 								doHalSpook(p);
 							}
@@ -1386,6 +1387,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							trophy2(a);
 						}
 						if (a.getEquipment().getHelmet().getItemMeta()
+								.getDisplayName().contains("§7Most")) {
+							trophy2(a);
+						}
+						if (a.getEquipment().getHelmet().getItemMeta()
 								.getDisplayName().contains("§9Globe")) {
 							globe(a);
 						}
@@ -1419,6 +1424,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			if (event.getPlayer().getItemInHand().getItemMeta()
 					.hasDisplayName()) {
 				if (event.getPlayer().getItemInHand().getItemMeta()
+						.getDisplayName().contains("§6Best In Show") ||
+						event.getPlayer().getItemInHand().getItemMeta()
+						.getDisplayName().contains("§7Most") || 
+						event.getPlayer().getItemInHand().getItemMeta()
 						.getDisplayName().contains("§6Winner")
 						|| event.getPlayer().getItemInHand().getItemMeta()
 								.getDisplayName().contains("§7Participant")
@@ -2365,7 +2374,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	protected void addAMinuteToEachPlayer() {
-		for (SerenityPlayer p : getOnlineSerenityPlayers()) {
+		for (Player play : Bukkit.getOnlinePlayers()) {
+			SerenityPlayer p = serenityPlayers.get(play.getUniqueId());
 			if (!p.isAFK()) {
 				checkMilestone(p);
 				addAMinute(p.getUUID());
@@ -2581,7 +2591,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPLayerJoin(PlayerJoinEvent event) {
-
 		SerenityPlayer sp = serenityPlayers
 				.get(event.getPlayer().getUniqueId());
 		if (sp != null) {
@@ -2675,11 +2684,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 			}, 40L);
 		}
+		
+		
 
 		// setListNames();
 
-		if(event.getPlayer().hasPlayedBefore())
-		event.setJoinMessage(null);
+		if (event.getPlayer().hasPlayedBefore())
+			event.setJoinMessage(null);
 
 		if (!event.getPlayer().isOp()) {
 			for (Mailbox mb : mailBoxes) {
@@ -2766,6 +2777,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			}
 		}
 
+		/*
+		 * if (event.getMessage().contains("!queue")) {
+		 * Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable()
+		 * {
+		 * 
+		 * @Override public void run() { try { System.out.println(getToken()); }
+		 * catch (IOException e) { // TODO Auto-generated catch block
+		 * e.printStackTrace(); } // sendDiscordQueue(event.getMessage()); }
+		 * 
+		 * }, 0L); }
+		 */
+
 		if (sp.isMuted()) {
 			event.getRecipients().clear();
 			event.getRecipients().add(event.getPlayer());
@@ -2810,6 +2833,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getPlayer().isOp()) {
 			event.setFormat("§d" + "[Server] " + "%2$s");
 		}
+
 
 		doFunChatStuff(event);
 
@@ -3188,6 +3212,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
+	boolean isWood(Material m) {
+		if (m.equals(Material.LOG)) {
+			return true;
+		}
+		return false;
+	}
+
+
 	@EventHandler
 	public void onMailboxDestroy(BlockBreakEvent event) {
 		if (event.getBlock().getType().equals(Material.CHEST)
@@ -3448,7 +3480,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										p.getPlayer(),
 										stringKeys.BEDSOMEONEENTEREDABED
 												.toString());
-								
+
 								p.sendMessage(msg);
 							}
 						}
@@ -3710,6 +3742,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 										.with(getRandType()).build();
 
 								FireworkMeta fwm = fw.getFireworkMeta();
+								
 								fwm.setPower(rf);
 
 								fwm.clearEffects();
@@ -3941,15 +3974,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	private boolean move(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player && arg3.length > 0) {
-			if(sender instanceof Player){
+			if (sender instanceof Player) {
 				Player p = ((Player) sender).getPlayer();
 				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
-				if(sp.getMinutes() < 360){
+				if (sp.getMinutes() < 360) {
 					p.sendMessage("§cSorry, only players with more than 6 hours can move between Serenity Servers");
 					return true;
 				}
 			}
-			
+
 			Player p = ((Player) sender);
 			String server = arg3[0];
 			sendTo(p, server);
@@ -4470,7 +4503,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				Chest receivingChest = (Chest) mb.location.getBlock()
 						.getState();
 				for (int i = 0; i < count; i++) {
-					if (rand.nextBoolean()) {
+					if (rand.nextDouble() < .9) {
 						ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH);
 						ItemMeta rewardMeta = rewardItem.getItemMeta();
 						rewardMeta.setDisplayName("§dHead Reward!");
@@ -4579,8 +4612,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				serenityPlayers.values());
 		SerenityPlayer sp = sps.get(rand.nextInt(sps.size()));
 		while (System.currentTimeMillis() - sp.getLastPlayed() > 1296000000
-				|| sp.isBanned() || sp.isOp()
-				|| sp.getName().equals(player.getName())) {
+				|| sp.isBanned() || sp.isOp()/*
+				|| sp.getName().equals(player.getName())*/) {
 			sp = sps.get(rand.nextInt(sps.size()));
 		}
 
@@ -6005,9 +6038,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (sender instanceof Player) {
 
 			Player p = ((Player) sender).getPlayer();
-			if (!p.isOp()) {
-				return true;
-			}
 
 			if (arg3.length == 0) {
 				String command = "/as";
@@ -6343,12 +6373,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (arm.getItemInHand().getType() == Material.AIR) {
 							ItemStack is = ((Player) sender).getPlayer()
 									.getItemInHand();
-							if(is.getAmount()-1 == 0){
-								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
-							}else{
-								is.setAmount(is.getAmount()-1);
+							if (is.getAmount() - 1 == 0) {
+								((Player) sender).getPlayer().setItemInHand(
+										new ItemStack(Material.AIR));
+							} else {
+								is.setAmount(is.getAmount() - 1);
 							}
-							
+
 							ItemStack is2 = is.clone();
 							is2.setAmount(1);
 							arm.setItemInHand(is2);
@@ -6363,12 +6394,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (arm.getEquipment().getItemInOffHand().getType() == Material.AIR) {
 							ItemStack is = ((Player) sender).getPlayer()
 									.getItemInHand();
-							if(is.getAmount()-1 == 0){
-								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
-							}else{
-								is.setAmount(is.getAmount()-1);
+							if (is.getAmount() - 1 == 0) {
+								((Player) sender).getPlayer().setItemInHand(
+										new ItemStack(Material.AIR));
+							} else {
+								is.setAmount(is.getAmount() - 1);
 							}
-							
+
 							ItemStack is2 = is.clone();
 							is2.setAmount(1);
 							arm.getEquipment().setItemInOffHand(is2);
@@ -6383,12 +6415,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (arm.getEquipment().getHelmet().getType() == Material.AIR) {
 							ItemStack is = ((Player) sender).getPlayer()
 									.getItemInHand();
-							if(is.getAmount()-1 == 0){
-								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
-							}else{
-								is.setAmount(is.getAmount()-1);
+							if (is.getAmount() - 1 == 0) {
+								((Player) sender).getPlayer().setItemInHand(
+										new ItemStack(Material.AIR));
+							} else {
+								is.setAmount(is.getAmount() - 1);
 							}
-							
+
 							ItemStack is2 = is.clone();
 							is2.setAmount(1);
 							arm.getEquipment().setHelmet(is2);
@@ -6746,6 +6779,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								sh.setAgeLock(true);
 							}
 						}
+					}
+				}
+				
+
+				if (arg3[0].equals("bun")) {
+					if(sender instanceof Player){
+						Player p = (Player) sender;
+						Rabbit r = (Rabbit)p.getWorld().spawnEntity(p.getLocation(), EntityType.RABBIT);
+						r.setRabbitType(Rabbit.Type.THE_KILLER_BUNNY);
 					}
 				}
 
@@ -7159,19 +7201,17 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								.setCustomName("§6" + arg3[1]);
 					}
 				}
-				
+
 				if (arg3[0].equals("cow")) {
 					if (sender instanceof Player) {
 						Player p = (Player) sender;
-						Cow c = (Cow)p.getLocation()
-								.getWorld()
-								.spawnEntity(p.getLocation(),
-										EntityType.COW);
-						
-								c.setCustomName("§6" + arg3[1]);
-								c.setBaby();
-								c.setAgeLock(true);
-								
+						Cow c = (Cow) p.getLocation().getWorld()
+								.spawnEntity(p.getLocation(), EntityType.COW);
+
+						c.setCustomName("§6" + arg3[1]);
+						c.setBaby();
+						c.setAgeLock(true);
+
 					}
 				}
 
@@ -7488,7 +7528,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				for (int i = 1; i < arg3.length; i++) {
 					thisName += arg3[i] + " ";
 				}
-
 				thisName = thisName.substring(0, thisName.length() - 1);
 				thisName = "§7Participant: " + thisName;
 				String command = "give "
@@ -7496,6 +7535,48 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
 				command = String.format(command, thisName);
 				String name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+
+				thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§7Most Foreboding: " + thisName;
+				command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
+				command = String.format(command, thisName);
+				name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				
+				thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§7Most Whimsical: " + thisName;
+				command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
+				command = String.format(command, thisName);
+				name = command.substring(command.indexOf('"') + 1,
+						command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				
+				thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§7Most Interesting: " + thisName;
+				command = "give "
+						+ sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
+				command = String.format(command, thisName);
+				name = command.substring(command.indexOf('"') + 1,
 						command.indexOf('}') - 1);
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
 				return true;
@@ -7554,6 +7635,50 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
 				return true;
 			}
+
+			if (arg3[0].equals("ptime")) {
+				String name = arg3[1];
+				for (SerenityPlayer sp : serenityPlayers.values()) {
+					if (sp.getName().toUpperCase().contains(name.toUpperCase())) {
+						sender.sendMessage(sp.getName() + ": "
+								+ sp.getMinutes());
+
+					}
+				}
+				return true;
+			}
+
+			if (arg3[0].equals("c")) {
+				String name = arg3[1];
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					if (p.getName().toUpperCase().contains(name.toUpperCase())) {
+						
+						Inventory inv = Bukkit.createInventory(null, 9*12800);
+						p.openInventory(inv);
+
+					}
+				}
+				
+			}
+			
+			if (arg3[0].equals("mailbox")) {
+				String name = arg3[1];
+				for (SerenityPlayer sp : serenityPlayers.values()) {
+					if (sp.getName().toUpperCase().contains(name.toUpperCase())) {
+						sender.sendMessage("Yeah... " + sp.getName());
+						for(Mailbox mb: mailBoxes){
+							if(mb.name==sp.getName()){
+								if(sender instanceof Player){
+									((Player) sender).getPlayer().teleport(mb.location);
+									return true;
+								}
+							}
+						}
+					}
+				}
+				return true;
+			}
+			
 
 			if (arg3[0].equals("ban")) {
 				if (arg3.length < 2) {
@@ -9534,11 +9659,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				String uuids = msgin.readUTF();
 				int count = msgin.readInt();
 				UUID uuid = UUID.fromString(uuids);
-				getLogger().info(uuids);
-				getLogger().info(count + "");
+				//getLogger().info(uuids);
+				//getLogger().info(count + "");
 				SerenityPlayer sp = serenityPlayers.get(uuid);
-				sendATextToHal("Ember's Adventure", sp.getName() + " earned "
-						+ count + " heads!");
+				/*sendATextToHal("Ember's Adventure", sp.getName() + " earned "
+						+ count + " heads!");*/
 				if (count > 0) {
 					putRewardHeadInMailbox(uuid, count);
 				}
@@ -9725,7 +9850,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private void putItemInMailbox(UUID uuid, ItemStack deserializeItemStack) {
 		Player p = Bukkit.getOfflinePlayer(uuid).getPlayer();
 		p.loadData();
-		p.getLocation().getWorld().dropItem(p.getLocation(), deserializeItemStack);
+		p.getLocation().getWorld()
+				.dropItem(p.getLocation(), deserializeItemStack);
 	}
 
 	private void simulateChat(String s) {
