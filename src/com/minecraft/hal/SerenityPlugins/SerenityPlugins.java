@@ -400,7 +400,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public boolean scoreboardIsDisplayed = false;
 
-	public Secrets Secret;
+	//public Secrets Secret;
 
 	public HashMap<String, String> commonRewardHeads;
 	public HashMap<String, String> unCommonRewardHeads;
@@ -500,7 +500,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		loadSerenityMailboxesFromDatabase();
 		loadMessagesFromDatabase();
 		loadStatusesFromDatabase();
-		Secret = new Secrets();
+		//Secret = new Secrets();
 		protectedAreasCfg = new ConfigAccessor(this, "protectedareas.yml");
 		stringsCfg = new ConfigAccessor(this, "strings.yml");
 		emailCfg = new ConfigAccessor(this, "email.yml");
@@ -2233,9 +2233,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ItemStack item = event.getItem();
 		if (item.getItemMeta().hasDisplayName()) {
 			if (item.getItemMeta().getDisplayName()
-					.equals(Secret.SECRETITEM2NAME)) {
+					.equals("§dForbidden Fruit")) {
 				event.setCancelled(true);
-				event.getPlayer().kickPlayer(Secret.SECRETMESSAGE);
+				event.getPlayer().kickPlayer("You are banned from the server");
 			}
 		}
 	}
@@ -3435,9 +3435,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getEntity().getCustomName() != null) {
 			if (event.getEntity().getCustomName().contains("§6")
 					|| event.getEntity().getCustomName().contains("§d")
-					|| (event.getEntity().getCustomName()
-							.contains(Secret.secretName) && event
-							.getEntityType().equals(EntityType.HORSE))) {
+					) {
 				event.setCancelled(true);
 			}
 		}
@@ -3565,7 +3563,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 							.getDisplayName() != null) {
 						if (event.getPlayer().getItemInHand().getItemMeta()
 								.getDisplayName()
-								.equals(Secret.SECRETITEM1NAME)) {
+								.equals("§6The Firework Axe")) {
 							Block target = event.getPlayer().getTargetBlock(
 									(Set<Material>) null, MAX_DISTANCE);
 							Location location = target.getLocation();
@@ -7969,25 +7967,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					horse.setAdult();
 					horse.setCustomName("§d" + arg3[1]);
 
-					/*
-					 * CraftLivingEntity h = (CraftLivingEntity)horse;
-					 * AttributeInstance a =
-					 * h.getHandle().getAttributeInstance(GenericAttributes.d);
-					 * a.setValue(8);
-					 */
-				}
-
-				if (arg3[0].equals("mule")) {
-					Player p = (Player) sender;
-					Horse horse = (Horse) p.getLocation().getWorld()
-							.spawnEntity(p.getLocation(), EntityType.HORSE);
-					horse.setDomestication(1);
-					horse.setStyle(Style.NONE);
-					horse.setVariant(Horse.Variant.MULE);
-					horse.setCarryingChest(true);
-					horse.setTamed(true);
-					horse.setAdult();
-					horse.setCustomName(Secret.secretName);
 					/*
 					 * CraftLivingEntity h = (CraftLivingEntity)horse;
 					 * AttributeInstance a =
