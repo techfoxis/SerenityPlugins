@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.World;
 
 public class ProtectedArea {
@@ -125,25 +126,19 @@ public class ProtectedArea {
 		for (int i = x; i < x + xDiff(); i++) {
 			Location l = new Location(w, i + .5, 1, z + .5);
 			l.setY(w.getHighestBlockYAt(l));
-			ParticleEffect.FIREWORKS_SPARK.display((float) 1, (float) 1,
-					(float) .005, .0001F, 5, l, 50);
+			l.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, l, 5, .005f, 1f, .005f, .000f); 
 			l = new Location(w, i + .5, 1, zMax + .5);
 			l.setY(w.getHighestBlockYAt(l));
-
-			ParticleEffect.FIREWORKS_SPARK.display((float) 1, (float) 1,
-					(float) .005, .0001F, 5, l, 50);
+			l.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, l, 5, .005f, 1f, .005f, .000f);
 		}
 
 		for (int i = z; i < z + zDiff(); i++) {
 			Location l = new Location(w, x + .5, 1, i + .5);
 			l.setY(w.getHighestBlockYAt(l));
-			ParticleEffect.FIREWORKS_SPARK.display((float) .005, (float) 1,
-					(float) 1, .0001F, 5, l, 50);
-
+			l.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, l, 5, .005f, 1f, .005f, .000f);
 			l = new Location(w, xMax + .5, 1, i + .5);
 			l.setY(w.getHighestBlockYAt(l));
-			ParticleEffect.FIREWORKS_SPARK.display((float) .005, (float) 1,
-					(float) 1, .0001F, 5, l, 50);
+			l.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, l, 5, .005f, 1f, .005f, .000f);
 		}
 	}
 

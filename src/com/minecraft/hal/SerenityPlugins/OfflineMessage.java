@@ -64,12 +64,6 @@ public class OfflineMessage implements Comparable {
 		String ret = "";
 		if(!isRead()){
 			ret = FancyText.GenerateFancyText("§a§onew §r" + color + name + " §7(" + getTimeAgo() + ") §r" + firstfewChars, FancyText.RUN_COMMAND, "/msg ~ " + getID(), FancyText.SHOW_TEXT, "Click to read");
-		}else{
-			ret = "[";
-			ret += FancyText.GenerateFancyText("§4x", FancyText.RUN_COMMAND, "/msg ^ " + getID(), FancyText.SHOW_TEXT, "Click to delete");
-			ret += ",";
-			ret += FancyText.GenerateFancyText("§r " + color + name + " §7(" + getTimeAgo() + ") §r" + firstfewChars, FancyText.RUN_COMMAND, "/msg ~ " + getID(), FancyText.SHOW_TEXT, "Click to read");
-			ret+= "]";
 		}
 		return ret;
 	}
