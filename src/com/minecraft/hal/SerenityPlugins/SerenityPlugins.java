@@ -192,7 +192,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public String mainMotd = "";
 	public HashMap<UUID, SerenityPlayer> serenityPlayers;
 	public short specEff = 0;
-
 	public List<String> creativePlayers;
 	public List<String> eventPlayers;
 	public Long lastCreativeList;
@@ -211,7 +210,6 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			add(DyeColor.PURPLE);
 			add(DyeColor.MAGENTA);
 			add(DyeColor.PINK);
-
 			add(DyeColor.GREEN);
 			add(DyeColor.BLACK);
 			add(DyeColor.BROWN);
