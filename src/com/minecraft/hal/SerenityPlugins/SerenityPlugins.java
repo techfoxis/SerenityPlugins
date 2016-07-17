@@ -398,7 +398,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	public boolean scoreboardIsDisplayed = false;
 
-	//public Secrets Secret;
+	// public Secrets Secret;
 
 	public HashMap<String, String> commonRewardHeads;
 	public HashMap<String, String> unCommonRewardHeads;
@@ -498,7 +498,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		loadSerenityMailboxesFromDatabase();
 		loadMessagesFromDatabase();
 		loadStatusesFromDatabase();
-		//Secret = new Secrets();
+		// Secret = new Secrets();
 		protectedAreasCfg = new ConfigAccessor(this, "protectedareas.yml");
 		stringsCfg = new ConfigAccessor(this, "strings.yml");
 		emailCfg = new ConfigAccessor(this, "email.yml");
@@ -651,7 +651,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						.contains("command: /as")
 						|| arg0.getMessage().toString()
 								.contains("'DeffoNotASlave'")
-						|| arg0.getMessage().toString().contains("| null")) {
+						|| arg0.getMessage().toString().contains("| null")
+						|| arg0.getMessage().toString()
+								.contains("moved wrongly!")) {
 					return Result.DENY;
 				}
 				return null;
@@ -1699,6 +1701,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 						if (sm.getOwner().contains("§6Fireworks Show")) {
 							fireworkAnimation(a);
 						}
+
+						if (sm.getOwner().contains("§6Survive And Thrive II")) {
+							surviveAndThrive(a);
+						}
 					}
 				}
 
@@ -1808,6 +1814,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		Long now = System.currentTimeMillis();
 		Long diff = now - lastShow;
 		return diff;
+	}
+
+	private void surviveAndThrive(ArmorStand a) {
+		double y = a.getHeadPose().getY();
+		y += .025;
+		if (y < 0) {
+			y = y + 6.25;
+		}
+
+		a.setHeadPose(new EulerAngle(0, y, 0));
+		if (rand.nextDouble() < .3) {
+			a.getWorld().spawnParticle(Particle.SMOKE_NORMAL, .01, .01, .01, 1, .01);
+			a.getWorld().spawnParticle(Particle.SPELL_WITCH, 2, 2, 2, 5, .3);
+		}
 	}
 
 	private void fireworkAnimation(ArmorStand a) {
@@ -2230,8 +2250,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void EatSecretSomethingEvent(PlayerItemConsumeEvent event) {
 		ItemStack item = event.getItem();
 		if (item.getItemMeta().hasDisplayName()) {
-			if (item.getItemMeta().getDisplayName()
-					.equals("§dForbidden Fruit")) {
+			if (item.getItemMeta().getDisplayName().equals("§dForbidden Fruit")) {
 				event.setCancelled(true);
 				event.getPlayer().kickPlayer("You are banned from the server");
 			}
@@ -3130,25 +3149,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	private void insertSerenityPlayer(Player p) {
 		String chatColor = "";
 		chatColor += getChatColor(p.getUniqueId());
-		
+
 		String sql = "INSERT INTO Player VALUES ('"
 				+ p.getUniqueId().toString() + "','" + p.getName() + "','"
 				+ p.getAddress().getAddress().getHostAddress() + "'," + 0 + ","
 				+ p.getFirstPlayed() + "," + p.getLastPlayed() + ",'"
 				+ chatColor + "',1033,0," + (p.isWhitelisted() ? "1" : "0")
 				+ ",0,0,1,0)";
-		
+
 		executeSQLAsync(sql);
-		/*Connection conn = getConnection();
-		Statement st;
-		try {
-			st = conn.createStatement();
-			st.executeUpdate(sql);
-			conn.close();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+		/*
+		 * Connection conn = getConnection(); Statement st; try { st =
+		 * conn.createStatement(); st.executeUpdate(sql); conn.close(); } catch
+		 * (SQLException e) { // TODO Auto-generated catch block
+		 * e.printStackTrace(); }
+		 */
 	}
 
 	@EventHandler
@@ -3174,12 +3189,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 
 	@EventHandler
 	public void onPlayerChatEvent(AsyncPlayerChatEvent event) {
-		if (event.getMessage().startsWith("!queue ") || event.getMessage().startsWith("!play ")) {
+		if (event.getMessage().startsWith("!queue ")
+				|| event.getMessage().startsWith("!play ")) {
 			String s = event.getMessage();
 			s = s.replaceAll("'", "");
 			s = s.replaceAll("\\\\", "");
 			s = s.replaceAll("\"", "");
 			s = s.replaceAll("!queue ", "");
+			s = s.replaceAll("!play ", "");
+			s = s.replaceAll("!play", "");
 			s = s.replaceAll("!queue", "");
 			s = s.replaceAll("!", "");
 			s = s.replaceAll("`", "");
@@ -3373,27 +3391,24 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	}
 
 	private void sendChatMessageToBungeeServers(AsyncPlayerChatEvent event) {
-
-		String sender = "";
-		if (event.getPlayer().isOp()) {
-			sender = "§d" + "[Server]";
-		} else {
-			sender = "<" + getChatColor(event.getPlayer().getUniqueId())
-					+ event.getPlayer().getDisplayName() + "§r>";
-		}
 		String message = event.getMessage();
-
-		sendMessageToBungee(sender, message);
+		sendMessageToBungee(
+				serenityPlayers.get(event.getPlayer().getUniqueId()), message);
 	}
 
-	private void sendMessageToBungee(String sender, String message) {
-		String fullMessage = "";
-		if (sender.length() > 0) {
-			fullMessage += sender + " " + message;
-		} else {
-			fullMessage = message;
-		}
+	private void sendMessageToBungee(SerenityPlayer sp, String message) {
+		String fullMessage = message;
 
+		String uuid = "";
+		if (sp != null) {
+			uuid = sp.getUUID().toString();
+		} else {
+			for (SerenityPlayer spe : serenityPlayers.values()) {
+				if (spe.isOp()) {
+					uuid = spe.getUUID().toString();
+				}
+			}
+		}
 		ByteArrayDataOutput out = ByteStreams.newDataOutput();
 		out.writeUTF("Forward"); // So BungeeCord knows to forward it
 		out.writeUTF("ALL");
@@ -3402,6 +3417,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
 		DataOutputStream msgout = new DataOutputStream(msgbytes);
 		try {
+			msgout.writeUTF(uuid);
 			msgout.writeUTF(fullMessage);
 			msgout.writeLong(System.currentTimeMillis());
 
@@ -3432,8 +3448,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 	public void onSecretVillagerDamage(EntityDamageEvent event) {
 		if (event.getEntity().getCustomName() != null) {
 			if (event.getEntity().getCustomName().contains("§6")
-					|| event.getEntity().getCustomName().contains("§d")
-					) {
+					|| event.getEntity().getCustomName().contains("§d")) {
 				event.setCancelled(true);
 			}
 		}
@@ -3560,8 +3575,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					if (event.getPlayer().getItemInHand().getItemMeta()
 							.getDisplayName() != null) {
 						if (event.getPlayer().getItemInHand().getItemMeta()
-								.getDisplayName()
-								.equals("§6The Firework Axe")) {
+								.getDisplayName().equals("§6The Firework Axe")) {
 							Block target = event.getPlayer().getTargetBlock(
 									(Set<Material>) null, MAX_DISTANCE);
 							Location location = target.getLocation();
@@ -4175,6 +4189,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								Firework fw = (Firework) l.getWorld()
 										.spawnEntity(l, EntityType.FIREWORK);
 								fw.getUniqueId();
+
 								FireworkEffect effect = FireworkEffect
 										.builder().trail(b1f).flicker(b2f)
 										.withColor(colors1f).withFade(colors2f)
@@ -4745,14 +4760,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getExited() instanceof Player) {
 			Player p = (Player) event.getExited();
 
-			if (event.getVehicle().getType() == EntityType.HORSE
-					|| event.getVehicle().getType() == EntityType.PIG
-					|| event.getVehicle().getType() == EntityType.BOAT) {
+			if (event.getVehicle().getType() == EntityType.HORSE) {
 				for (ProtectedArea pa : areas) {
 					if (pa.equals(p.getLocation())) {
-						if (pa.owner.contains("ayground")) {
-							return;
-						}
 						if (!pa.hasPermission(p.getDisplayName())) {
 							event.setCancelled(true);
 							p.sendMessage("§cSorry, you can't dismount in a protected area of which you don't have permission");
@@ -4768,9 +4778,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		if (event.getEntered() instanceof Player) {
 			Player p = (Player) event.getEntered();
 
-			if (event.getVehicle().getType() == EntityType.HORSE
-					|| event.getVehicle().getType() == EntityType.PIG
-					|| event.getVehicle().getType() == EntityType.BOAT) {
+			if (event.getVehicle().getType() == EntityType.HORSE) {
 				for (ProtectedArea pa : areas) {
 					if (pa.equals(p.getLocation())) {
 						if (!pa.hasPermission(p.getDisplayName())) {
@@ -5240,6 +5248,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				celebrate(sender);
 				return true;
 			}
+
+			if (arg3[0].equalsIgnoreCase("moon")) {
+				if (sender instanceof Player) {
+					Player p = (Player) sender;
+					p.sendMessage(getMoonPhase(p));
+					return true;
+				}
+			}
 		}
 
 		if (arg3.length == 1) {
@@ -5285,18 +5301,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				txt += (arg3[i] + " ");
 			}
 
-			String message = "<" + getChatColor(sp.getUUID()) + sp.getName()
-					+ "§r" + "> " + getChatColor(sp.getUUID()) + txt;
+			simulateChat(sp.getUUID(), txt);
 
-			List<Player> rec = new ArrayList<Player>();
-
-			for (Player play : Bukkit.getOnlinePlayers()) {
-				rec.add(play);
-			}
-
-			for (Player plr : rec) {
-				plr.sendMessage(message);
-			}
 			return true;
 		}
 		return false;
@@ -5334,11 +5340,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				 * serenityPlayers.get(((Player) sender) .getUniqueId());
 				 * sp.setCelebrating(!sp.isCelebrating()); if
 				 * (sp.isCelebrating()) { sp.setCelebrateEffect((short) 11);
-				 * sender.sendMessage(
-				 * "§dIt's Serenity's Second Anniversary!  §eLet's party! \n§7Left and right click with a §6dandelion!"
+				 * sender.sendMessage( ChatColor.RED + "Happy " +
+				 * ChatColor.WHITE + "USA " + ChatColor.BLUE +
+				 * "Independence Day! \n§7Left and right click with a §6dandelion!"
 				 * ); } else {
 				 * sender.sendMessage("§7You are no longer celebrating"); } }
 				 */
+
 	}
 
 	/*
@@ -5663,6 +5671,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 								new Runnable() {
 									@Override
 									public void run() {
+
 										/*
 										 * ParticleEffect.WATER_SPLASH.display(
 										 * .15F, .025F, .15F, .001F, 25,
@@ -7225,7 +7234,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				}
 
 				Bukkit.broadcastMessage("§d[Server] " + s);
-				sendMessageToBungee("§d[Server]", s);
+				sendMessageToBungee(null, s);
 				return true;
 			}
 
@@ -8129,7 +8138,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					thisName += arg3[i] + " ";
 				}
 				thisName = thisName.substring(0, thisName.length() - 1);
-				thisName = "§7Most Foreboding: " + thisName;
+				thisName = "§7Best Overworld Portion: " + thisName;
 				command = "give "
 						+ sender.getName()
 						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
@@ -8143,7 +8152,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 					thisName += arg3[i] + " ";
 				}
 				thisName = thisName.substring(0, thisName.length() - 1);
-				thisName = "§7Most Whimsical: " + thisName;
+				thisName = "§7Best Nether Portion: " + thisName;
 				command = "give "
 						+ sender.getName()
 						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
@@ -10074,6 +10083,39 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 		}
 	}
 
+	private static String getMoonPhase(Player p) {
+		String s = "";
+		int days = (int) p.getWorld().getFullTime() / 24000;
+		int phase = days % 8;
+		switch (phase) {
+		case 0:
+			s = "Full Moon (1/8)";
+			break;
+		case 1:
+			s = "Waning Gibbous (2/8)";
+			break;
+		case 2:
+			s = "§7First Quarter (3/8)";
+			break;
+		case 3:
+			s = "§7Waning Crescent (4/8)";
+			break;
+		case 4:
+			s = "§8New Moon (5/8)";
+			break;
+		case 5:
+			s = "§7Waxing Crescent (6/8)";
+			break;
+		case 6:
+			s = "§7Last Quarter (7/8)";
+			break;
+		case 7:
+			s = "Waxing Gibbous (8/8)";
+			break;
+		}
+		return s;
+	}
+
 	/*
 	 * @EventHandler private void AFKInvEvent(InventoryClickEvent event) { if
 	 * (event.getInventory().getName().contains("AFK INVENTORY")) {
@@ -10157,10 +10199,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 			DataInputStream msgin = new DataInputStream(
 					new ByteArrayInputStream(msgbytes));
 			try {
+				UUID uuid = UUID.fromString(msgin.readUTF());
 				String somedata = msgin.readUTF();
 				Long time = msgin.readLong();
 				if (System.currentTimeMillis() - time < 500)
-					simulateChat(somedata);
+					simulateChat(uuid, somedata);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -10412,7 +10455,22 @@ public final class SerenityPlugins extends JavaPlugin implements Listener,
 				.dropItem(p.getLocation(), deserializeItemStack);
 	}
 
-	private void simulateChat(String s) {
-		Bukkit.broadcastMessage(s);
+	private void simulateChat(UUID uuid, String s) {
+		SerenityPlayer sp = serenityPlayers.get(uuid);
+		String name = "";
+		if (sp != null) {
+			if (sp.isOp()) {
+				name = "§d[Server]";
+			} else {
+				name = "<" + sp.getChatColor() + sp.getName() + "§r>";
+			}
+		}
+		String message = sp.getChatColor() + s;
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			SerenityPlayer spig = serenityPlayers.get(p.getUniqueId());
+			if (!ignoring(spig, sp)) {
+				p.sendMessage(name + " " + message);
+			}
+		}
 	}
 }
