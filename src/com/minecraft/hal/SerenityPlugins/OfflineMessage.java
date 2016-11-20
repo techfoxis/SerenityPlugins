@@ -59,8 +59,6 @@ public class OfflineMessage implements Comparable {
 		
 		firstfewChars = firstfewChars.replace("\"", "");
 		
-		
-		
 		String ret = "";
 		if(!isRead()){
 			ret = FancyText.GenerateFancyText("§a§onew §r" + color + name + " §7(" + getTimeAgo() + ") §r" + firstfewChars, FancyText.RUN_COMMAND, "/msg ~ " + getID(), FancyText.SHOW_TEXT, "Click to read");

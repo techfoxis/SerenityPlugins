@@ -28,6 +28,7 @@ public class SerenityPlayer {
 	private boolean banned;
 	private int afkTime;
 	private int playerVectorHash;
+	private int playerLocationHash;
 	private List<OfflineMessage> offlineMessages;
 	private Long lastText;
 	private String lastToSendMessage;
@@ -36,6 +37,7 @@ public class SerenityPlayer {
 	private Short celebrateEffect;
 	private boolean pendingMove;
 	private List<UUID> ignoreList;
+	
 
 	@Override
 	public int hashCode() {
@@ -259,6 +261,14 @@ public class SerenityPlayer {
 	public void setPlayerVectorHash(int hash) {
 		this.playerVectorHash = hash;
 	}
+	
+	public int getPlayerLocationHash(){
+		return playerLocationHash;
+	}
+	
+	public void setPlayerLocationHash(int hash){
+		this.playerLocationHash = hash;
+	}
 
 	public List<OfflineMessage> getOfflineMessages() {
 		return offlineMessages;
@@ -323,6 +333,4 @@ public class SerenityPlayer {
 	public void setIgnoreList(List<UUID> ignoreList) {
 		this.ignoreList = ignoreList;
 	}
-	
-
 }
