@@ -32,17 +32,17 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import net.minecraft.server.v1_10_R1.Enchantment.Rarity;
-import net.minecraft.server.v1_10_R1.EnchantmentSlotType;
-import net.minecraft.server.v1_10_R1.EnumItemSlot;
-import net.minecraft.server.v1_10_R1.IChatBaseComponent;
-import net.minecraft.server.v1_10_R1.IChatBaseComponent.ChatSerializer;
-import net.minecraft.server.v1_10_R1.NBTTagCompound;
-import net.minecraft.server.v1_10_R1.NBTTagList;
-import net.minecraft.server.v1_10_R1.Packet;
-import net.minecraft.server.v1_10_R1.PacketPlayOutChat;
-import net.minecraft.server.v1_10_R1.PacketPlayOutPlayerListHeaderFooter;
-import net.minecraft.server.v1_10_R1.PlayerConnection;
+import net.minecraft.server.v1_11_R1.Enchantment.Rarity;
+import net.minecraft.server.v1_11_R1.EnchantmentSlotType;
+import net.minecraft.server.v1_11_R1.EnumItemSlot;
+import net.minecraft.server.v1_11_R1.IChatBaseComponent;
+import net.minecraft.server.v1_11_R1.IChatBaseComponent.ChatSerializer;
+import net.minecraft.server.v1_11_R1.NBTTagCompound;
+import net.minecraft.server.v1_11_R1.NBTTagList;
+import net.minecraft.server.v1_11_R1.Packet;
+import net.minecraft.server.v1_11_R1.PacketPlayOutChat;
+import net.minecraft.server.v1_11_R1.PacketPlayOutPlayerListHeaderFooter;
+import net.minecraft.server.v1_11_R1.PlayerConnection;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -77,8 +77,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_10_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_10_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_11_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_11_R1.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentTarget;
 import org.bukkit.entity.ArmorStand;
@@ -102,6 +102,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Rabbit;
 import org.bukkit.entity.Sheep;
 import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Snowball;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -173,6 +174,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 
+import com.avaje.ebeaninternal.server.deploy.generatedproperty.GeneratedCounterLong;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
@@ -227,6 +229,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			add(DyeColor.WHITE);
 		}
 	};
+
 
 	public static final List<SerenityCommand> allCommands = new ArrayList<SerenityCommand>() {
 		{
@@ -669,7 +672,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 				case 3:
 					name = "§d" + name;
 					break;
+				case 5:
+					name = "§4" + name;
+					break;
 				}
+
 				String actualCommand = raw.replace("/give @p", "give %s");
 				actualCommand = actualCommand.replaceFirst("\\{.*?\\},", "\\{");
 				actualCommand = actualCommand.replaceFirst("SkullOwner:\\{", "SkullOwner:\\{Name:\"" + name + "\",");
@@ -821,9 +828,45 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 				if (Bukkit.getOnlinePlayers().size() > 0) {
 					addAMinuteToEachPlayer();
 				}
+
 			}
 		}, 0L, 1200L);
 	}
+
+	private ItemStack getRandomLeatherStack(String name) {
+		int r = rand.nextInt(4);
+
+		ItemStack is = new ItemStack(Material.LEATHER_HELMET);
+		switch (r) {
+		case 0: {
+			is = new ItemStack(Material.LEATHER_HELMET);
+			break;
+		}
+		case 1: {
+			is = new ItemStack(Material.LEATHER_CHESTPLATE);
+			break;
+		}
+		case 2: {
+			is = new ItemStack(Material.LEATHER_LEGGINGS);
+			break;
+		}
+		case 3: {
+			is = new ItemStack(Material.LEATHER_BOOTS);
+			break;
+		}
+		}
+
+		ItemMeta im = is.getItemMeta();
+		im.setDisplayName("§dParty Armor");
+		List<String> lore = new ArrayList<String>();
+		lore.add("May only be worn by");
+		lore.add(name);
+		im.setLore(lore);
+		is.setItemMeta(im);
+		return is;
+
+	}
+
 
 	private void runAFKTest() {
 		BukkitScheduler scheduler = Bukkit.getScheduler();
@@ -947,15 +990,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (sp.isCelebrating())
 							celebrate(sp);
 					}
+					//doRainbowTest();
 
 					if (opParticles) {
 						for (Player p : Bukkit.getOnlinePlayers()) {
-
 							if (p.isOp()) {
 								doHalSpook(p);
-								// doRainbowTest(p);
 							}
-
 						}
 					}
 
@@ -968,17 +1009,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 		}, 0L, 20L);
 	}
 
-	protected void doRainbowTest(Player p) {
-		final Player pf = p;
+	protected void doRainbowTest() {
 		for (int i = 0; i < 20; i++) {
 			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
 				@Override
 				public void run() {
 					List<Player> players = new ArrayList<Player>();
 					for (Player p : Bukkit.getOnlinePlayers()) {
-						if (!p.isOp() || opParticlesDeb) {
-							players.add(p);
-						}
+						players.add(p);
+
 					}
 
 					if (!players.isEmpty()) {
@@ -986,12 +1025,41 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							int offset = 2;
 							int amount = 75;
 							for (int i = 0; i < amount; i++) {
-								Location l = p.getEyeLocation();
+								Location l = new Location(Bukkit.getWorld("world"), 1784.429, 84.611, -6257.170);
 								double off = getRandomOffset(offset);
-
-								l.setY(l.getY() + off);
-								l.setX(l.getX() + off);
-								l.setZ(l.getZ() + off);
+								int phase = rand.nextInt(6);
+								switch (phase) {
+								case 0: {
+									l.setY(l.getY() + ((rand.nextBoolean() ? -1 : 1) * off));
+									break;
+								}
+								case 1: {
+									l.setX(l.getX() + ((rand.nextBoolean() ? -1 : 1) * off));
+									break;
+								}
+								case 2: {
+									l.setZ(l.getZ() + ((rand.nextBoolean() ? -1 : 1) * off));
+									break;
+								}
+								case 3: {
+									off = off / (1.5);
+									l.setZ(l.getZ() + ((rand.nextBoolean() ? -1 : 1) * off));
+									l.setX(l.getX() + ((rand.nextBoolean() ? -1 : 1) * off));
+									break;
+								}
+								case 4: {
+									off = off / (1.5);
+									l.setZ(l.getZ() + ((rand.nextBoolean() ? -1 : 1) * off));
+									l.setY(l.getY() + ((rand.nextBoolean() ? -1 : 1) * off));
+									break;
+								}
+								case 5: {
+									off = off / (1.5);
+									l.setX(l.getX() + ((rand.nextBoolean() ? -1 : 1) * off));
+									l.setY(l.getY() + ((rand.nextBoolean() ? -1 : 1) * off));
+									break;
+								}
+								}
 
 								playRainbowTime(player, l);
 							}
@@ -1063,7 +1131,67 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 	}
 
 	@EventHandler
+	private void snowBow(ProjectileLaunchEvent event) {
+		if (event.getEntity() instanceof Arrow) {
+			if (event.getEntity().getShooter() instanceof Player) {
+				Player p = (Player) event.getEntity().getShooter();
+
+				if ((p.getEquipment().getItemInMainHand().hasItemMeta()
+						&& p.getEquipment().getItemInMainHand().getItemMeta().hasDisplayName()
+						&& p.getEquipment().getItemInMainHand().getItemMeta().getDisplayName().equals("§bParty Bow"))
+						|| (p.getEquipment().getItemInOffHand().hasItemMeta()
+								&& p.getEquipment().getItemInOffHand().getItemMeta().hasDisplayName()
+								&& p.getEquipment().getItemInOffHand().getItemMeta().getDisplayName()
+										.equals("§bParty Bow"))) {
+					ItemStack m = p.getEquipment().getItemInMainHand();
+					ItemStack o = p.getEquipment().getItemInOffHand();
+
+					if (m != null && m.hasItemMeta() && m.getItemMeta().hasDisplayName()
+							&& m.getItemMeta().getDisplayName().contains("arty")) {
+						m.setDurability((short) 0);
+					}
+					if (o != null && o.hasItemMeta() && o.getItemMeta().hasDisplayName()
+							&& o.getItemMeta().getDisplayName().contains("arty")) {
+						o.setDurability((short) 0);
+					}
+
+					final Player pf = p;
+					Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+						public void run() {
+							ItemStack is = new ItemStack(Material.ARROW, 1);
+							pf.getInventory().addItem(is);
+						}
+					}, 1L);
+
+					Arrow a = (Arrow) event.getEntity();
+					a.setMetadata("p", new FixedMetadataValue(this, true));
+					doPartyTrail(a);
+					p.updateInventory();
+				}
+			}
+		}
+	}
+
+	@EventHandler
 	private void valentinesDay(ProjectileLaunchEvent event) {
+		if (event.getEntity() instanceof Snowball && event.getEntity().getShooter() instanceof Player) {
+			Snowball sn = (Snowball) event.getEntity();
+			Player shooter = (Player) sn.getShooter();
+			Location l = new Location(Bukkit.getWorld("world"), 1784.429, 84.611, -6257.170);
+			if (shooter.getWorld().getName().equals(l.getWorld().getName())) {
+				if (shooter.getLocation().distance(l) < 400) {
+					final Player pf = shooter;
+					Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+						public void run() {
+							ItemStack is = new ItemStack(Material.SNOW_BALL, 1);
+							pf.getInventory().addItem(is);
+						}
+					}, 1L);
+					pf.updateInventory();
+				}
+			}
+		}
+
 		if (event.getEntity() instanceof Arrow) {
 			if (event.getEntity().getShooter() instanceof Player) {
 				Player p = (Player) event.getEntity().getShooter();
@@ -1123,6 +1251,53 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 		}
 	}
 
+	@EventHandler
+	private void onPartyArrow(ProjectileHitEvent event) {
+		if (event.getEntity().hasMetadata("p")) {
+			doPartyExplosion(event.getEntity());
+		}
+	}
+
+	private void doPartyExplosion(Entity entity) {
+		List<Player> pl = new ArrayList<Player>();
+		Location loc = entity.getLocation();
+		for (int i = 0; i < 20; i++) {
+			final int ife = i;
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+				@Override
+				public void run() {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						for (int i = 0; i < 5; i++) {
+							Location l2 = loc.clone();
+							double offsetX = getRandomOffset(ife / 5);
+							double offsetY = getRandomOffset(ife / 5);
+							double offsetZ = getRandomOffset(ife / 5);
+							if (rand.nextBoolean()) {
+								offsetX *= -1;
+							}
+							if (rand.nextBoolean()) {
+								offsetY *= -1;
+							}
+							if (rand.nextBoolean()) {
+								offsetZ *= -1;
+							}
+							l2.setX(l2.getX() + offsetX);
+							l2.setY(l2.getY() + offsetY);
+							l2.setZ(l2.getZ() + offsetZ);
+							playRainbowTime(p, l2);
+						}
+					}
+
+				}
+			}, i + 0L);
+		}
+
+		entity.getLocation().getWorld().spawnParticle(Particle.FIREWORKS_SPARK, entity.getLocation(), 5, .25f, .25f,
+				.25f);
+		entity.setMetadata("p", new FixedMetadataValue(this, false));
+		entity.remove();
+	}
+
 	private void doHeartExplosion(Entity entity) {
 		List<Player> pl = new ArrayList<Player>();
 		for (Player p : Bukkit.getOnlinePlayers()) {
@@ -1171,6 +1346,31 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			if (event.getDamager() instanceof Arrow) {
 				event.setCancelled(true);
 			}
+		}
+	}
+
+	private void doPartyTrail(Arrow a) {
+		final Arrow af = a;
+		for (int i = 0; i < 180; i++) {
+			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+				@Override
+				public void run() {
+					boolean isV = false;
+					for (MetadataValue mdv : af.getMetadata("p")) {
+						if ((boolean) mdv.value() == true) {
+							isV = true;
+						}
+					}
+					if (af.hasMetadata("p") && isV) {
+						Vector f = af.getVelocity();
+						if (f != new Vector(0, 0, 0)) {
+							for (Player p : Bukkit.getOnlinePlayers()) {
+								playRainbowTime(p, a.getLocation());
+							}
+						}
+					}
+				}
+			}, i + 0L);
 		}
 	}
 
@@ -1622,7 +1822,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (sm.getOwner().contains("§9Survive and Thrive II")) {
 							surviveAndThrive(a);
 						}
-						
+
 					}
 				}
 
@@ -1652,8 +1852,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (a.getEquipment().getHelmet().getItemMeta().getDisplayName().contains("§9Money Bag")) {
 							moneyBag(a);
 						}
-						
-						if (a.getEquipment().getHelmet().getItemMeta().getDisplayName().contains("§6Best Haunted House 2016")) {
+
+						if (a.getEquipment().getHelmet().getItemMeta().getDisplayName()
+								.contains("§6Best Haunted House 2016")) {
 							hauntedHouse(a);
 						}
 
@@ -2097,7 +2298,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			if (item.getItemMeta().getLore().get(1).equals(wearer.getDisplayName())) {
 				return true;
 			} else {
-				wearer.damage(0);
+				wearer.damage(1);
 			}
 		}
 		return false;
@@ -2316,9 +2517,29 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 	}
 
 	@EventHandler
+	public void eraserTools(PlayerInteractEvent event) {
+		if (event.getPlayer().isOp()) {
+			if (event.getPlayer().getItemInHand().getType() == Material.RED_ROSE) {
+				if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
+						|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
+					Block target = event.getPlayer().getTargetBlock((Set<Material>) null, MAX_DISTANCE);
+					for (int x = -1; x < 2; x++) {
+						for (int z = -1; z < 2; z++) {
+							for (int y = -1; y < 2; y++) {
+								target.getRelative(x, y, z).setType(Material.AIR);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
 	public void halsEffects(PlayerInteractEvent event) {
 		if (event.getPlayer().isOp()) {
 			if (event.getPlayer().getItemInHand().getType() == Material.YELLOW_FLOWER) {
+
 				if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
 						|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
 					event.setCancelled(true);
@@ -2825,16 +3046,20 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 	public void onPortal(PlayerPortalEvent evt) {
 		getLogger().info("§d" + evt.getPlayer().getName() + " §5used a portal");
 		if (evt.getTo().getWorld().getName().equals("world_the_end")) {
-			evt.setCancelled(true);
-			Location l = new Location(Bukkit.getWorld("world_the_end"), 100, 51, 0);
-			evt.getPlayer().teleport(l);
-			Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
-				@Override
-				public void run() {
-					Location l = new Location(Bukkit.getWorld("world_the_end"), 100, 51, 0);
-					evt.getPlayer().teleport(l);
-				}
-			}, 30L);
+			evt.getPlayer().sendMessage(ChatColor.RED
+					+ "New Rule:  Please do NOT hoard elytras or shulker-shells.  Be courteous to other server users!  Disregarding this rule may result in a ban.");
+			// evt.setCancelled(true);
+			// Location l = new Location(Bukkit.getWorld("world_the_end"), 100,
+			// 51, 0);
+			// evt.getPlayer().teleport(l);
+			/*
+			 * Bukkit.getScheduler().runTaskLaterAsynchronously(this, new
+			 * Runnable() {
+			 * 
+			 * @Override public void run() { Location l = new
+			 * Location(Bukkit.getWorld("world_the_end"), 100, 51, 0);
+			 * evt.getPlayer().teleport(l); } }, 30L);
+			 */
 		}
 	}
 
@@ -3048,7 +3273,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			event.getRecipients().add(event.getPlayer());
 		}
 
-		event.setFormat("<" + getChatColor(sp.getUUID()) + "%s§r> %s");
+		if(sp.getMinutes() > 60000){
+			event.setFormat("<" + getChatColor(sp.getUUID()) + "§l%s§r> %s");	
+		}else{
+			event.setFormat("<" + getChatColor(sp.getUUID()) + "%s§r> %s");
+		}
 
 		if (sp.isLocalChatting()) {
 			event.setFormat("§7§o(%1s) %2$s");
@@ -3255,6 +3484,11 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			Location chestLoc = event.getBlock().getLocation();
 			Location fenceLoc = new Location(chestLoc.getWorld(), chestLoc.getX(), chestLoc.getY() - 1,
 					chestLoc.getZ());
+			if(fenceLoc.getWorld().getName().contains("end")){
+				event.setCancelled(true);
+				event.getPlayer().sendMessage("§cYou cannot create a mailbox in the end.  This has been abused.");
+				return;
+			}
 			if (fenceLoc.getBlock().getType().equals(Material.FENCE)
 					|| fenceLoc.getBlock().getType().equals(Material.ACACIA_FENCE)
 					|| fenceLoc.getBlock().getType().equals(Material.BIRCH_FENCE)
@@ -3329,6 +3563,23 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			}
 		}
 		return false;
+	}
+
+	@EventHandler
+	public void onHalLlamaStick(PlayerInteractEvent event) {
+		if (event.getPlayer().isOp()) {
+			if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
+					|| event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
+				if (event.getPlayer().getItemInHand().getType() == Material.REDSTONE_TORCH_ON) {
+
+					Block target = event.getPlayer().getTargetBlock((Set<Material>) null, MAX_DISTANCE);
+					Location location = target.getLocation();
+					location.getWorld().spawnEntity(location, EntityType.LLAMA);
+					event.setCancelled(true);
+					return;
+				}
+			}
+		}
 	}
 
 	@EventHandler
@@ -3534,6 +3785,25 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 					amt++;
 					serenityPlayers.get(event.getPlayer().getUniqueId()).getSerenityLeader().setDiamondsFound(amt);
 				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void onShulkerKill(EntityDeathEvent event) {
+		LivingEntity e = event.getEntity();
+		if (e.getType() == EntityType.SHULKER) {
+			getLogger().info(e.getKiller().getName() + " killed a shulker");
+		}
+	}
+
+	@EventHandler
+	private void onItemFrameElytra(EntityDamageByEntityEvent event) {
+		if (event.getEntity().getLocation().getWorld().getName().equals("world_the_end")) {
+			if (event.getEntity() instanceof ItemFrame) {
+				getLogger().info(event.getDamager().getName() + " found elytra at "
+						+ event.getEntity().getLocation().getX() + " " + event.getEntity().getLocation().getY() + " "
+						+ event.getEntity().getLocation().getZ());
 			}
 		}
 	}
@@ -4043,7 +4313,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			Player p = (Player) sender;
 			p.updateInventory();
 			HashMap<Head, Integer> headsToStore = new HashMap<Head, Integer>();
-			for (ItemStack is : p.getInventory().getContents()) {
+			for (ItemStack is : p.getInventory().getStorageContents()) {
 				count = 0;
 				if (is != null && is.hasItemMeta() && is.getItemMeta() instanceof SkullMeta) {
 					SkullMeta sm = (SkullMeta) is.getItemMeta();
@@ -4728,6 +4998,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 		}
 	}
 
+	public ItemStack generateHeadBush() {
+		ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH);
+		ItemMeta rewardMeta = rewardItem.getItemMeta();
+		rewardMeta.setDisplayName("§dHead Reward!");
+		rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
+		List<String> lore = new ArrayList<String>();
+		lore.add("§aHappy Holidays!");
+		lore.add("Right click while holding this for a random head!");
+		lore.add("Holiday heads are more common for a limited time!");
+		lore.add("See a list of all heads on http://serenity-mc.org/heads");
+		rewardMeta.setLore(lore);
+		rewardItem.setItemMeta(rewardMeta);
+		return rewardItem;
+	}
+
 	public void putRewardHeadInMailbox(UUID uid, int count, boolean type) {
 		for (Mailbox mb : mailBoxes) {
 			if (mb.uuid.equals(uid)) {
@@ -4739,13 +5024,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						rewardMeta.setDisplayName("§dHead Reward!");
 						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
 						List<String> lore = new ArrayList<String>();
-						lore.add("§aHappy 2nd Anniversary to Serenity!");
+						lore.add("§aHappy Holidays!");
 						lore.add("Right click while holding this for a random head!");
+						lore.add("Holiday heads are more common for a limited time!");
 						lore.add("See a list of all heads on http://serenity-mc.org/heads");
 						rewardMeta.setLore(lore);
 						rewardItem.setItemMeta(rewardMeta);
 						receivingChest.getInventory().addItem(rewardItem);
-						doRandomFirework(receivingChest.getLocation());
+						// doRandomFirework(receivingChest.getLocation());
 					} else {
 						ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH, 1);
 						ItemMeta rewardMeta = rewardItem.getItemMeta();
@@ -4821,14 +5107,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							if (player.getItemInHand().getItemMeta().hasLore()) {
 								List<String> lore = player.getItemInHand().getItemMeta().getLore();
 								if (lore.size() > 1) {
-									for(String lo: lore){
-										if(lo.toUpperCase().contains("DAISY")){
-											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + player.getName() + " skull 1 3 {display:{Name:\"Pumpkin\"},SkullOwner:{Id:\"fd871fd3-7d88-4c58-bfe8-eeafc9a5c586\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjcxNzVhM2JkYzI5YzViMTE0ZTc1NmIyMmRhYWUzZWIyMWFkNWJhZWVmNjQ3NjIzNzQ3OTcyMTJhOWIwNDcifX19\"}]}}}");
+									for (String lo : lore) {
+										if (lo.toUpperCase().contains("DAISY")) {
+											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + player.getName()
+													+ " skull 1 3 {display:{Name:\"Pumpkin\"},SkullOwner:{Id:\"fd871fd3-7d88-4c58-bfe8-eeafc9a5c586\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjcxNzVhM2JkYzI5YzViMTE0ZTc1NmIyMmRhYWUzZWIyMWFkNWJhZWVmNjQ3NjIzNzQ3OTcyMTJhOWIwNDcifX19\"}]}}}");
 											takeOneItemFromPlayerHand(player);
 											return;
 										}
-										if(lo.toUpperCase().contains("BREEZE")){
-											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + player.getName() + " skull 1 3 {display:{Name:\"Candy Bowl\"},SkullOwner:{Id:\"601b82ee-9718-4c49-b932-10e82671b607\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzY4ZjFjMzM2MjViNGI0NGMzNjdiNTRjNTRhYmQxY2VhMDg4MzQ1MWYxN2Q0ZjcwM2JhM2E4N2JiOWI4MDM3In19fQ==\"}]}}}");
+										if (lo.toUpperCase().contains("BREEZE")) {
+											Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "give " + player.getName()
+													+ " skull 1 3 {display:{Name:\"Candy Bowl\"},SkullOwner:{Id:\"601b82ee-9718-4c49-b932-10e82671b607\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzY4ZjFjMzM2MjViNGI0NGMzNjdiNTRjNTRhYmQxY2VhMDg4MzQ1MWYxN2Q0ZjcwM2JhM2E4N2JiOWI4MDM3In19fQ==\"}]}}}");
 											takeOneItemFromPlayerHand(player);
 											return;
 										}
@@ -4956,13 +5244,13 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 
 	private void givePlayerARandomHead(Player player) {
 		double chance = rand.nextDouble();
-		if (chance < .35) {
-			Head h = getRandomRewardHead(4);
+		if (chance < .8) {
+			Head h = getRandomRewardHead(5);
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(), String.format(h.Command, player.getName()));
-			player.sendMessage("§7You got §r" + h.Name + " §7(Halloween Head)");
+			player.sendMessage("§7You got §d" + h.Name + " §d(Limited time)");
+			return;
 		}
-
-		if (chance < .65) {
+		if (chance < .9) {
 			Head h = getRandomRewardHead(0);
 			Bukkit.dispatchCommand(Bukkit.getConsoleSender(), String.format(h.Command, player.getName()));
 			player.sendMessage("§7You got §r" + h.Name + " §7(common)");
@@ -4985,6 +5273,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			Bukkit.broadcastMessage(sp.getChatColor() + sp.getName() + " §rgot a §dSuper Rare §rhead!!");
 		}
 	}
+
 
 	@EventHandler
 	public void onPlayerRedeemBone(PlayerInteractEvent event) {
@@ -5117,17 +5406,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 	}
 
 	private void celebrate(CommandSender sender) {
-		return;/*
-				 * if (sender instanceof Player) { SerenityPlayer sp =
-				 * serenityPlayers.get(((Player) sender) .getUniqueId());
-				 * sp.setCelebrating(!sp.isCelebrating()); if
-				 * (sp.isCelebrating()) { sp.setCelebrateEffect((short) 11);
-				 * sender.sendMessage( ChatColor.RED + "Happy " +
-				 * ChatColor.WHITE + "USA " + ChatColor.BLUE +
-				 * "Independence Day! \n§7Left and right click with a §6dandelion!"
-				 * ); } else {
-				 * sender.sendMessage("§7You are no longer celebrating"); } }
-				 */
+
+				  if (sender instanceof Player) { SerenityPlayer sp =
+				  serenityPlayers.get(((Player) sender) .getUniqueId());
+				  sp.setCelebrating(!sp.isCelebrating()); if
+				  (sp.isCelebrating()) { sp.setCelebrateEffect((short) 11);
+				  sender.sendMessage( ChatColor.DARK_RED + "Happy New Year" +
+				  "\n§7Left and right click with a §6dandelion!"
+				  ); } else {
+				  sender.sendMessage("§7You are no longer celebrating"); } }
 
 	}
 
@@ -5709,9 +5996,10 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			if (sp.getAfkTime() > 6) {
 				event.setCancelled(true);
 			} else {
-				sp.setAfkTime(sp.getAfkTime() + 1);
+				int afkTime = sp.getAfkTime();
+				afkTime++;
+				sp.setAfkTime(afkTime);
 			}
-			getLogger().info(sp.getName() + " is AFK fishing: " + sp.getAfkTime());
 		}
 	}
 
@@ -6281,7 +6569,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 				SendTranslateLine("m", "Move the armor stand", p, command);
 
 			} else {
-				if(arg3[0].equals("m")){
+				if (arg3[0].equals("m")) {
 					sendSecretArmorStand(p);
 					return true;
 				}
@@ -6557,7 +6845,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							arm.getEquipment().setHelmet(null);
 						}
 					}
-					
+
 					if (arg3[0].equals("p+")) {
 						int particle = -1;
 						for (MetadataValue mv : arm.getMetadata("particle")) {
@@ -6570,10 +6858,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							particle = 0;
 						}
 
-						arm.setMetadata("particle", new FixedMetadataValue(
-								this, particle));
-						((Player) sender).sendTitle("",
-								Particle.values()[particle].name());
+						arm.setMetadata("particle", new FixedMetadataValue(this, particle));
+						((Player) sender).sendTitle("", Particle.values()[particle].name());
 					}
 					if (arg3[0].equals("p-")) {
 						int particle = -1;
@@ -6584,10 +6870,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (particle < 0) {
 							particle = Particle.values().length - 1;
 						}
-						arm.setMetadata("particle", new FixedMetadataValue(
-								this, particle));
-						((Player) sender).sendTitle("",
-								Particle.values()[particle].name());
+						arm.setMetadata("particle", new FixedMetadataValue(this, particle));
+						((Player) sender).sendTitle("", Particle.values()[particle].name());
 					}
 					if (arg3[0].equals("e+")) {
 						double extra = -1;
@@ -6601,8 +6885,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							extra = 5;
 						}
 
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
 						((Player) sender).sendTitle("", "Extra: " + extra);
 					}
 					if (arg3[0].equals("e-")) {
@@ -6613,11 +6896,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (extra < 0) {
 							extra = 0;
 						}
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
 
-						((Player) sender).sendTitle("", "Extra: "
-								+ new DecimalFormat("#.##").format(extra));
+						((Player) sender).sendTitle("", "Extra: " + new DecimalFormat("#.##").format(extra));
 					}
 					if (arg3[0].equals("e++")) {
 						double extra = -1;
@@ -6631,8 +6912,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							extra = 5;
 						}
 
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
 						((Player) sender).sendTitle("", "Extra: " + extra);
 					}
 					if (arg3[0].equals("e--")) {
@@ -6643,10 +6923,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (extra < 0) {
 							extra = 0;
 						}
-						arm.setMetadata("extra", new FixedMetadataValue(this,
-								extra));
-						((Player) sender).sendTitle("", "Extra: "
-								+ new DecimalFormat("#.##").format(extra));
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
+						((Player) sender).sendTitle("", "Extra: " + new DecimalFormat("#.##").format(extra));
 					}
 
 					if (arg3[0].equals("r+")) {
@@ -6661,8 +6939,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							range = 5;
 						}
 
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
 						((Player) sender).sendTitle("", "range: " + range);
 					}
 					if (arg3[0].equals("r-")) {
@@ -6673,10 +6950,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (range < 0) {
 							range = 0;
 						}
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
-						((Player) sender).sendTitle("", "Range: "
-								+ new DecimalFormat("#.##").format(range));
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
+						((Player) sender).sendTitle("", "Range: " + new DecimalFormat("#.##").format(range));
 					}
 
 					if (arg3[0].equals("r++")) {
@@ -6691,8 +6966,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 							range = 5;
 						}
 
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
 						((Player) sender).sendTitle("", "range: " + range);
 					}
 					if (arg3[0].equals("r--")) {
@@ -6703,10 +6977,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (range < 0) {
 							range = 0;
 						}
-						arm.setMetadata("range", new FixedMetadataValue(this,
-								range));
-						((Player) sender).sendTitle("", "Range: "
-								+ new DecimalFormat("#.##").format(range));
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
+						((Player) sender).sendTitle("", "Range: " + new DecimalFormat("#.##").format(range));
 					}
 
 					if (arg3[0].equals("i+")) {
@@ -6717,10 +6989,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (intensity > 50) {
 							intensity = 50;
 						}
-						arm.setMetadata("intensity", new FixedMetadataValue(
-								this, intensity));
-						((Player) sender).sendTitle("", "Intensity: "
-								+ intensity);
+						arm.setMetadata("intensity", new FixedMetadataValue(this, intensity));
+						((Player) sender).sendTitle("", "Intensity: " + intensity);
 					}
 					if (arg3[0].equals("i-")) {
 						int intensity = -1;
@@ -6730,10 +7000,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						if (intensity < 0) {
 							intensity = 0;
 						}
-						arm.setMetadata("intensity", new FixedMetadataValue(
-								this, intensity));
-						((Player) sender).sendTitle("", "Intensity: "
-								+ intensity);
+						arm.setMetadata("intensity", new FixedMetadataValue(this, intensity));
+						((Player) sender).sendTitle("", "Intensity: " + intensity);
 					}
 				}
 			}
@@ -6892,6 +7160,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 
 	@EventHandler
 	private void onAnimalHurtEvent(EntityDamageByEntityEvent event) {
+		if (event.getDamager() instanceof Snowball) {
+			return;
+		}
 		for (ProtectedArea pa : areas) {
 			if (pa.equals(event.getEntity().getLocation())) {
 				if (!event.getEntityType().equals(EntityType.ZOMBIE)
@@ -6942,7 +7213,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 			for (LivingEntity e : event.getAffectedEntities()) {
 				for (ProtectedArea pa : areas) {
 					if (pa.equals(e.getLocation())) {
-						if (!pa.hasPermission(p.getDisplayName()) && !pa.owner.equals("secret1")) {
+						if (!pa.hasPermission(p.getDisplayName()) && !pa.owner.equals("HolidayHamlet")) {
 							event.setCancelled(true);
 							return;
 						}
@@ -6970,7 +7241,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 	}
 
 	private double getRandomOffset(double max) {
-		int neg = rand.nextBoolean() ? -1 : 1;
+		int neg = rand.nextBoolean() ? 1 : 1;
 		return neg * rand.nextDouble() * max;
 	}
 
@@ -7029,6 +7300,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 
 				Bukkit.broadcastMessage("§d[Server] " + s);
 				sendMessageToBungee(null, s);
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("justlog")) {
+				String s = "";
+				for (int i = 1; i < arg3.length; i++) {
+					s += arg3[i] + " ";
+				}
+				getLogger().info(s);
 				return true;
 			}
 
@@ -7307,7 +7587,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 
 						ItemStack cupidsBow = new ItemStack(Material.BOW);
 						ItemMeta imc = cupidsBow.getItemMeta();
-						imc.setDisplayName("§4Cupid's Bow");
+						imc.setDisplayName("§bParty Bow");
 						cupidsBow.setItemMeta(imc);
 						((Player) sender).getPlayer().getInventory().addItem(cupidsBow);
 					}
@@ -7518,7 +7798,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						im.setDisplayName("§dParty Armor");
 						List<String> lore = new ArrayList<String>();
 						lore.add("May only be worn by");
-						lore.add(p.getDisplayName());
+						lore.add("emmafreester");
 						im.setLore(lore);
 						is.setItemMeta(im);
 						p.getEquipment().setHelmet(is);
@@ -7617,6 +7897,27 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 						c.setBaby();
 						c.setAgeLock(true);
 
+					}
+				}
+				
+				if (arg3[0].equals("party")) {
+					if (sender instanceof Player) {
+						Player p = ((Player) sender).getPlayer();
+						ItemStack is = new ItemStack(Material.LEATHER_HELMET);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						List<String> lore = new ArrayList<String>();
+						lore.add("May only be worn by");
+						lore.add(arg3[1]);
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getEquipment().setHelmet(is);
+						is.setType(Material.LEATHER_BOOTS);
+						p.getEquipment().setBoots(is);
+						is.setType(Material.LEATHER_CHESTPLATE);
+						p.getEquipment().setChestplate(is);
+						is.setType(Material.LEATHER_LEGGINGS);
+						p.getEquipment().setLeggings(is);
 					}
 				}
 
@@ -7898,8 +8199,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
 			}
-			
-			
+
 			if (arg3[0].equals("2016hall")) {
 				if (arg3.length < 2) {
 					return true;
@@ -8104,8 +8404,8 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 	private void sendRequest(String s, String name) {
 		Runtime runtime = Runtime.getRuntime();
 		try {
-			runtime.exec("/backup/oldscripts/discord.sh " + name + " sent this from in-game Minecraft");
-			runtime.exec("/backup/oldscripts/discord.sh !play " + s);
+			runtime.exec("/home/hal/discord.sh " + name + " sent this from in-game Minecraft");
+			runtime.exec("/home/hal/discord.sh !play " + s);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -8302,6 +8602,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Comma
 				for (Entry<Integer, ItemStack> items : x.entrySet()) {
 					l.getWorld().dropItem(l, items.getValue());
 				}
+			}
+		});
+	}
+
+	private void safelyDropItemStack(Location location, ItemStack is) {
+		final Location l = location;
+		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+			@Override
+			public void run() {
+
+				l.getWorld().dropItem(l, is);
+
 			}
 		});
 	}
