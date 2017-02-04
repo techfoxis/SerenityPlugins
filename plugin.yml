@@ -1,0 +1,91 @@
+name:  SerenityPlugins
+main:  org.serenity.maven.plugins.SerenityPlugins.SerenityPlugins
+version:  4.0
+commands:
+   coords:
+     description: Broadcasts your current coordinates
+     default: true
+     usage: <command>
+   lc:
+     description: Local chat settings
+     usage: <command> [on|off]
+     default: true
+   portal:
+     description: Tells you where to build a nether portal
+     default: true
+     usage: <command>
+   afk:
+     description: Indicate to others that you are AFK (others can sleep)
+     default: true
+     usage: <command>
+   getTime:
+     description: Sends you the current world's time
+     default: true
+     usage: <command>
+   mailto:
+     description: Sends items in your mailbox to the designated location
+     default: false
+     usage: <command> <MailboxName>
+   setcompass:
+     description: Change where your compass points
+     default: true
+     usage: <command> <location>
+   setchatcolor:
+     description: Changes your chat's color
+     default: false
+     usage: <command> <color>
+   status:
+     description: Check all player statuses or update your own!
+     default: true
+     usage: <command> <optional status>
+   lastseen:
+     description:  See when a player was last here or a full list of (whitelisted) players
+     usage: <command> <optional name>
+   server:
+     description:  Admin commands. Everything admin related will now be done through parameters in this command.
+     usage: <command> <admin command> <optional admin command params>
+   lag:
+     description:  Calculates the server's ticks/second
+     usage: <command>
+   ignore:
+     description:  Ignore another player's chats
+     usage: <command> <PlayerName>
+   vote:
+     description: Vote for special server events here!
+     usage: <command>
+     default: false
+   protect:
+     description: Protect your areas!
+     usage: <command> [claim|unclaim|trust <playerName>|untrust <playerName>|list]
+     default: false
+   msg:
+     description: Privately message another player
+     usage: <command> <PlayerName> <Message>
+   text:
+     description: Send a text to Hal himself! His phone should buzz.
+     usage: <command> <message>
+     default: false
+   links:
+     description: Important internet links for this server
+     usage: <command>
+   mytime:
+     description: Tells you the amount of time you've spent on the server
+     usage: <command>
+   map:
+     description: Will give you a link to see your location on the map
+     usage: <command>
+   move:
+     description: Moves you into another server
+     usage: <command> ServerName
+   help:
+     description: Helps you
+     usage: <command>
+   as:
+     description: Armor stand manipulation
+     usage: <command>
+   password:
+     description: Generates a link for you to login to the website
+     usage: <command>
+   deposit:
+     description: Store your reward heads in the "bank"
+     usage: <command>

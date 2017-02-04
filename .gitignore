@@ -1,7 +1,6 @@
 bin
 *.classpath
 *.class
-*.yml
 .settings
 *.prefs
 settings
