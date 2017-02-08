@@ -190,7 +190,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	 // Task List //
 	///////////////
 	
-	// TODO Finish Refactoring o_0
+	// TODO Finish Refactoring o_0/
 	// TODO Reference previous commits to identify useful disabled features
 	// TODO Party Intensity
 	// TODO MultiMessage
@@ -236,10 +236,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	public List<String> eventPlayers;
 	public Long lastCreativeList;
 	public Long lastEventList;
+	public List<ProtectedArea> areas;
+	public List<Mailbox> mailBoxes;
+	public List<Long> lags;
+	public List<PlayerProtect> preppedToProtectArea;
+	public List<Player> preppedToUnProtectChunk;
 	
 	// Misc.
 	public String mainMotd = "";
 	public Random rand = new Random();
+	public SimpleDateFormat sdtf = new SimpleDateFormat("EEE, MMM d, yyyy hh:mm:ss a z");
 	
 	// Finals
 	public final String FIREWORK_SHOW_HEAD = "/give @p skull 1 3 {display:{Name:\"Fireworks Show\"},SkullOwner:{Id:\"4871fc40-b2c7-431d-9eb8-b54cd666dca7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzg0MGI4N2Q1MjI3MWQyYTc1NWRlZGM4Mjg3N2UwZWQzZGY2N2RjYzQyZWE0NzllYzE0NjE3NmIwMjc3OWE1In19fQ==\"}]}}}";
@@ -457,9 +463,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		}
 	};
 
-	////
-	// Initialization
-	////
+  	  ////////////////////
+	 // Initialization //
+	////////////////////
 
 	@Override
 	public void onEnable() {
@@ -608,6 +614,104 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	  /////////////
 	 // Methods //
 	/////////////
+
+	private void SendPlayerList() {
+		String footer = "";
+
+		if (System.currentTimeMillis() - lastCreativeList > 1500) {
+			creativePlayers = new ArrayList<String>();
+		}
+		if (System.currentTimeMillis() - lastEventList > 1500) {
+			eventPlayers = new ArrayList<String>();
+		}
+
+		if (creativePlayers.size() > 0) {
+			footer = ChatColor.GREEN + "[Creative]§r";
+			for (String s : creativePlayers) {
+				footer += "\n" + s;
+			}
+		}
+		if (eventPlayers.size() > 0) {
+			footer += ChatColor.DARK_RED + "\n[Event]§r";
+			for (String s : eventPlayers) {
+				footer += "\n" + s;
+			}
+		}
+
+		SimpleDateFormat sdfDate = new SimpleDateFormat("MMM d HH:mm:ss");
+		Date now = new Date();
+		String date = ((creativePlayers.size() > 0 || eventPlayers.size() > 0) ? "\n" : "") + ChatColor.GRAY
+				+ sdfDate.format(now);
+		footer += date;
+
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+			p.setPlayerListName(sp.getChatColor() + sp.getName() + (sp.isAFK() ? ChatColor.GRAY + " (AFK)" : ""));
+			sendTabTitle(p, "§5[Survival]§r", footer);
+		}
+
+		sendPlayerListToBungee();
+	}
+	public void sendPlayerListToBungee() {
+		List<String> players = new ArrayList<String>();
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			if (!p.isOp()) {
+				SerenityPlayer spc = serenityPlayers.get(p.getUniqueId());
+				players.add(spc.getChatColor() + spc.getName() + "§r");
+			}
+		}
+
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Forward"); // So BungeeCord knows to forward it
+		out.writeUTF("ALL");
+		out.writeUTF("PlS"); // The channel name to check if this your data
+
+		ByteArrayOutputStream msgbytes = new ByteArrayOutputStream();
+		DataOutputStream msgout = new DataOutputStream(msgbytes);
+		try {
+			msgout.writeLong(System.currentTimeMillis());
+			msgout.writeInt(players.size());
+			for (String s : players) {
+				msgout.writeUTF(s);
+			}
+
+			out.writeShort(msgbytes.toByteArray().length);
+			out.write(msgbytes.toByteArray());
+			Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
+			player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} // You can do anything you want with msgout
+	}
+	public static void sendTabTitle(Player player, String header, String footer) {
+		if (header == null)
+			header = "";
+		if (footer == null)
+			footer = "";
+
+		PlayerConnection connection = ((CraftPlayer) player).getHandle().playerConnection;
+		IChatBaseComponent tabTitle = ChatSerializer.a("{\"text\": \"" + header + "\"}");
+		IChatBaseComponent tabFoot = ChatSerializer.a("{\"text\": \"" + footer + "\"}");
+		PacketPlayOutPlayerListHeaderFooter headerPacket = new PacketPlayOutPlayerListHeaderFooter(tabTitle);
+
+		try {
+			Field field = headerPacket.getClass().getDeclaredField("b");
+			field.setAccessible(true);
+			field.set(headerPacket, tabFoot);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			connection.sendPacket(headerPacket);
+		}
+	}
+	public String getHoursAndMinutes(UUID uuid) {
+		int minutes = getPlayerMinutes(uuid);
+		int hours = minutes / 60;
+		minutes = minutes % 60;
+		return "" + "§b" + hours + "§3" + " hours and " + "§b" + minutes + "§3" + " minutes.";
+
+	}
 	
 	// DB
 	protected Connection getConnection() {
@@ -814,6 +918,280 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 			e.printStackTrace();
 		}
 		return null;
+	}
+	private void loadMessagesFromDatabase() {
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			ResultSet rs = st.executeQuery("Select * FROM Messages where ReadStatus = 0");
+			while (rs.next()) {
+				OfflineMessage om = new OfflineMessage();
+				om.setFrom(UUID.fromString(rs.getString("FromUUID")));
+				om.setTo(UUID.fromString(rs.getString("ToUUID")));
+				om.setMessage(rs.getString("Message"));
+				om.setRead(rs.getBoolean("ReadStatus"));
+				om.setTime(rs.getLong("Time"));
+				om.setID(rs.getInt("M_ID"));
+				serenityPlayers.get(om.getTo()).getOfflineMessages().add(om);
+			}
+			if (conn != null)
+				conn.close();
+			/*
+			 * getLogger().info( "Time to get Messages: " +
+			 * (System.currentTimeMillis() - now) + "ms");
+			 */
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	private void createTables() {
+		try {
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+			String sql = "CREATE TABLE IF NOT EXISTS Player (" + "UUID VARCHAR(40) NOT NULL PRIMARY KEY , "
+					+ "Name VARCHAR(20), IP VARCHAR(15), " + "Time INT, " + "FirstPlayed Long, " + "LastPlayed Long, "
+					+ "Color VARCHAR(4), " + "Locale INT, " + "Op TINYINT(1), " + "Whitelisted TINYINT(1), "
+					+ "Muted TINYINT(1), " + "LocalChat TINYINT(1), " + "Online TINYINT(1), " + " Banned TINYINT(1)"
+					+ ")";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Mailbox (M_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+					+ "Owner VARCHAR(40)," + "FOREIGN KEY (Owner) REFERENCES Player(UUID), World VARCHAR(20), "
+					+ " X INT, Y INT, Z INT, Public TINYINT(0), Name VARCHAR(20))";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Messages (" + "M_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+					+ "FromUUID VARCHAR(40), " + "FOREIGN KEY (FromUUID) REFERENCES Player(UUID), "
+					+ "ToUUID VARCHAR(40), " + "FOREIGN KEY (ToUUID) REFERENCES Player(UUID), "
+					+ "Message VARCHAR(500), " + "ReadStatus TINYINT(1), " + "Time Long);";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Leaderboard (" + "Time Long, " + "UUID VARCHAR(40), "
+					+ "FOREIGN KEY (UUID) REFERENCES Player(UUID), " + "Online INT, " + "Life Long, " + "Diamonds INT, "
+					+ "Monsters INT," + "Villagers INT," + "Animals INT," + "Deaths INT);";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Status (" + "UUID VARCHAR(40), "
+					+ "FOREIGN KEY (UUID) REFERENCES Player(UUID), " + "Time Long," + "Status VARCHAR(300));";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Heads (Head VARCHAR(500) NOT NULL );";
+			st.executeUpdate(sql);
+
+			sql = "CREATE TABLE IF NOT EXISTS Ignores (" + "Annoyed VARCHAR(40) NOT NULL, "
+					+ "Annoying VARCHAR(40) NOT NULL, " + "FOREIGN KEY (Annoyed) REFERENCES Player(UUID), "
+					+ "FOREIGN KEY (Annoying) REFERENCES Player(UUID));";
+			st.executeUpdate(sql);
+
+			/*
+			 * sql = "CREATE TABLE IF NOT EXISTS StatsGeneral ("; for (Statistic
+			 * s : Statistic.values()) { if (!s.isSubstatistic()) { sql += "`" +
+			 * s.toString() + "` INT UNSIGNED, "; } } sql = sql.substring(0,
+			 * sql.length() - 2); sql += ");"; getLogger().info(sql);
+			 * st.executeUpdate(sql);
+			 * 
+			 * sql = "CREATE TABLE IF NOT EXISTS StatsBlock ("; for (Statistic s
+			 * : Statistic.values()) { if (s.isSubstatistic()) { if
+			 * (s.getType().equals(Statistic.Type.BLOCK) ||
+			 * s.getType().equals(Statistic.Type.ITEM)) { for (Material m :
+			 * Material.values()) { sql += "`" + s.toString() + "_" +
+			 * m.toString() + "` INT UNSIGNED, "; } }
+			 * 
+			 * } } sql = sql.substring(0, sql.length() - 2); sql += ");";
+			 * getLogger().info(sql); st.executeUpdate(sql);
+			 * 
+			 * sql = "CREATE TABLE IF NOT EXISTS StatsEntity ("; for (Statistic
+			 * s : Statistic.values()) { if (s.isSubstatistic()) { if
+			 * (s.getType().equals(Statistic.Type.ENTITY)) { for (EntityType e :
+			 * EntityType.values()) { sql += "`" + s.toString() + "_" +
+			 * e.toString() + "` INT UNSIGNED, "; } } } } sql = sql.substring(0,
+			 * sql.length() - 2); sql += ");"; getLogger().info(sql);
+			 * st.executeUpdate(sql);
+			 */
+			if (conn != null)
+				conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	private void loadSerenityPlayersFromDatabase() {
+
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			ResultSet rs = st.executeQuery("Select * FROM Player order by LastPlayed desc");
+			while (rs.next()) {
+				SerenityPlayer sp = new SerenityPlayer();
+				sp.setChatColor(rs.getString("Color"));
+				sp.setUUID(UUID.fromString(rs.getString("UUID")));
+				sp.setName(rs.getString("Name"));
+				sp.setIP(rs.getString("IP"));
+				sp.setMinutes(rs.getInt("Time"));
+				sp.setFirstPlayed(rs.getLong("FirstPlayed"));
+				sp.setLastPlayed(rs.getLong("LastPlayed"));
+				sp.setLocaleId(rs.getInt("Locale"));
+				sp.setOp(rs.getBoolean("Op"));
+				sp.setWhitelisted(rs.getBoolean("Whitelisted"));
+				sp.setMuted(rs.getBoolean("Muted"));
+				sp.setLocalChatting(rs.getBoolean("LocalChat"));
+				sp.setOnline(false);
+				sp.setDirty(false);
+				serenityPlayers.put(sp.getUUID(), sp);
+			}
+			if (conn != null)
+				conn.close();
+			getLogger().info("Time to get SerenityPlayer cache: " + (System.currentTimeMillis() - now) + "ms");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	private void loadSerenityMailboxesFromDatabase() {
+
+		mailBoxes = new ArrayList<Mailbox>();
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			ResultSet rs = st.executeQuery("Select * FROM Mailbox");
+			while (rs.next()) {
+				Mailbox mb = new Mailbox();
+				mb.uuid = UUID.fromString(rs.getString("Owner"));
+				String world = rs.getString("World");
+				int x = rs.getInt("X");
+				int y = rs.getInt("Y");
+				int z = rs.getInt("Z");
+				mb.isPublic = rs.getBoolean("Public");
+				if (!mb.isPublic) {
+					mb.name = serenityPlayers.get(mb.uuid).getName();
+				} else {
+					mb.name = rs.getString("Name");
+				}
+				mb.location = new Location(Bukkit.getWorld(world), (double) x, (double) y, (double) z);
+				mailBoxes.add(mb);
+			}
+			if (conn != null)
+				conn.close();
+			getLogger().info("Time to get Mailboxes loaded: " + (System.currentTimeMillis() - now) + "ms");
+			return;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return;
+	}
+	private void loadStatusesFromDatabase() {
+		playerStatuses = new TreeSet<PlayerStatus>();
+		try {
+			Long now = System.currentTimeMillis();
+			Connection conn = getConnection();
+			Statement st = conn.createStatement();
+
+			ResultSet rs = st.executeQuery("Select * FROM Status");
+			while (rs.next()) {
+				GregorianCalendar gc = new GregorianCalendar();
+				gc.setTimeInMillis(rs.getLong("Time"));
+				PlayerStatus ps = new PlayerStatus(rs.getString("Status").replace('`', '\''), gc,
+						UUID.fromString(rs.getString("UUID")));
+
+				ps.setStatus(ps.getStatus().replace('|', '\"'));
+				playerStatuses.add(ps);
+			}
+			if (conn != null)
+				conn.close();
+			getLogger().info("Time to get Status: " + (System.currentTimeMillis() - now) + "ms");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public static synchronized String getMysqlRealScapeString(String str) {
+		String data = null;
+		if (str != null && str.length() > 0) {
+			str = str.replace("\\", "\\\\");
+			str = str.replace("'", "\\'");
+			str = str.replace("\0", "\\0");
+			str = str.replace("\n", "\\n");
+			str = str.replace("\r", "\\r");
+			str = str.replace("\"", "\\\"");
+			str = str.replace("\\x1a", "\\Z");
+			data = str;
+		}
+		return data;
+	}
+	private void MaybeGiveRewardHead(int id, SerenityPlayer sp) {
+		int amt = 0;
+		Connection conn = getConnection();
+		Statement st;
+		try {
+			st = conn.createStatement();
+
+			ResultSet rs = st
+					.executeQuery("Select * FROM HeadBank where Owner='" + sp.getUUID() + "' and HeadID = " + id);
+			while (rs.next()) {
+				amt = rs.getInt("Amount");
+			}
+			if (conn != null)
+				conn.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		if (amt == 0) {
+			getLogger().info("None left in bank");
+			return;
+		}
+
+		amt--;
+
+		String sql = "";
+
+		if (amt > 0) {
+			sql = "UPDATE HeadBank set Amount = " + amt + " where Owner='" + sp.getUUID() + "' and HeadID = " + id;
+		} else {
+			sql = "Delete From HeadBank where Owner='" + sp.getUUID() + "' and HeadID = " + id;
+		}
+		executeSQLBlocking(sql);
+		addRewardToMailbox(id, getMailbox(sp));
+		getLogger().info("Mailed a " + id + " to " + sp.getName());
+	}
+	private void addPlayerStatus(PlayerStatus ps) {
+
+		for (Iterator<PlayerStatus> iterator = playerStatuses.iterator(); iterator.hasNext();) {
+			PlayerStatus ps1 = iterator.next();
+			if (ps1.getUuid().equals(ps.getUuid())) {
+				iterator.remove();
+			}
+		}
+
+		playerStatuses.add(ps);
+		ps.setStatus(ps.getStatus().replace('\'', '`'));
+		ps.setStatus(ps.getStatus().replace('\"', '|'));
+		String sql = "DELETE From Status where UUID='" + ps.getUuid().toString() + "';";
+		executeSQLAsync(sql);
+
+		sql = "INSERT INTO Status (UUID, Time, Status) VALUES ('" + ps.getUuid() + "','" + System.currentTimeMillis()
+				+ "','" + ps.getStatus() + "');";
+		String sqlf = sql;
+
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				executeSQLAsync(sqlf);
+			}
+		}, 20L);
+		ps.setStatus(ps.getStatus().replace('`', '\''));
+		ps.setStatus(ps.getStatus().replace('|', '\"'));
+
 	}
 	
 	// Party
@@ -1068,6 +1446,81 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	}
 
 	// Firework Show
+	private void startFireworkShow(Location showLoc, int radius, double intensity) {
+		showLoc.getWorld().playSound(showLoc, Sound.ENTITY_LIGHTNING_THUNDER, 80, 1);
+		ArrayList<Location> locations = new ArrayList<Location>();
+
+		for (double i = 0.0; i < 360.0; i += 10) {
+			double angle = i * Math.PI / 180;
+			int x = (int) (showLoc.getX() + radius * Math.cos(angle));
+			int z = (int) (showLoc.getZ() + radius * Math.sin(angle));
+			Location l = new Location(showLoc.getWorld(), x, 0, z);
+			l = l.getWorld().getHighestBlockAt(l).getLocation();
+			locations.add(l);
+		}
+
+		for (int i = 0; i < 50; i++) {
+			if (rand.nextDouble() < intensity) {
+				Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+					@Override
+					public void run() {
+						doRandomFirework(locations.get(rand.nextInt(locations.size())));
+					}
+				}, i * 10);
+			}
+		}
+
+		final ArrayList<Location> locationsF = locations;
+		final int inc = (int) (1 / intensity);
+		Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+
+			@Override
+			public void run() {
+				int counter = 0;
+				for (int i = 0; i < locationsF.size(); i += inc) {
+					final int intF = i;
+					counter += 5;
+					Bukkit.getScheduler().runTaskLater(global, new Runnable() {
+						@Override
+						public void run() {
+							doRandomFirework(locationsF.get(intF));
+						}
+					}, i + counter + 0L);
+				}
+			}
+		}, 50 * 10L);
+
+		Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+
+			@Override
+			public void run() {
+				int counter = 0;
+				for (int i = 0; i < locationsF.size(); i += inc) {
+					final int intF = i;
+					counter += 2;
+					Bukkit.getScheduler().runTaskLater(global, new Runnable() {
+						@Override
+						public void run() {
+							doRandomFirework(locationsF.get(intF));
+						}
+					}, i + counter + 0L);
+				}
+			}
+		}, 800L);
+
+		for (int i = 0; i < 300; i++) {
+			if (rand.nextDouble() < intensity) {
+				Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+
+					@Override
+					public void run() {
+						doRandomFirework(locations.get(rand.nextInt(locations.size())));
+					}
+
+				}, 950L + (i * 5));
+			}
+		}
+	}
 	@EventHandler
 	public void CraftFWEvent(org.bukkit.event.inventory.CraftItemEvent event) {
 		if (event.getRecipe().getResult().hasItemMeta() && event.getRecipe().getResult().getItemMeta().hasDisplayName()
@@ -1529,7 +1982,77 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		}
 	}
 
+	// Scheduling
+	private void runEveryMinute() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				refreshOfflineMessages();
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					addAMinuteToEachPlayer();
+				}
+
+			}
+		}, 0L, 1200L);
+	}
+	private void runEverySecond() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				Long now = System.currentTimeMillis();
+				if (lags.size() > 9) {
+					lags.remove(0);
+				}
+				lags.add(now);
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					SendPlayerList();
+					PartyLeather();
+					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
+						if (sp.isCelebrating())
+							celebrate(sp);
+					}
+					//doRainbowTest();
+
+					if (opParticles) {
+						for (Player p : Bukkit.getOnlinePlayers()) {
+							if (p.isOp()) {
+								doHalSpook(p);
+							}
+						}
+					}
+
+					highlightSticks();
+					if (getTickrate() < 16) {
+						Bukkit.getLogger().info("§cTickrate: " + getTickrate());
+					}
+				}
+			}
+		}, 0L, 20L);
+	}
+	private void runEntityCountWatchdog() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					// int currentDay = new Date().getDay();
+					if (getServer().getOnlinePlayers().size() != 0) {
+						// addScores(currentDay);
+						checkAndClearAllChunks();
+						// unloadChunks();
+					}
+				}
+			}
+		}, 0L, 6000L);
+	}
+	
 	// Utility
+	public static String convertToHoursAndMinutesSinceNoSeconds(Long time) {
+		Long difference = System.currentTimeMillis() - time;
+		return getDurationBreakdownNoSeconds(difference);
+	}
 	// TODO Unused
 	protected void unloadChunks() {
 		long now = System.currentTimeMillis();
@@ -1772,6 +2295,180 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 			return false;
 		}
 		return false;
+	}
+	private void doRandomTeleport(CommandSender sender) {
+
+		if (sender instanceof Player) {
+			SerenityPlayer sp = serenityPlayers.get(((Player) sender).getUniqueId());
+			Location l = Bukkit.getPlayer(sender.getName()).getLocation();
+
+			if (l.getWorld().getName().equalsIgnoreCase("world")) {
+				if (Math.abs(l.getX()) < 50 && Math.abs(l.getZ()) < 50) {
+					boolean ready = true;
+					if (sp.getLastRandomTP() != null) {
+
+						if (System.currentTimeMillis() - sp.getLastRandomTP() < 1800000) {
+							ready = false;
+						}
+
+					}
+					if (ready) {
+						Random rand = new Random();
+						Location teleLoc;
+
+						boolean safe = false;
+						do {
+							teleLoc = new Location(Bukkit.getWorld("world"), (double) rand.nextInt(10000) - 5000, 5.0,
+									(double) rand.nextInt(10000) - 5000);
+
+							if (teleLoc.getWorld().getHighestBlockAt(teleLoc).getRelative(BlockFace.DOWN)
+									.getType() != Material.WATER
+									&& teleLoc.getWorld().getHighestBlockAt(teleLoc).getRelative(BlockFace.DOWN)
+											.getType() != Material.STATIONARY_WATER) {
+								boolean isprotected = false;
+								for (ProtectedArea pa : areas) {
+									if (pa.equals(teleLoc)) {
+										isprotected = true;
+									}
+								}
+								if (!isprotected) {
+									safe = true;
+								}
+							}
+						} while (!safe);
+
+						teleLoc.setY(teleLoc.getWorld().getHighestBlockYAt(teleLoc) + 1);
+						Bukkit.getPlayer(sender.getName()).teleport(teleLoc);
+
+						sp.setLastRandomTP(System.currentTimeMillis());
+						return;
+					} else {
+
+						String msg = getTranslationLanguage(sender, stringKeys.RANDOMTPWAIT.toString());
+						sender.sendMessage(msg);
+						// sender.sendMessage("§cYou must wait to use that
+						// again!");
+						return;
+					}
+				}
+
+				String msg = getTranslationLanguage(sender, stringKeys.RANDOMTPTOOFAR.toString());
+				sender.sendMessage(msg);
+				// sender.sendMessage("§cYou can only do this at spawn!");
+				return;
+			} else {
+				String msg = getTranslationLanguage(sender, stringKeys.RANDOMTPWRONGWORLD.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§cYou can only do this in the
+				// overworld!");
+				return;
+			}
+		}
+	}
+	private String getTranslationLanguage(Player player, String key) {
+
+		String result = "";
+		/*
+		 * if (dutchSpeakers.contains(player.getName())) { result =
+		 * dutchStrings.get(key); if (result == "") {
+		 * player.sendMessage("WARNING!  TELL HAL that DUTCH " + key +
+		 * " string is not right!! Sorry!!! So I'm gonna send you the english version!"
+		 * ); } else { return result; } }
+		 */
+		return englishStrings.get(key);
+	}
+	private String getTranslationLanguage(CommandSender player, String key) {
+		String result = "";
+		/*
+		 * if (dutchSpeakers.contains(player.getName())) { result =
+		 * dutchStrings.get(key); if (result == null || result == "") {
+		 * player.sendMessage("WARNING!  TELL HAL that DUTCH " + key +
+		 * " string is not right!! Sorry!!! So I'm gonna send you the english version!"
+		 * ); } else { return result; } }
+		 */
+		if (englishStrings.get(key) == "" || englishStrings.get(key) == null) {
+			player.sendMessage("SOMETHING WENT WRONG! TELL HAL A STRING IS MESSED UP!  MORE DATA: " + key);
+			getLogger().info("SOMETHING WENT WRONG! TELL HAL A STRING IS MESSED UP!  MORE DATA: " + key);
+		}
+		return englishStrings.get(key);
+	}
+	public int getPlayerMinutes(UUID uuid) {
+		return serenityPlayers.get(uuid).getMinutes();
+	}
+	private double getTickrate() {
+
+		if (lags.size() < 10) {
+			return 20;
+		}
+
+		Long avg = 0L;
+
+		for (int i = 9; i > 1; i--) {
+			avg += lags.get(i) - lags.get(i - 1);
+		}
+
+		double average = avg / 8;
+		average /= 1000;
+		double tickrate = 20 / average;
+
+		return tickrate;
+	}
+	private void checkAndClearAllChunks() {
+
+		Long before = System.currentTimeMillis();
+		Boolean hadToRun = false;
+		// Bukkit.getLogger().info("Starting to check all chunks!");
+		List<World> worlds = Bukkit.getServer().getWorlds();
+		for (int i = 0; i < worlds.size(); i++) {
+			Chunk[] chunks = worlds.get(i).getLoadedChunks();
+			for (int j = 0; j < chunks.length; j++) {
+				Entity[] entities = chunks[j].getEntities();
+				if (entities.length > 70) {
+					getLogger()
+							.info("WOAH TOO MANY ENTITIES AT " + chunks[j].getX() * 16 + " , " + chunks[j].getZ() * 16);
+					hadToRun = true;
+					Random r = new Random();
+					int count = 0;
+					String s = "";
+					for (int k = 0; k < entities.length; k++) {
+						s += entities[k].toString() + ", ";
+						if (r.nextBoolean()) {
+							if (entities[k].getType().equals(EntityType.CHICKEN)
+									|| entities[k].getType().equals(EntityType.BLAZE)
+									|| entities[k].getType().equals(EntityType.CAVE_SPIDER)
+									|| entities[k].getType().equals(EntityType.ENDERMAN)
+									|| entities[k].getType().equals(EntityType.COW)
+									|| entities[k].getType().equals(EntityType.HORSE)
+									|| entities[k].getType().equals(EntityType.PIG)
+									|| entities[k].getType().equals(EntityType.SHEEP)
+									|| entities[k].getType().equals(EntityType.ZOMBIE)
+									|| entities[k].getType().equals(EntityType.SKELETON)
+									|| entities[k].getType().equals(EntityType.WOLF)
+									|| entities[k].getType().equals(EntityType.OCELOT)
+									|| entities[k].getType().equals(EntityType.PIG_ZOMBIE)
+									|| entities[k].getType().equals(EntityType.BOAT)
+									|| entities[k].getType().equals(EntityType.EXPERIENCE_ORB)) {
+								if (entities[k].getCustomName() == null) {
+									entities[k].remove();
+									count++;
+								}
+							}
+						}
+					}
+					// getLogger().info(s);
+					getLogger().info("Deleted " + count + " entities.");
+
+				}
+			}
+		}
+		Long elapsed = System.currentTimeMillis() - before;
+
+		if (hadToRun) {
+			Bukkit.getLogger().info("It took: " + elapsed + "ms.  ");
+		} else {
+			// Bukkit.getLogger().info("All clear! (" + elapsed + "ms.)");
+		}
 	}
 	
 	// In-Game Utility
@@ -2150,6 +2847,14 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 			}
 		}
 	}
+	public boolean AreaIsClaimed(Location l) {
+		for (ProtectedArea pa : areas) {
+			if (pa.equals(l)) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	// Hal Voodoo
 	@EventHandler
@@ -2382,6 +3087,37 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		if (!votingForDay)
 			p.setSleepingIgnored(false);
 		// setListNames();
+	}
+	private void runAFKTest() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					afkTest();
+				}
+			}
+		}, 0L, 600L);
+	}
+	private void runUnAFKTest() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					for (SerenityPlayer sp : getOnlineSerenityPlayers()) {
+						if (sp.isAFK()) {
+							Player p = Bukkit.getPlayer(sp.getUUID());
+							Vector bV = p.getLocation().getDirection();
+							if (sp.getPlayerVectorHash() != bV.hashCode()) {
+								sp.setPlayerVectorHash(bV.hashCode());
+								unAfk(sp);
+							}
+						}
+					}
+				}
+			}
+		}, 0L, 100L);
 	}
 	
 	// Play Time
@@ -2655,7 +3391,21 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		event.setQuitMessage(null);
 
 	}
-
+	private void setOnlinePlayersOnline() {
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			serenityPlayers.get(p.getUniqueId()).setOnline(true);
+		}
+	}
+	private void runsaveDirtySerenityPlayersScheduler() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				saveDirtySerenityPlayers();
+			}
+		}, 0L, 6000L);
+	}
+	
 	// Chat
 	// TODO *SIGH* Look into fixing this
 	@EventHandler
@@ -2894,6 +3644,16 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 			return "";
 		}
 	}
+	private void sendRequest(String s, String name) {
+		Runtime runtime = Runtime.getRuntime();
+		try {
+			runtime.exec("/home/hal/discord.sh " + name + " sent this from in-game Minecraft");
+			runtime.exec("/home/hal/discord.sh !play " + s);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	// Grief Prevention
 	@EventHandler
@@ -3077,6 +3837,179 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		Player p = Bukkit.getOfflinePlayer(uuid).getPlayer();
 		p.loadData();
 		p.getLocation().getWorld().dropItem(p.getLocation(), deserializeItemStack);
+	}
+	private void runMailboxHearts() {
+		BukkitScheduler scheduler = Bukkit.getScheduler();
+		scheduler.runTaskTimer(this, new Runnable() {
+			@Override
+			public void run() {
+				if (Bukkit.getOnlinePlayers().size() > 0) {
+					fireOnMailBoxes();
+				}
+			}
+		}, 0L, 40L);
+	}
+	private boolean mailTo(CommandSender sender, String[] arg3) {
+		if (arg3.length < 1) {
+			String s = "";
+			s += "\n§cType a mailbox name!";
+			sender.sendMessage(s);
+			return false;
+		}
+		String mailto = arg3[0];
+		/*
+		 * if (mailto.equals("EVERYBODY18104")) { for (Mailbox mb : mailBoxes) {
+		 * mailItemsTo(sender, mb.name, true); } return true; }
+		 */
+
+		return mailItemsTo(sender, mailto);
+	}
+	private boolean mailItemsTo(CommandSender sender, String mailto) {
+		if (sender instanceof Player) {
+			Player p = (Player) sender;
+			boolean receivingMailBoxExists = false;
+			boolean sendingMailBoxExists = hasAMailbox(p.getUniqueId());
+			Mailbox sendingMailbox = new Mailbox();
+			Mailbox receivingMailbox = new Mailbox();
+			for (Mailbox mb : mailBoxes) {
+				if (mb.name.toLowerCase().contains(mailto.toLowerCase())) {
+					receivingMailBoxExists = true;
+					receivingMailbox.uuid = mb.uuid;
+					receivingMailbox.location = mb.location;
+					receivingMailbox.name = mb.name;
+				}
+				if (mb.uuid.equals(p.getUniqueId())) {
+					sendingMailbox.uuid = mb.uuid;
+					sendingMailbox.location = mb.location;
+				}
+			}
+
+			if (!sendingMailBoxExists) {
+
+				String msg = getTranslationLanguage(sender, stringKeys.MAILDOESNTHAVEMAILBOX.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§cYou don't have a mailbox! Put a chest
+				// on top of a fence post!");
+				return true;
+			}
+			if (!receivingMailBoxExists) {
+				sender.sendMessage("§cThere is no mailbox with §6\"" + mailto + "\"§c in it.  Check your spelling!");
+				return true;
+			}
+
+			if (sendingMailbox.uuid.equals(receivingMailbox.uuid)) {
+
+				String msg = getTranslationLanguage(sender, stringKeys.MAILTOSELF.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§cYou can't send mail to yourself!");
+				return true;
+			}
+
+			Chest sendingChest = (Chest) sendingMailbox.location.getBlock().getState();
+			Chest receivingChest = (Chest) receivingMailbox.location.getBlock().getState();
+
+			ItemStack[] sendingItems = sendingChest.getInventory().getContents();
+			ItemStack[] receivingItems = receivingChest.getInventory().getContents();
+
+			int sendingItemsCount = 0;
+			int receivingItemsCount = 0;
+
+			for (int i = 0; i < sendingItems.length; i++) {
+				if (sendingItems[i] != null) {
+					sendingItemsCount++;
+				}
+			}
+
+			for (int i = 0; i < receivingItems.length; i++) {
+				if (receivingItems[i] != null) {
+					receivingItemsCount++;
+				}
+			}
+
+			if (sendingItemsCount == 0) {
+				// sender.sendMessage("§cYou don't have any items in your
+				// mailbox!");
+
+				String msg = getTranslationLanguage(sender, stringKeys.MAILEMPTY.toString());
+				sender.sendMessage(msg);
+
+				return true;
+			}
+
+			if (receivingItemsCount == receivingItems.length) {
+
+				String msg = getTranslationLanguage(sender, stringKeys.MAILFULL.toString());
+				sender.sendMessage(String.format(msg, receivingMailbox.name));
+
+				/*
+				 * sender.sendMessage("§6" + receivingMailbox.name +
+				 * "§2's mailbox is full!");
+				 */
+				return true;
+			}
+
+			if (receivingItems.length - receivingItemsCount < sendingItemsCount) {
+
+				String msg = getTranslationLanguage(sender, stringKeys.MAILNOTENOUGHSPACE.toString());
+				sender.sendMessage(
+						String.format(msg, receivingMailbox.name, ((receivingItems.length - receivingItemsCount) - 1)));
+
+				/*
+				 * sender.sendMessage("§6" + receivingMailbox.name +
+				 * "§2's mailbox can only hold " + ((receivingItems.length -
+				 * receivingItemsCount) - 1) +
+				 * " more slots!  Send less items!");
+				 */
+				return true;
+			}
+
+			for (int i = 0; i < sendingItems.length; i++) {
+				if (sendingItems[i] != null) {
+					receivingChest.getInventory().addItem(sendingItems[i]);
+					sendingChest.getInventory().remove(sendingItems[i]);
+					receivingChest.update();
+					sendingChest.update();
+				}
+			}
+
+			String msg = getTranslationLanguage(sender, stringKeys.MAILSUCCESS.toString());
+			sender.sendMessage(String.format(msg, receivingMailbox.name));
+			/*
+			 * sender.sendMessage("§2Your items were sent to §6" +
+			 * receivingMailbox.name + "§2's mailbox!\n");
+			 */
+			doRandomFirework(receivingMailbox.location);
+
+			return true;
+		}
+		return false;
+
+	}
+	private Mailbox getMailbox(SerenityPlayer sp) {
+		for (Mailbox mb : mailBoxes) {
+			if (!mb.isPublic && mb.uuid.equals(sp.getUUID())) {
+				return mb;
+			}
+		}
+		return null;
+	}
+	private void addRewardToMailbox(int id, Mailbox mailbox) {
+		Chest receivingChest = (Chest) mailbox.location.getBlock().getState();
+		Head h = getRewardHead(id);
+		ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH);
+		ItemMeta rewardMeta = rewardItem.getItemMeta();
+		rewardMeta.setDisplayName("§dHead Reward!");
+		rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
+		List<String> lore = new ArrayList<String>();
+		lore.add("Specific head:");
+		lore.add(h.Name);
+		lore.add(id + "");
+		rewardMeta.setLore(lore);
+		rewardItem.setItemMeta(rewardMeta);
+		receivingChest.getInventory().addItem(rewardItem);
+		doRandomFirework(receivingChest.getLocation());
 	}
 	
 	// Suspicious behavior warnings
@@ -4110,6 +5043,718 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 			}
 		}, (long) time);
 	}
+	private void serializeAndSendInventory(Player p) {
+		ItemStack air = new ItemStack(Material.AIR);
+
+		for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+			if (e.isCustomNameVisible() && e.getCustomName().contains("§6")) {
+				moveEntityToOther(p, e);
+
+			}
+		}
+		for (int i = 0; i < p.getInventory().getSize(); i++) {
+			ItemStack is = p.getInventory().getItem(i);
+			if (is != null) {
+				if (is.getType() != null) {
+					if (is.getType() == Material.SKULL_ITEM) {
+						SkullMeta sm = (SkullMeta) is.getItemMeta();
+						if (sm.getOwner() == null || sm.getOwner() == "") {
+							sm.setOwner("Halloween 2015");
+							is.setItemMeta(sm);
+						}
+						moveItemToOther(p, is);
+						p.getInventory().remove(is);
+					}
+
+					if (is.hasItemMeta()) {
+						if (is.getItemMeta().hasDisplayName()) {
+							if (is.getItemMeta().getDisplayName().equals("§6The Firework Axe")
+									|| is.getItemMeta().getDisplayName().equals("§dParty Armor")
+									|| is.getItemMeta().getDisplayName().equals("§4Cupid's Bow")
+									|| is.getItemMeta().getDisplayName().equals("§dForbidden Fruit")) {
+								moveItemToOther(p, is);
+								p.getInventory().removeItem(is);
+							}
+						}
+					}
+
+					if (is.getType().equals(Material.WRITTEN_BOOK) || is.getType().equals(Material.BANNER)) {
+						moveItemToOther(p, is);
+						p.getInventory().removeItem(is);
+					}
+				}
+			}
+		}
+	}
+	
+	// Other
+	public void noPerms(CommandSender p) {
+		String msg = getTranslationLanguage(p, stringKeys.NOPERMS.toString());
+		p.sendMessage(msg);
+	}
+	private int blocksAllowed(UUID uuid) {
+		return (getPlayerMinutes(uuid) / 60) * 256;
+	}
+	private int blocksClaimed(String playerName) {
+		int i = 0;
+		for (ProtectedArea pa : areas) {
+			if (pa.owner.equals(playerName)) {
+				i += pa.area();
+			}
+		}
+
+		return i;
+	}
+	private boolean chunk(CommandSender sender, String[] arg3) {
+		if (arg3.length > 0) {
+			if (arg3[0].equalsIgnoreCase("claim")) {
+				Player p = Bukkit.getPlayer(sender.getName());
+
+				if (getPlayerMinutes(p.getUniqueId()) < 60) {
+					p.sendMessage("§cYou cannot claim an area yet!  Stick around");
+					return true;
+				}
+
+				boolean alreadyPrepped = false;
+				for (PlayerProtect pp : preppedToProtectArea) {
+					if (pp.player.equals(p)) {
+						alreadyPrepped = true;
+					}
+				}
+				if (alreadyPrepped) {
+					String msg = getTranslationLanguage(p, stringKeys.PROTPREPPEDTOPROTECT.toString());
+					p.sendMessage(msg);
+
+					// p.sendMessage("§2You are already prepped to protect!
+					// Right click somewhere");
+					return true;
+				}
+
+				if (arg3.length == 1) {
+					preppedToProtectArea.add(new PlayerProtect(Bukkit.getPlayer(sender.getName()), 0));
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTPREPPEDTOPROTECT.toString());
+					sender.sendMessage(msg);
+
+					// sender.sendMessage("§2You are ready to claim an area!
+					// Right click your first corner");
+					return true;
+				} else {
+					int length = -1;
+					if (arg3.length > 1) {
+						try {
+							length = Integer.parseInt(arg3[1]);
+						} catch (Exception e) {
+							// sender.sendMessage("§cThe length must be an
+							// integer value! §3Ex: /protect claim 5");
+
+							String msg = getTranslationLanguage(sender, stringKeys.PROTAREABADARG.toString());
+							sender.sendMessage(msg);
+
+							return true;
+						}
+					}
+
+					if (length == -1) {
+						return false;
+					}
+					if (length < 5) {
+
+						String msg = getTranslationLanguage(sender, stringKeys.PROTAREATOOSMALL.toString());
+						sender.sendMessage(msg);
+
+						// sender.sendMessage("§cThe minimum size is 5! (11x11
+						// blocks)");
+						return true;
+					}
+					if (length >= 75) {
+
+						String msg = getTranslationLanguage(sender, stringKeys.PROTAREATOOBIG.toString());
+						sender.sendMessage(msg);
+
+						// sender.sendMessage("§cThat is too much!");
+						return true;
+					}
+
+					preppedToProtectArea.add(new PlayerProtect(Bukkit.getPlayer(sender.getName()), length));
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTAREAREADY.toString());
+					sender.sendMessage(msg);
+
+					// sender.sendMessage("§2You are ready to claim an area!
+					// Right click the center block");
+					return true;
+
+				}
+			} else if (arg3[0].equalsIgnoreCase("unclaim")) {
+				if (!preppedToUnProtectChunk.contains(sender.getServer().getPlayer(sender.getName()))) {
+					preppedToUnProtectChunk.add(Bukkit.getServer().getPlayer(sender.getName()));
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTUNCLAIMPREPPED.toString());
+					sender.sendMessage(msg);
+
+					// sender.sendMessage("§2You are ready to unclaim an area!
+					// Right click on a block to unclaim its area.");
+					return true;
+				} else {
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTUNCLAIMSTILLPREPPED.toString());
+					sender.sendMessage(msg);
+
+					// sender.sendMessage("§2You are still ready to unclaim an
+					// area... Right click on a block.");
+					return true;
+				}
+
+			}
+
+			else if (arg3[0].equalsIgnoreCase("trustlist")) {
+				if (blocksClaimed(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()) == 0) {
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTNOAREAS.toString());
+					sender.sendMessage(msg);
+
+					// sender.sendMessage("§cYou don't own any areas!");
+					return true;
+				}
+				for (ProtectedArea pa : areas) {
+					if (pa.owner.equals(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName())) {
+						/*
+						 * sender.sendMessage("§3Trustlist: \n" +
+						 * pa.trustList());
+						 */
+
+						String msg = getTranslationLanguage(sender, stringKeys.PROTTRUSTLIST.toString()) + "\n"
+								+ pa.trustList();
+						sender.sendMessage(msg);
+
+						return true;
+					}
+				}
+			}
+
+			else if (arg3[0].equalsIgnoreCase("list")) {
+				if (blocksClaimed(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()) == 0) {
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTNOAREAS.toString());
+					sender.sendMessage(msg);
+
+					// sender.sendMessage("§cYou don't own any areas!");
+					return true;
+				}
+
+				String msg = getTranslationLanguage(sender, stringKeys.PROTAREALIST.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§3Your area list:");
+
+				for (ProtectedArea pa : areas) {
+					if (pa.owner.equals(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName())) {
+						sender.sendMessage(" - §3 X: " + pa.location1.getX() + " Z: " + pa.location1.getZ() + " ("
+								+ pa.xDiff() + "x" + pa.zDiff() + " = " + pa.area() + " blocks)");
+					}
+				}
+				UUID uuid = Bukkit.getServer().getPlayer(sender.getName()).getUniqueId();
+				String name = Bukkit.getServer().getPlayer(sender.getName()).getDisplayName();
+
+				String message = getTranslationLanguage(sender, stringKeys.PROTEXTENDEDLISTDATA.toString());
+
+				sender.sendMessage(String.format(message, blocksAllowed(uuid), blocksClaimed(name),
+						(blocksAllowed(uuid) - blocksClaimed(name)),
+						(int) Math.sqrt((blocksAllowed(uuid) - blocksClaimed(name))),
+						(int) Math.sqrt((blocksAllowed(uuid) - blocksClaimed(name)))));
+
+				return true;
+			} else if (arg3[0].equalsIgnoreCase("cri")) {
+				if (sender instanceof Player) {
+					Player p = (Player) sender;
+
+					final Player pf = p;
+
+					for (int i = 0; i < 5; i++) {
+						Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+							@Override
+							public void run() {
+
+								/*
+								 * ParticleEffect.WATER_SPLASH.display( .15F,
+								 * .025F, .15F, .001F, 25, pf.getEyeLocation(),
+								 * 50.0);
+								 */
+							}
+						}, i * 10L);
+					}
+
+					return true;
+				}
+			}
+
+			else if (arg3[0].equalsIgnoreCase("stuck")) {
+				Player p = Bukkit.getPlayer(sender.getName());
+				Location l = Bukkit.getPlayer(sender.getName()).getLocation();
+				getLogger().info("from: " + l);
+				for (ProtectedArea pa : areas) {
+					if (pa.equals(l)) {
+						if (!pa.hasPermission(p.getDisplayName())) {
+							while (true) {
+								l.setX(l.getX() + 5);
+								boolean safe = true;
+								for (ProtectedArea pcs : areas) {
+									if (pcs.equals(l)) {
+										safe = false;
+									}
+								}
+								if (safe) {
+									getLogger().info("to: " + l.getWorld().getHighestBlockAt(l).getLocation());
+
+									p.teleport(l.getWorld().getHighestBlockAt(l).getLocation());
+									return true;
+								}
+							}
+						} else {
+							String msg = getTranslationLanguage(sender, stringKeys.PROTSTUCKABUSEATTEMPT.toString());
+							sender.sendMessage(msg);
+							return true;
+						}
+					}
+				}
+
+				String msg = getTranslationLanguage(sender, stringKeys.PROTSTUCKABUSEATTEMPTNOTEVENPROT.toString());
+				sender.sendMessage(msg);
+				return true;
+			}
+		}
+		if (arg3.length > 1) {
+			if (arg3[0].equalsIgnoreCase("trust")) {
+				if (blocksClaimed(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()) == 0) {
+					// sender.sendMessage("§cYou don't own any areas!");
+					String msg = getTranslationLanguage(sender, stringKeys.PROTNOAREAS.toString());
+					sender.sendMessage(msg);
+
+					return true;
+				}
+
+				ArrayList<String> list = new ArrayList<String>();
+
+				if (arg3[1].equalsIgnoreCase("doors")) {
+					arg3[1] = "doors";
+				}
+				if (arg3[1].equalsIgnoreCase("buttons")) {
+					arg3[1] = "buttons";
+				}
+				if (arg3[1].equalsIgnoreCase("plates")) {
+					arg3[1] = "plates";
+				}
+				if (arg3[1].equalsIgnoreCase("chests")) {
+					arg3[1] = "chests";
+				}
+				if (arg3[1].equalsIgnoreCase("levers")) {
+					arg3[1] = "levers";
+				}
+				if (arg3[1].equalsIgnoreCase("gates")) {
+					arg3[1] = "gates";
+				}
+
+				for (ProtectedArea pa : areas) {
+					if (pa.owner.equals(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName())) {
+						pa.addTrust(arg3[1]);
+						list = pa.trustedPlayers;
+					}
+				}
+
+				String path = "ProtectedAreas." + Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()
+						+ ".Trusts";
+
+				String[] loc = new String[list.size()];
+				for (int i = 0; i < list.size(); i++) {
+					loc[i] = list.get(i);
+				}
+
+				protectedAreasCfg.getConfig().set(path, loc);
+				protectedAreasCfg.saveConfig();
+				protectedAreasCfg.reloadConfig();
+
+				/*
+				 * sender.sendMessage("§2" + arg3[1] +
+				 * "§3 now has full permissions in all of your protected areas"
+				 * );
+				 */
+
+				if (arg3[1].equalsIgnoreCase("doors")) {
+					sender.sendMessage("§2Doors §3are now publicly clickable in all of your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("buttons")) {
+					sender.sendMessage("§2Buttons §3are now publicly clickable in all of your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("plates")) {
+					sender.sendMessage("§2Pressure plates §3are now public in all of your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("chests")) {
+					sender.sendMessage(
+							"§2Chests, furnaces, brewing stands and hoppers §3are now public in all of your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("levers")) {
+					sender.sendMessage("§2Levers §3are now public in all of your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("gates")) {
+					sender.sendMessage("§2Fence gates §3are now public in all of your claims");
+					return true;
+				}
+
+				String msg = getTranslationLanguage(sender, stringKeys.PROTADDEDTRUST.toString());
+				sender.sendMessage(String.format(msg, arg3[1]));
+
+				return true;
+
+			} else if (arg3[0].equalsIgnoreCase("untrust")) {
+				if (blocksClaimed(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()) == 0) {
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTNOAREAS.toString());
+					sender.sendMessage(msg);
+
+					// sender.sendMessage("§cYou don't own any areas!");
+					return true;
+				}
+
+				if (arg3[1].equalsIgnoreCase("doors")) {
+					arg3[1] = "doors";
+				}
+				if (arg3[1].equalsIgnoreCase("buttons")) {
+					arg3[1] = "buttons";
+				}
+				if (arg3[1].equalsIgnoreCase("plates")) {
+					arg3[1] = "plates";
+				}
+				if (arg3[1].equalsIgnoreCase("chests")) {
+					arg3[1] = "chests";
+				}
+				if (arg3[1].equalsIgnoreCase("levers")) {
+					arg3[1] = "levers";
+				}
+				if (arg3[1].equalsIgnoreCase("gates")) {
+					arg3[1] = "gates";
+				}
+
+				if (arg3[1].equalsIgnoreCase("all")) {
+					ArrayList<String> list = new ArrayList<String>();
+					for (ProtectedArea pa : areas) {
+						if (pa.owner.equals(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName())) {
+
+							ArrayList<String> untrustList = new ArrayList<String>();
+							for (String s : pa.trustedPlayers) {
+								untrustList.add(s);
+							}
+
+							for (String s : untrustList) {
+								pa.unTrust(s);
+							}
+						}
+					}
+
+					String path = "ProtectedAreas." + Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()
+							+ ".Trusts";
+
+					String[] loc = new String[list.size()];
+					for (int i = 0; i < list.size(); i++) {
+						loc[i] = list.get(i);
+					}
+
+					protectedAreasCfg.getConfig().set(path, loc);
+					protectedAreasCfg.saveConfig();
+					protectedAreasCfg.reloadConfig();
+
+					// sender.sendMessage("§c" +
+					// "You no longer trust anybody");
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTTRUSTISSUES.toString());
+					sender.sendMessage(msg);
+					return true;
+
+				}
+
+				ArrayList<String> list = new ArrayList<String>();
+				boolean happened = false;
+				for (ProtectedArea pa : areas) {
+					if (pa.owner.equals(Bukkit.getServer().getPlayer(sender.getName()).getDisplayName())) {
+						if (pa.trustedPlayers.contains(arg3[1])) {
+							happened = true;
+							pa.unTrust(arg3[1]);
+							list = pa.trustedPlayers;
+						}
+					}
+				}
+
+				if (!happened) {
+
+					// sender.sendMessage("§cYou do not trust anybody named §2"
+					// + arg3[1]);
+
+					String msg = getTranslationLanguage(sender, stringKeys.PROTCANTFINDTRUST.toString());
+					sender.sendMessage(String.format(msg, arg3[1]));
+					return true;
+				}
+
+				String path = "ProtectedAreas." + Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()
+						+ ".Trusts";
+
+				String[] loc = new String[list.size()];
+				for (int i = 0; i < list.size(); i++) {
+					loc[i] = list.get(i);
+				}
+
+				protectedAreasCfg.getConfig().set(path, loc);
+				protectedAreasCfg.saveConfig();
+				protectedAreasCfg.reloadConfig();
+
+				/*
+				 * sender.sendMessage("§2" + arg3[1] +
+				 * "§3 no longer has permissions in any of your protected areas"
+				 * );
+				 */
+
+				if (arg3[1].equalsIgnoreCase("doors")) {
+					sender.sendMessage("§2Doors §3are now longer publicly clickable in your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("buttons")) {
+					sender.sendMessage("§2Buttons §3are no longer publicly clickable in your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("plates")) {
+					sender.sendMessage("§2Pressure plates §3are no longer public in your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("chests")) {
+					sender.sendMessage(
+							"§2Chests, furnaces, brewing stands and hoppers §3are no longer public in your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("levers")) {
+					sender.sendMessage("§2Levers §3are no longer public in your claims");
+					return true;
+				}
+				if (arg3[1].equalsIgnoreCase("gates")) {
+					sender.sendMessage("§2Fence gates §3are no longer public in your claims");
+					return true;
+				}
+
+				String msg = getTranslationLanguage(sender, stringKeys.PROTUNTRUSTED.toString());
+				sender.sendMessage(String.format(msg, arg3[1]));
+				return true;
+			}
+
+		}
+
+		String msg = getTranslationLanguage(sender, stringKeys.PROTHELP.toString());
+		sender.sendMessage(msg);
+		return true;
+	}
+	private boolean vote(CommandSender sender, String[] arg3) {
+		return true;/*
+					 * if (arg3.length == 0) { sender.sendMessage(
+					 * "§3Minecraft 1.9 is right around the corner.  Please read the post here:  §7http://tinyurl.com/SerenityUpdate\n"
+					 * ); sender.sendMessage("§7(Click below to vote)"); String
+					 * s = FancyText.GenerateFancyText(
+					 * "- §eVOTE TO §4RESET THE WORLD", FancyText.RUN_COMMAND,
+					 * "/vote yes", FancyText.SHOW_TEXT,
+					 * "Vote to §creset§r the world for 1.9"); String s2 =
+					 * FancyText.GenerateFancyText(
+					 * "- §eVOTE TO §4KEEP THE WORLD", FancyText.RUN_COMMAND,
+					 * "/vote no", FancyText.SHOW_TEXT,
+					 * "Vote to §2keep§r the world for 1.9"); String s3 =
+					 * FancyText.GenerateFancyText("§2See results",
+					 * FancyText.RUN_COMMAND, "/vote results",
+					 * FancyText.SHOW_TEXT, "Show the current votes"); if
+					 * (sender instanceof Player) { Player p = ((Player)
+					 * sender).getPlayer(); sendRawPacket(p, s);
+					 * sendRawPacket(p, s2); sendRawPacket(p, s3); } return
+					 * true; }
+					 * 
+					 * if (arg3.length > 0) { if
+					 * (arg3[0].equalsIgnoreCase("yes")) { if (sender instanceof
+					 * Player) { SerenityPlayer sp =
+					 * serenityPlayers.get(((Player) sender) .getUniqueId()); if
+					 * (sp.getMinutes() < 1440) { sender.sendMessage(
+					 * "§cSorry only players with >24 hours of time can vote for this"
+					 * ); return true; } }
+					 * sender.sendMessage("§aYour vote was cast!");
+					 * voteCfg.getConfig().set("Vote." + sender.getName(),
+					 * "yes"); voteCfg.saveConfig(); voteCfg.reloadConfig();
+					 * return true; } if (arg3[0].equalsIgnoreCase("no")) { if
+					 * (sender instanceof Player) { SerenityPlayer sp =
+					 * serenityPlayers.get(((Player) sender) .getUniqueId()); if
+					 * (sp.getMinutes() < 1440) { sender.sendMessage(
+					 * "§cSorry only players with >24 hours of time can vote for this"
+					 * ); return true; } }
+					 * sender.sendMessage("§aYour vote was cast!");
+					 * voteCfg.getConfig().set("Vote." + sender.getName(),
+					 * "no"); voteCfg.saveConfig(); voteCfg.reloadConfig();
+					 * return true; } if (arg3[0].equalsIgnoreCase("results")) {
+					 * ConfigurationSection votesFromConfig =
+					 * voteCfg.getConfig() .getConfigurationSection("Vote");
+					 * ArrayList<String> votes = new ArrayList<String>(); for
+					 * (String key : votesFromConfig.getKeys(false)) {
+					 * votes.add(votesFromConfig.getString(key)); }
+					 * 
+					 * int votesToReset = 0; int votesToKeep = 0; for (int i =
+					 * 0; i < votes.size(); i++) { if
+					 * (votes.get(i).equalsIgnoreCase("yes")) { votesToReset++;
+					 * } if (votes.get(i).equalsIgnoreCase("no")) {
+					 * votesToKeep++; } }
+					 * 
+					 * sender.sendMessage("§3Total votes: §b" + (votesToReset +
+					 * votesToKeep) + "\n§5Reset world: §2" + new
+					 * DecimalFormat("##.##") .format((double) ((double)
+					 * votesToReset / (double) (votesToKeep + votesToReset) *
+					 * 100.00)) + "%" + "\n§5Keep world:  §2" + new
+					 * DecimalFormat("##.##") .format((double) ((double)
+					 * votesToKeep / (double) (votesToKeep + votesToReset) *
+					 * 100.00)) + "%"); return true; }
+					 * 
+					 * return true; } return false;
+					 */
+	}
+	private static String getMoonPhase(Player p) {
+		String s = "";
+		int days = (int) p.getWorld().getFullTime() / 24000;
+		int phase = days % 8;
+		switch (phase) {
+		case 0:
+			s = "Full Moon (1/8)";
+			break;
+		case 1:
+			s = "Waning Gibbous (2/8)";
+			break;
+		case 2:
+			s = "§7First Quarter (3/8)";
+			break;
+		case 3:
+			s = "§7Waning Crescent (4/8)";
+			break;
+		case 4:
+			s = "§8New Moon (5/8)";
+			break;
+		case 5:
+			s = "§7Waxing Crescent (6/8)";
+			break;
+		case 6:
+			s = "§7Last Quarter (7/8)";
+			break;
+		case 7:
+			s = "Waxing Gibbous (8/8)";
+			break;
+		}
+		return s;
+	}
+	private void getHalloweenHeads() {
+		halloweenHeads = new HashMap<String, String>();
+		List<String> rawHeads = new ArrayList<String>();
+
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Spider\"},SkullOwner:{Id:\"8bdb71d0-4724-48b2-9344-e79480424798\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q1NDE1NDFkYWFmZjUwODk2Y2QyNThiZGJkZDRjZjgwYzNiYTgxNjczNTcyNjA3OGJmZTM5MzkyN2U1N2YxIn19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Herobrine\"},SkullOwner:{Id:\"d0b15454-36fa-43e4-a247-f882bb9fe288\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOThiN2NhM2M3ZDMxNGE2MWFiZWQ4ZmMxOGQ3OTdmYzMwYjZlZmM4NDQ1NDI1YzRlMjUwOTk3ZTUyZTZjYiJ9fX0=\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Mummy\"},SkullOwner:{Id:\"8f7c0c5b-720f-4944-8481-b0f7931f303f\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2U5MWU5NTgyMmZlOThjYzVhNTY1OGU4MjRiMWI4Y2YxNGQ0ZGU5MmYwZTFhZjI0ODE1MzcyNDM1YzllYWI2In19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Black Cat\"},SkullOwner:{Id:\"6dbe3930-9e7c-426a-a7aa-4a48e93078a8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q4Y2RjYTg3Mjk2Njc5Y2EyNmFhZDY3MDQzYmYxZDQ0Yjk4MjYyMTljY2E5ZjRjNDlhNDExM2IxNzZlNGMifX19\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Pumpkin\"},SkullOwner:{Id:\"c168fbe4-4ec1-4e45-b9bc-6ff5b0f0bf32\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjQxYWQxNDhlMzNjODFkY2EzZjFhNmNlMTNhYTcwZTRmZTZiYzJjNzllODcxODVkOGQxNzZiZGRhMWM5OGEzIn19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Devil\"},SkullOwner:{Id:\"c3c88c33-f305-4c10-9303-ce658b2fbde7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOWRhMzkyNjllZjQ1ZjgyNWVjNjFiYjRmOGFhMDliZDNjZjA3OTk2ZmI2ZmFjMzM4YTZlOTFkNjY5OWFlNDI1In19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Skeleton Miner\"},SkullOwner:{Id:\"fc0cbbe8-e2e2-4118-99a4-e4f811e75511\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvOTM3ZjhmOTVjMTI1NzU3Y2JmNzY3YTExZjUyYTRlNjY5MWNlMThhMjU5NzhjNjhjZmEzOTEwMzYwZmUifX19\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Cauldron\"},SkullOwner:{Id:\"d5a8d4a1-a76d-46f3-8e20-0ce2dc10583a\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZjk1NWJkNTExNjM1YTc3ZTYxNmEyNDExMmM5ZmM0NTdiMjdjOGExNDZhNWU2ZGU3MjdmMTdlOTg5ODgyIn19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Skeleton with Hat\"},SkullOwner:{Id:\"73cf74c8-d2e2-432b-9157-a93ed1e4f09c\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZGQ1MDI2MzkyMzNkOGFlZWRjM2Y0NzNmYTlmODhlM2ZkMjZiNmVkYWFjMjlhODM4ZWI4ZDllMDI2NDc1YWIifX19\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Witch\"},SkullOwner:{Id:\"6c151ba9-2a10-4762-bd82-d0fa41abfb21\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWE2NDEwMzc4OTMwZDhiMTQxMjdkNDM4OGRlNzQ2MzZkMzRlZTI1MTdmM2IxZjJjYjZjZTYyYTFlNzIxNTMifX19\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Evil Bunny\"},SkullOwner:{Id:\"e4f254ad-1413-4853-8736-10c7aa53fbaf\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvY2Q0ZmRhZDVhNjEwNGFhNTQ5ZDFlNzZkNzNhM2M2ZmUzYzY3MjRiZjA5ZjdmZmNjMDJmMzNmOWVkZTdmYWRlIn19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Ghost\"},SkullOwner:{Id:\"31152fb2-cb1e-45c3-86dd-b23f7a20a6f8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjhkMjE4MzY0MDIxOGFiMzMwYWM1NmQyYWFiN2UyOWE5NzkwYTU0NWY2OTE2MTllMzg1NzhlYTRhNjlhZTBiNiJ9fX0=\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Scary Clown\"},SkullOwner:{Id:\"d1956517-9a4d-421d-8647-2d940dc64518\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODZkYmMxZGViYzU3NDM4YTVkZTRiYTkxNTE1MTM4MmFiYzNkOGYxMzE4ZTJhMzVlNzhkZmIzMGYwNGJjNDY3In19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Frankenstein\"},SkullOwner:{Id:\"aec7b0b6-7bf8-46a6-b873-feb3d6277af8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDdjYmUwNjFiNDQ1Yjg4Y2IyZGY1OWFjY2M4ZDJjMWMxMjExOGZlMGIyMTI3ZTZlNzU4MTM1NTBhZGFjNjdjZiJ9fX0=\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Scarecrow\"},SkullOwner:{Id:\"3ee188a6-2c6a-4c26-98a5-d655d4eed50f\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTE3MWJhYTVhZDE2N2JkMzNlNDE5ZmU3NDVmN2IwMTg0MGNiNmQ3ZThkN2FlYzZjZGEzMWNlMmQ1Y2Y2MSJ9fX0=\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Skull\"},SkullOwner:{Id:\"72e89a28-49fa-45af-93dc-567597f950af\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTFmNTRmZjliYjQyODUxOTEyYWE4N2ExYmRhNWI3Y2Q5ODE0Y2NjY2ZiZTIyNWZkZGE4ODdhZDYxODBkOSJ9fX0=\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Ogre\"},SkullOwner:{Id:\"579a7117-023d-4183-80d1-f33ab649f7ff\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNWNhNDc5NDZkNzI4NTgzNGVmMWUxNzYyOWY3MjgyYjY1ZTkxNDM1OTdmZTdiZjJiZTFkZTI0M2YxYzYzIn19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Werewolf\"},SkullOwner:{Id:\"fdc7eb2a-0bec-408d-8f16-f8494d3960d7\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTFjOTkzNGNkZDU1YTllNjMzNTk2MmE4Nzc2MjYwZDc5MTYxNTA4MTM0ODNlOTU2YzI4NjFiMTFhOGEyNjdmNyJ9fX0=\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Enderdragon\"},SkullOwner:{Id:\"433562fa-9e23-443e-93b0-d67228435e77\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzRlY2MwNDA3ODVlNTQ2NjNlODU1ZWYwNDg2ZGE3MjE1NGQ2OWJiNGI3NDI0YjczODFjY2Y5NWIwOTVhIn19fQ==\"}]}}}");
+		rawHeads.add(
+				"/give @p skull 1 3 {display:{Name:\"Zombie\"},SkullOwner:{Id:\"96cbfca7-5729-47f1-bc3e-4788bc6b06fc\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvM2ZkMmRkMWQ1YzkzZTU5NWU3OWJmMWRkYTMzMmJiODJkMjNlYzk2M2U3YTMwNGZjMjFjMjM0ZGY0NWE2ZWYifX19\"}]}}}");
+
+		for (String raw : rawHeads) {
+			String name = raw.substring(raw.indexOf('"') + 1, raw.indexOf('}') - 1);
+			String actualCommand = raw.replace("/give @p", "give %s");
+			actualCommand = actualCommand.replaceFirst("\\{.*?\\},", "\\{");
+			actualCommand = actualCommand.replaceFirst("SkullOwner:\\{", "SkullOwner:\\{Name:\"" + name + "\",");
+
+			halloweenHeads.put(actualCommand, name);
+		}
+	}
+	private void sendSecretArmorStand(Player p) {
+		String command = "/as";
+		String particleminus = FancyText.GenerateFancyText(" §c( - )", FancyText.RUN_COMMAND, command + " p-",
+				FancyText.SHOW_TEXT, "Previous Particle effect");
+		String particleplus = FancyText.GenerateFancyText(" §a( + )                   §7Change particle effect",
+				FancyText.RUN_COMMAND, command + " p-", FancyText.SHOW_TEXT, "Next Particle effect");
+
+		sendRawPacket(p, "[" + particleminus + "," + particleplus + "]");
+
+		String intensityminus = FancyText.GenerateFancyText(" §c( - )", FancyText.RUN_COMMAND, command + " i-",
+				FancyText.SHOW_TEXT, "Fewer particles");
+		String intensityplus = FancyText.GenerateFancyText(" §a( + )                   §7Change intensity",
+				FancyText.RUN_COMMAND, command + " i+", FancyText.SHOW_TEXT, "More particles");
+
+		sendRawPacket(p, "[" + intensityminus + "," + intensityplus + "]");
+
+		String rangeminus = FancyText.GenerateFancyText(" §c( - )", FancyText.RUN_COMMAND, command + " r-",
+				FancyText.SHOW_TEXT, "Less Range (-.1 meter)");
+		String rangeplus = FancyText.GenerateFancyText(" §a( + )", FancyText.RUN_COMMAND, command + " r+",
+				FancyText.SHOW_TEXT, "More Range (+.1 meter)");
+
+		String rangeminusminus = FancyText.GenerateFancyText(" §c( -- )", FancyText.RUN_COMMAND, command + " r--",
+				FancyText.SHOW_TEXT, "Less Range (-1 meter)");
+		String rangeplusplus = FancyText.GenerateFancyText(" §a( ++ )  §7Change range", FancyText.RUN_COMMAND,
+				command + " r++", FancyText.SHOW_TEXT, "More Range (+1 meter)");
+
+		sendRawPacket(p, "[" + rangeminus + "," + rangeplus + "," + rangeminusminus + "," + rangeplusplus + "]");
+
+		String extraminus = FancyText.GenerateFancyText(" §c( - )", FancyText.RUN_COMMAND, command + " e-",
+				FancyText.SHOW_TEXT,
+				"Extra -.1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+		String extraplus = FancyText.GenerateFancyText(" §c( + )", FancyText.RUN_COMMAND, command + " e+",
+				FancyText.SHOW_TEXT,
+				"Extra +.1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+
+		String extraminusminus = FancyText.GenerateFancyText(" §c( -- )", FancyText.RUN_COMMAND, command + " e--",
+				FancyText.SHOW_TEXT,
+				"Extra -1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+		String extraplusplus = FancyText.GenerateFancyText(" §c( ++ )  §7Change extra", FancyText.RUN_COMMAND,
+				command + " e++", FancyText.SHOW_TEXT,
+				"Extra +1 \nThis sometimes affects speed and sometimes color.\nNot all particles are affected by this!");
+
+		sendRawPacket(p, "[" + extraminus + "," + extraplus + "," + extraminusminus + "," + extraplusplus + "]");
+	}
+	
+	/*
+	 * @EventHandler private void AFKInvEvent(InventoryClickEvent event) { if
+	 * (event.getInventory().getName().contains("AFK INVENTORY")) {
+	 * event.setCancelled(true); } }
+	 */
 	
 	  //////////////
 	 // Commands //
@@ -4232,6 +5877,68 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		return false;
 	}
 
+	// Ignore
+	private boolean ignore(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player) {
+			if (arg3.length != 1) {
+				return false;
+			} else {
+				Player p = ((Player) sender).getPlayer();
+
+				SerenityPlayer annoying = null;
+
+				for (SerenityPlayer sp : serenityPlayers.values()) {
+					if (sp.getName().toUpperCase().equals(arg3[0].toUpperCase())) {
+						annoying = sp;
+						break;
+					}
+				}
+
+				SerenityPlayer annoyed = serenityPlayers.get(p.getUniqueId());
+
+				if (annoying == null) {
+					sender.sendMessage("§cThere is nobody by the name of §7" + arg3[0]);
+					return true;
+				} else {
+					if (annoyed.getIgnoreList().contains(annoying.getUUID())) {
+						sender.sendMessage("§aYou will again see chat messages from §7" + annoying.getChatColor()
+								+ annoying.getName());
+						deleteFromIgnore(annoyed, annoying);
+						annoyed.getIgnoreList().remove(annoying.getUUID());
+						return true;
+					} else {
+						annoyed.getIgnoreList().add(annoying.getUUID());
+						sender.sendMessage("§aYou will no longer see chat messages from §7" + annoying.getChatColor()
+								+ annoying.getName());
+						insertIgnore(annoyed, annoying);
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	private void deleteFromIgnore(SerenityPlayer annoyed, SerenityPlayer annoying) {
+		String sql = "DELETE FROM Ignores WHERE Annoyed = '" + annoyed.getUUID().toString() + "' AND Annoying = '"
+				+ annoying.getUUID().toString() + "'";
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				executeSQLAsync(sql);
+			}
+		}, 0L);
+	}
+	private void insertIgnore(SerenityPlayer annoyed, SerenityPlayer annoying) {
+		String sql = "INSERT INTO Ignores (Annoyed, Annoying) VALUES ('" + annoyed.getUUID().toString() + "','"
+				+ annoying.getUUID().toString() + "');";
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				executeSQLAsync(sql);
+			}
+		}, 0L);
+	}
+	
 	// Deposit
 	private boolean deposit(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player) {
@@ -4441,6 +6148,1089 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		sendRawPacket(p, ft);
 	}
 
+	// Server
+	private boolean server(CommandSender sender, String[] arg3) {
+		if (sender.isOp() || sender instanceof ConsoleCommandSender) {
+
+			if (arg3[0].equals("tempmute")) {
+				SerenityPlayer sp = serenityPlayers.get((Bukkit.getOfflinePlayer(arg3[1]).getUniqueId()));
+				sp.setMuted(true);
+				int minutes = Integer.parseInt(arg3[2]);
+				Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+
+					@Override
+					public void run() {
+						sp.setMuted(false);
+						sender.sendMessage(sp.getName() + " was unmuted!");
+					}
+
+				}, minutes * 20 * 60);
+				sender.sendMessage(sp.getName() + "muted = " + sp.isMuted() + " for " + minutes + " minutes.");
+				return true;
+			}
+
+			if (arg3[0].equals("afkset")) {
+				SerenityPlayer sp = serenityPlayers.get((Bukkit.getPlayer(arg3[1]).getUniqueId()));
+				int time = Integer.parseInt(arg3[2]);
+				sp.setAfkTime(time);
+				sender.sendMessage("Set " + sp.getName() + "'s afk time to " + time);
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("say")) {
+				String s = "";
+				for (int i = 1; i < arg3.length; i++) {
+					s += arg3[i] + " ";
+				}
+
+				Bukkit.broadcastMessage("§d[Server] " + s);
+				sendMessageToBungee(null, s);
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("justlog")) {
+				String s = "";
+				for (int i = 1; i < arg3.length; i++) {
+					s += arg3[i] + " ";
+				}
+				getLogger().info(s);
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("wm")) {
+				if (arg3.length > 3) {
+					String author = arg3[1];
+					String recip = arg3[2];
+
+					String message = "";
+					for (int i = 3; i < arg3.length; i++) {
+						message += arg3[i] + " ";
+					}
+					OfflineMessage om = new OfflineMessage();
+					om.setFrom(UUID.fromString(author));
+					om.setTo(UUID.fromString(recip));
+					om.setMessage(getMysqlRealScapeString(message));
+					om.setTime(System.currentTimeMillis());
+					om.setRead(false);
+					return sendOfflineMessage(om);
+				}
+				return false;
+			}
+
+			if (arg3[0].equalsIgnoreCase("mailhead")) {
+				if (arg3.length > 2) {
+					int id = Integer.parseInt(arg3[1]);
+					UUID uid = UUID.fromString(arg3[2]);
+					SerenityPlayer sp = serenityPlayers.get(uid);
+					if (false/* sp.isOp() */) {
+						addRewardToMailbox(id, getMailbox(sp));
+					} else {
+						Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+							@Override
+							public void run() {
+								MaybeGiveRewardHead(id, sp);
+							}
+						}, 0L);
+					}
+					return true;
+				}
+				return false;
+			}
+
+			if (arg3[0].equalsIgnoreCase("txt")) {
+				String rec = arg3[1];
+				String msg = "";
+				for (int i = 2; i < arg3.length; i++) {
+					msg += arg3[i] + " ";
+				}
+				return MsgViaText(rec, msg);
+			}
+
+			if (arg3[0].equalsIgnoreCase("queue")) {
+				String rec = arg3[1];
+				String msg = "";
+				for (int i = 1; i < arg3.length; i++) {
+					msg += arg3[i] + " ";
+				}
+				sender.sendMessage("!play " + msg);
+				sendRequest(msg, "[Server]");
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("halloween")) {
+				getHalloweenHeads();
+				for (String s : halloweenHeads.keySet()) {
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), String.format(s, sender.getName()));
+				}
+			}
+
+			if (arg3[0].equalsIgnoreCase("event")) {
+				boolean bool = this.getConfig().getBoolean("EventOn", false);
+				bool = !bool;
+				this.getConfig().set("EventOn", bool);
+				sender.sendMessage(bool ? "Event is ENABLED" : "Event is DISABLED");
+				this.saveConfig();
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("heads")) {
+				ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH);
+				ItemMeta rewardMeta = rewardItem.getItemMeta();
+				rewardMeta.setDisplayName("§dHead Reward!");
+				rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
+				List<String> lore = new ArrayList<String>();
+				lore.add("Thanks for playing the Event!");
+				lore.add("Right click while holding this for a random head!");
+				rewardMeta.setLore(lore);
+				rewardItem.setItemMeta(rewardMeta);
+				if (sender instanceof Player) {
+					Player p = (Player) sender;
+					for (int i = 0; i < 150; i++)
+						p.getInventory().addItem(rewardItem);
+				}
+				// Bukkit.broadcastMessage(common +" " + uncommon + " " +rare +
+				// " " + superrare);
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("fw")) {
+				if (sender instanceof Player) {
+					Player p = (Player) sender;
+					givePlayerFwHead(p);
+
+					ItemStack it = new ItemStack(Material.GOLD_AXE);
+					ItemMeta im = it.getItemMeta();
+					im.setDisplayName("§6The Firework Axe");
+					it.setItemMeta(im);
+					p.getInventory().addItem(it);
+				}
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("thisiswrong")) {
+				Player p = (Player) sender;
+				for (int x = -25; x < 25; x++) {
+					for (int z = -25; z < 25; z++) {
+						Location l = p.getLocation();
+						Block b = p.getWorld()
+								.getBlockAt(new Location(p.getWorld(), l.getX() + x, l.getY(), l.getZ() + z));
+						if (b.getType() == Material.AIR) {
+							b.setType(Material.ENDER_STONE);
+						}
+					}
+				}
+			}
+
+			if (arg3[0].equalsIgnoreCase("title")) {
+				String rec = arg3[1];
+				String msg = "";
+				for (int i = 2; i < arg3.length; i++) {
+					msg += arg3[i] + " ";
+				}
+
+				// Bukkit.getPlayer(rec).sendTitle(msg, msg);
+				Player p = Bukkit.getPlayer(rec);
+
+				String msg2 = getTranslationLanguage(p.getPlayer(), stringKeys.BEDSOMEONEENTEREDABED.toString());
+				p.sendTitle("", msg2);
+
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("msgall")) {
+
+				String msg = "";
+				for (int i = 1; i < arg3.length; i++) {
+					msg += arg3[i] + " ";
+				}
+
+				int i = 0;
+
+				for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers.entrySet()) {
+					final String name = entry.getValue().getName();
+					final String m = msg;
+					if (TimeUnit.MILLISECONDS
+							.toDays(System.currentTimeMillis() - entry.getValue().getLastPlayed()) < 75) {
+						i += 5;
+						Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+
+							@Override
+							public void run() {
+								Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "msg " + name + " " + m);
+							}
+						}, i + 0L);
+					}
+				}
+
+				return true;
+			}
+
+			if (arg3.length == 1) {
+				if (arg3[0].equals("baby")) {
+					if (sender instanceof Player) {
+
+						Player p = (Player) sender;
+						for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+							if (e instanceof Sheep) {
+								Sheep sh = (Sheep) e;
+								sh.setBaby();
+								sh.setAgeLock(true);
+							}
+						}
+					}
+				}
+
+				if (arg3[0].equals("bun")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						Rabbit r = (Rabbit) p.getWorld().spawnEntity(p.getLocation(), EntityType.RABBIT);
+						r.setCustomName("§6Alfredia");
+						r.setBaby();
+						r.setAgeLock(true);
+					}
+				}
+
+				if (arg3[0].equals("chunks")) {
+
+					int area = 0;
+					String s = "";
+					for (ProtectedArea pa : areas) {
+						s += pa.owner + ": " + (int) pa.location1.getX() + " " + (int) pa.location1.getZ() + " Area: "
+								+ pa.area() + "\n";
+						area += pa.area();
+					}
+					s += "Total Area: " + area;
+					sender.sendMessage(s);
+
+				}
+
+				if (arg3[0].equals("paper")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						ItemStack is = new ItemStack(Material.PAPER);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName("§dSerenity University:  Doctor of Crafting");
+						is.setItemMeta(im);
+						p.getInventory().addItem(is);
+					}
+				}
+
+				if (arg3[0].equals("spawnt")) {
+					for (SerenityPlayer sp : serenityPlayers.values()) {
+						if (sp.getMinutes() > 1439) {
+							Bukkit.dispatchCommand(sender, "trust " + sp.getName());
+						}
+					}
+				}
+
+				if (arg3[0].equals("ss")) {
+					if (sender instanceof Player) {
+						ItemStack is = new ItemStack(Material.SOUL_SAND);
+						ItemMeta im = is.getItemMeta();
+
+						is.setItemMeta(im);
+						is.setAmount(64);
+						((Player) sender).getPlayer().getInventory().addItem(is);
+					}
+				}
+
+				if (arg3[0].equals("reward")) {
+					if (sender instanceof Player) {
+						ItemStack rewardItem = new ItemStack(Material.DEAD_BUSH, 1);
+						ItemMeta rewardMeta = rewardItem.getItemMeta();
+						rewardMeta.setDisplayName("§dYour head!");
+						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
+						List<String> lore = new ArrayList<String>();
+						lore.add("Thanks for signing up for Daisy's newsletter");
+						lore.add("Right click while holding this for your reward!");
+						rewardMeta.setLore(lore);
+						rewardItem.setItemMeta(rewardMeta);
+
+						((Player) sender).getPlayer().getInventory().addItem(rewardItem);
+
+						rewardItem = new ItemStack(Material.DEAD_BUSH, 15);
+						rewardMeta = rewardItem.getItemMeta();
+						rewardMeta.setDisplayName("§dRandom recent player head!");
+						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
+						lore = new ArrayList<String>();
+						lore.add("Thanks for signing up for Daisy's newsletter");
+						lore.add("Right click while holding this for your reward!");
+						rewardMeta.setLore(lore);
+						rewardItem.setItemMeta(rewardMeta);
+						((Player) sender).getPlayer().getInventory().addItem(rewardItem);
+
+						rewardItem = new ItemStack(Material.DEAD_BUSH);
+						rewardMeta = rewardItem.getItemMeta();
+						rewardMeta.setDisplayName("§dHead Reward!");
+						rewardMeta.addEnchant(Enchantment.LOOT_BONUS_BLOCKS, 1, true);
+						lore = new ArrayList<String>();
+						lore.add("Thanks for playing Survive and Thrive!");
+						lore.add("Right click while holding this for a random head!");
+						rewardMeta.setLore(lore);
+						rewardItem.setItemMeta(rewardMeta);
+						((Player) sender).getPlayer().getInventory().addItem(rewardItem);
+
+						ItemStack cupidsBow = new ItemStack(Material.BOW);
+						ItemMeta imc = cupidsBow.getItemMeta();
+						imc.setDisplayName("§bParty Bow");
+						cupidsBow.setItemMeta(imc);
+						((Player) sender).getPlayer().getInventory().addItem(cupidsBow);
+					}
+				}
+
+				if (arg3[0].equals("skele")) {
+					if (sender instanceof Player) {
+
+						Skeleton s = (Skeleton) ((Player) sender).getPlayer().getWorld()
+								.spawnEntity(((Player) sender).getPlayer().getLocation(), EntityType.SKELETON);
+						ItemStack cupidsBow = new ItemStack(Material.BOW);
+						ItemMeta imc = cupidsBow.getItemMeta();
+						imc.setDisplayName("§4Cupid's Bow");
+						cupidsBow.setItemMeta(imc);
+						s.getEquipment().setItemInHand(cupidsBow);
+						s.getEquipment().setHelmet(new ItemStack(Material.LEATHER_HELMET));
+					}
+				}
+
+				if (arg3[0].equals("testin")) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						if (p.getName().contains("ousden")) {
+							p.setCustomNameVisible(!p.isCustomNameVisible());
+							sender.sendMessage(p.getName() + " : " + p.isCustomNameVisible());
+						}
+					}
+				}
+
+				if (arg3[0].equals("serialize")) {
+					if (sender instanceof Player) {
+						Player p = ((Player) sender).getPlayer();
+
+						serializeAndSendInventory(p);
+
+						ByteArrayDataOutput out = ByteStreams.newDataOutput();
+						out.writeUTF("ConnectOther");
+						out.writeUTF(p.getName());
+						out.writeUTF("survival");
+						Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
+						player.sendPluginMessage(global, "BungeeCord", out.toByteArray());
+					}
+				}
+
+				if (arg3[0].equals("npe")) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						Player pl = Bukkit.getPlayer(p.getUniqueId());
+						int x = pl.getStatistic(Statistic.TIME_SINCE_DEATH);
+						Bukkit.broadcastMessage(x + "");
+
+					}
+				}
+
+				if (arg3[0].equals("updateSPs")) {
+					Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+						@Override
+						public void run() {
+							for (Map.Entry<UUID, SerenityPlayer> entry : serenityPlayers.entrySet()) {
+								sender.sendMessage("Checking " + entry.getValue().getName());
+								OfflinePlayer op = Bukkit.getOfflinePlayer(entry.getValue().getUUID());
+								if (op.isBanned()) {
+									entry.getValue().setBanned(true);
+								}
+								if (!op.isWhitelisted()) {
+									entry.getValue().setWhitelisted(false);
+								}
+							}
+							sender.sendMessage("Done");
+
+						}
+					}, 0L);
+					return true;
+				}
+
+				if (arg3[0].equals("reloadmailboxes")) {
+					mailBoxes = new ArrayList<Mailbox>();
+
+					loadSerenityMailboxesFromDatabase();
+				}
+
+				if (arg3[0].equals("showsql")) {
+					showingSql = !showingSql;
+					sender.sendMessage("Showing sql = " + showingSql);
+				}
+
+				if (arg3[0].equals("afktimes")) {
+					for (
+
+					SerenityPlayer sp :
+
+					getOnlineSerenityPlayers()) {
+						sender.sendMessage(sp.getName() + ": " + sp.getAfkTime() + "");
+					}
+				}
+
+				if (arg3[0].equals("unload")) {
+
+					unloadChunks();
+					return true;
+				}
+
+				if (arg3[0].equals("eff")) {
+					opParticles = !opParticles;
+					sender.sendMessage("Particles on = " + opParticles);
+					return true;
+				}
+
+				if (arg3[0].equals("deb")) {
+					opParticlesDeb = !opParticlesDeb;
+					sender.sendMessage("You will see = " + opParticlesDeb);
+					return true;
+				}
+
+				if (arg3[0].equals("remove")) {
+					if (sender instanceof Player) {
+
+						Player p = (Player) sender;
+						for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+							e.remove();
+						}
+					}
+				}
+
+				if (arg3[0].equals("ping")) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						CraftPlayer cp = (CraftPlayer) p;
+						sender.sendMessage(p.getDisplayName() + ": " + cp.getHandle().ping + "ms");
+					}
+				}
+
+				if (arg3[0].equals("cte")) {
+					TreeMap<Integer, String> chunks = new TreeMap<Integer, String>();
+					for (World w : Bukkit.getWorlds()) {
+						for (Chunk c : w.getLoadedChunks()) {
+							chunks.put(c.getTileEntities().length,
+									"§a" + c.getWorld().getName() + ": " + c.getX() * 16 + ", " + c.getZ() * 16);
+						}
+					}
+					sender.sendMessage("§cTile Entities:");
+					if (chunks.size() >= 10) {
+						for (int i = 0; i < 10; i++) {
+							sender.sendMessage(chunks.lastEntry().getValue() + ": §6" + chunks.lastEntry().getKey());
+							chunks.remove(chunks.lastKey());
+						}
+					}
+					return true;
+				}
+
+				if (arg3[0].equals("ce")) {
+					TreeMap<Integer, String> chunks = new TreeMap<Integer, String>();
+					for (World w : Bukkit.getWorlds()) {
+						for (Chunk c : w.getLoadedChunks()) {
+							chunks.put(c.getEntities().length,
+									"§a" + c.getWorld().getName() + ": " + c.getX() * 16 + ", " + c.getZ() * 16);
+						}
+					}
+					sender.sendMessage("§cEntities:");
+					if (chunks.size() >= 10) {
+						for (int i = 0; i < 10; i++) {
+							sender.sendMessage(chunks.lastEntry().getValue() + ": §6" + chunks.lastEntry().getKey());
+							chunks.remove(chunks.lastKey());
+						}
+					}
+					return true;
+				}
+
+				if (arg3[0].equals("online")) {
+					String s = "";
+					if (Bukkit.getOnlinePlayers().size() > 0) {
+
+						for (Player p : Bukkit.getOnlinePlayers()) {
+							s += p.getName() + " ";
+						}
+					} else {
+						s = "Nobody is online";
+					}
+
+					sendATextToHal("SerenityPlugins", s);
+
+				}
+
+				if (arg3[0].equals("reloadcfg")) {
+					emailCfg.reloadConfig();
+					bookCfg.reloadConfig();
+					linksCfg.reloadConfig();
+					sender.sendMessage(
+							"Reloaded pod, email, books, links, it, dale, mailbox, who is onilne, diamond, leaderboard");
+					return true;
+				}
+
+				if (arg3[0].equals("sleepers")) {
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						sender.sendMessage(p.getDisplayName() + " sleeping ignored = " + p.isSleepingIgnored());
+						sender.sendMessage(p.getDisplayName() + " sleeping = " + p.isSleeping());
+					}
+				}
+
+				if (arg3[0].equals("clear")) {
+					for (int i = 0; i < 50; i++)
+						sender.sendMessage("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+					return true;
+				}
+
+				if (arg3[0].equals("party")) {
+					if (sender instanceof Player) {
+						Player p = ((Player) sender).getPlayer();
+						ItemStack is = new ItemStack(Material.LEATHER_HELMET);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						List<String> lore = new ArrayList<String>();
+						lore.add("May only be worn by");
+						lore.add("emmafreester");
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getEquipment().setHelmet(is);
+						is.setType(Material.LEATHER_BOOTS);
+						p.getEquipment().setBoots(is);
+						is.setType(Material.LEATHER_CHESTPLATE);
+						p.getEquipment().setChestplate(is);
+						is.setType(Material.LEATHER_LEGGINGS);
+						p.getEquipment().setLeggings(is);
+					}
+				}
+
+				if (arg3[0].equals("reload")) {
+					Long time = System.currentTimeMillis();
+					Bukkit.getServer().broadcastMessage("§cReloading plugins... There might be lag");
+					Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), "reload");
+					Long dur = System.currentTimeMillis() - time;
+					Bukkit.getServer().broadcastMessage("§2Done. (" + (double) dur / 1000 + "s)");
+					return true;
+				}
+
+				if (arg3[0].equals("createbook")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						ItemStack book = new ItemStack(Material.WRITTEN_BOOK, 1);
+						BookMeta meta = (BookMeta) book.getItemMeta();
+						bookCfg.reloadConfig();
+
+						meta.setTitle(bookCfg.getConfig().getString("Title"));
+						meta.setAuthor("§6" + bookCfg.getConfig().getString("Author"));
+
+						String bookText = bookCfg.getConfig().getString("Text");
+						List<String> pages = new ArrayList<String>();
+						int l = 0;
+						int lineCount = 0;
+						String page = "";
+						for (int i = 0; i < bookText.length(); i++) {
+							if (bookText.charAt(i) == '~') {
+								pages.add(page);
+								page = "";
+								lineCount = 0;
+							} else {
+								page += bookText.charAt(i);
+
+								l++;
+								if (bookText.charAt(i) == '\n' || l > 19) {
+									l = 0;
+									lineCount++;
+								}
+
+								if (lineCount > 12 && (bookText.charAt(i) == ' ' || bookText.charAt(i) == '\n')) {
+									pages.add(page);
+									page = "";
+									lineCount = 0;
+								}
+							}
+						}
+						pages.add(page);
+
+						meta.setPages(pages);
+						book.setItemMeta(meta);
+
+						safelyDropItemStack(p.getLocation(), p.getInventory().addItem(book));
+
+						return true;
+					}
+				}
+
+				if (arg3[0].equals("showscores")) {
+					Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+					Objective objective = (Objective) board.getObjectives().toArray()[0];
+					objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+					objective.setDisplayName("Exploration Challenge");
+
+					for (Player p : Bukkit.getOnlinePlayers()) {
+						p.setScoreboard(board);
+					}
+					return true;
+				}
+
+			} else if (arg3.length == 2) {
+				if (arg3[0].equals("secret")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.VILLAGER)
+								.setCustomName("§6" + arg3[1]);
+					}
+				}
+
+				if (arg3[0].equals("cow")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						Cow c = (Cow) p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.COW);
+
+						c.setCustomName("§6" + arg3[1]);
+						c.setBaby();
+						c.setAgeLock(true);
+
+					}
+				}
+				
+				if (arg3[0].equals("party")) {
+					if (sender instanceof Player) {
+						Player p = ((Player) sender).getPlayer();
+						ItemStack is = new ItemStack(Material.LEATHER_HELMET);
+						ItemMeta im = is.getItemMeta();
+						im.setDisplayName("§dParty Armor");
+						List<String> lore = new ArrayList<String>();
+						lore.add("May only be worn by");
+						lore.add(arg3[1]);
+						im.setLore(lore);
+						is.setItemMeta(im);
+						p.getEquipment().setHelmet(is);
+						is.setType(Material.LEATHER_BOOTS);
+						p.getEquipment().setBoots(is);
+						is.setType(Material.LEATHER_CHESTPLATE);
+						p.getEquipment().setChestplate(is);
+						is.setType(Material.LEATHER_LEGGINGS);
+						p.getEquipment().setLeggings(is);
+					}
+				}
+
+				if (arg3[0].equals("fakeMail")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						boolean receivingMailBoxExists = false;
+						Mailbox receivingMailbox = new Mailbox();
+						String mailto = arg3[1];
+						for (Mailbox mb : mailBoxes) {
+							if (mb.name.toLowerCase().contains(arg3[1])) {
+								receivingMailBoxExists = true;
+								receivingMailbox.uuid = mb.uuid;
+								receivingMailbox.location = mb.location;
+								receivingMailbox.name = mb.name;
+							}
+						}
+
+						if (!receivingMailBoxExists) {
+							sender.sendMessage(
+									"§cThere is no mailbox with §6\"" + mailto + "\"§c in it.  Check your spelling!");
+							return true;
+						}
+
+						Chest receivingChest = (Chest) receivingMailbox.location.getBlock().getState();
+
+						ItemStack[] sendingItems = p.getInventory().getContents();
+
+						ItemStack[] receivingItems = receivingChest.getInventory().getContents();
+
+						int sendingItemsCount = 0;
+						int receivingItemsCount = 0;
+
+						for (int i = 0; i < sendingItems.length; i++) {
+							if (sendingItems[i] != null) {
+								sendingItemsCount++;
+							}
+						}
+
+						for (int i = 0; i < receivingItems.length; i++) {
+							if (receivingItems[i] != null) {
+								receivingItemsCount++;
+							}
+						}
+
+						if (sendingItemsCount == 0) {
+							// sender.sendMessage("§cYou don't have any items in
+							// your mailbox!");
+
+							String msg = getTranslationLanguage(sender, stringKeys.MAILEMPTY.toString());
+							sender.sendMessage(msg);
+
+							return true;
+						}
+
+						if (receivingItemsCount == receivingItems.length) {
+
+							String msg = getTranslationLanguage(sender, stringKeys.MAILFULL.toString());
+							sender.sendMessage(String.format(msg, receivingMailbox.name));
+
+							/*
+							 * sender.sendMessage("§6" + receivingMailbox.name +
+							 * "§2's mailbox is full!");
+							 */
+							return true;
+						}
+
+						if (receivingItems.length - receivingItemsCount < sendingItemsCount) {
+
+							String msg = getTranslationLanguage(sender, stringKeys.MAILNOTENOUGHSPACE.toString());
+							sender.sendMessage(String.format(msg, receivingMailbox.name,
+									((receivingItems.length - receivingItemsCount) - 1)));
+
+							/*
+							 * sender.sendMessage("§6" + receivingMailbox.name +
+							 * "§2's mailbox can only hold " +
+							 * ((receivingItems.length - receivingItemsCount) -
+							 * 1) + " more slots!  Send less items!");
+							 */
+							return true;
+						}
+
+						for (int i = 0; i < sendingItems.length; i++) {
+							if (sendingItems[i] != null) {
+								receivingChest.getInventory().addItem(sendingItems[i]);
+								receivingChest.update();
+							}
+						}
+
+						String msg = getTranslationLanguage(sender, stringKeys.MAILSUCCESS.toString());
+						sender.sendMessage(String.format(msg, receivingMailbox.name));
+
+						doRandomFirework(receivingMailbox.location);
+					}
+				}
+
+				if (arg3[0].equals("secretpig")) {
+					if (sender instanceof Player) {
+
+						Player p = (Player) sender;
+						p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.PIG)
+								.setCustomName("§6" + arg3[1]);
+					}
+				}
+
+				if (arg3[0].equals("changemyname")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						p.setDisplayName(arg3[1]);
+						p.sendMessage("§6Identity changed to §3" + arg3[1]);
+						return true;
+
+					}
+				}
+
+				if (arg3[0].equals("secretcow")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.COW)
+								.setCustomName("§6" + arg3[1]);
+					}
+				}
+
+				if (arg3[0].equals("horse")) {
+					Player p = (Player) sender;
+					Horse horse = (Horse) p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.HORSE);
+					horse.setDomestication(1);
+					horse.setStyle(Style.NONE);
+					horse.setVariant(Horse.Variant.SKELETON_HORSE);
+					horse.setJumpStrength(30);
+					horse.setTamed(true);
+					horse.setAdult();
+					horse.setCustomName("§d" + arg3[1]);
+
+					/*
+					 * CraftLivingEntity h = (CraftLivingEntity)horse;
+					 * AttributeInstance a =
+					 * h.getHandle().getAttributeInstance(GenericAttributes.d);
+					 * a.setValue(8);
+					 */
+				}
+
+				if (arg3[0].equals("secretcat")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+
+						Ocelot ocelot = (Ocelot) p.getLocation().getWorld().spawnEntity(p.getLocation(),
+								EntityType.OCELOT);
+
+						ocelot.setCustomName("§6" + arg3[1]);
+						ocelot.setTamed(true);
+						ocelot.setRemoveWhenFarAway(false);
+						ocelot.setCatType(Ocelot.Type.SIAMESE_CAT);
+					}
+				}
+
+				if (arg3[0].equals("secretgolem")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.IRON_GOLEM)
+								.setCustomName("§6" + arg3[1]);
+					}
+				}
+
+				if (arg3[0].equals("secretmoosh")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.MUSHROOM_COW)
+								.setCustomName("§6" + arg3[1]);
+					}
+				}
+
+				if (arg3[0].equals("secretsheep")) {
+					if (sender instanceof Player) {
+						Player p = (Player) sender;
+						p.getLocation().getWorld().spawnEntity(p.getLocation(), EntityType.SHEEP)
+								.setCustomName("§6" + arg3[1]);
+					}
+				}
+
+				if (arg3[0].equals("mute")) {
+					SerenityPlayer sp = serenityPlayers.get((Bukkit.getOfflinePlayer(arg3[1]).getUniqueId()));
+					sp.setMuted(!sp.isMuted());
+					sender.sendMessage(sp.getName() + "muted = " + sp.isMuted());
+					return true;
+				}
+
+				if (arg3[0].equals("find")) {
+					try {
+						Location l = Bukkit.getPlayer(arg3[1]).getLocation();
+						sender.sendMessage(l.getWorld().getName() + ": " + (int) l.getX() + ", " + (int) l.getY() + ", "
+								+ (int) l.getZ());
+						return true;
+					} catch (Exception e) {
+						sender.sendMessage("Something went wrong");
+					}
+				}
+
+				if (arg3[0].equals("tpabove")) {
+					try {
+						Location l = Bukkit.getPlayer(arg3[1]).getLocation();
+						if (sender instanceof Player) {
+							Player p = (Player) sender;
+							l.setY(150);
+							p.teleport(l);
+							return true;
+						}
+						return true;
+					} catch (Exception e) {
+						sender.sendMessage("Something went wrong");
+					}
+				}
+
+				if (arg3[0].equals("exp")) {
+					try {
+						Location l = Bukkit.getPlayer(arg3[1]).getLocation();
+						if (sender instanceof Player) {
+							Player p = (Player) sender;
+							for (int i = 0; i < 70; i++) {
+
+								safelySpawnExperienceOrb(p, 10000, i);
+							}
+							return true;
+						}
+						return true;
+					} catch (
+
+					Exception e) {
+						sender.sendMessage("Something went wrong");
+					}
+				}
+
+			}
+			if (arg3[0].equals("cmd")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String cmd = "";
+				for (int i = 2; i < arg3.length; i++) {
+					cmd += arg3[i] + " ";
+				}
+				Player p = Bukkit.getPlayer(arg3[1]);
+				Bukkit.dispatchCommand((CommandSender) p, cmd);
+				return true;
+			}
+
+			if (arg3[0].equals("trophy")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§6Winner: " + thisName;
+				String command = "give " + sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"dbf38443-2d8b-435e-991e-4bdbd2505df9\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWViMWVjMTEyZjY4ZDE4NDk3NTQxNDk1ODkzYTM3NWMzMTdhNzc3ZTAxM2JiZjEzNTg5YjFkODg1MzJjYyJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("trophy2")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§7" + thisName;
+				String command = "give " + sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"ca7964e5-70b0-486d-b97c-7c874d95cff8\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYTRhMWY4NzBmN2ZmNjQyNjEzZGI3MzVjOGNkNWUzYmRmOGZkZmEzMjgwODc0OGU0MzRiMWFkZWI2YTk2MjU2In19fQ==\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+			}
+
+			if (arg3[0].equals("2016hall")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String thisName = "";
+				for (int i = 1; i < arg3.length; i++) {
+					thisName += arg3[i] + " ";
+				}
+
+				thisName = thisName.substring(0, thisName.length() - 1);
+				thisName = "§6" + thisName;
+				String command = "give " + sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"f0f30342-2ce7-41bf-9e5f-5a3fb18a141b\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzk2ZjUzOTg0NTJlY2QxOGZlNmZkZGIyY2ZmYWZiM2UxYmZjN2I2N2ZiNTUzZWU3ZmQ4Mjc3ZGU1Zjg3NjMifX19\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+			}
+
+			if (arg3[0].equals("omg")) {
+				if (sender instanceof Player) {
+					sendSecretArmorStand(((Player) sender).getPlayer());
+				}
+			}
+
+			if (arg3[0].equals("donator")) {
+				String thisName = "§9Globe";
+				String command = "give " + sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"f26a2360-0158-4f76-8a34-f487883f2b04\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzljODg4MWU0MjkxNWE5ZDI5YmI2MWExNmZiMjZkMDU5OTEzMjA0ZDI2NWRmNWI0MzliM2Q3OTJhY2Q1NiJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equalsIgnoreCase("s&t")) {
+				giveRawHeadCommand(SURVIVE_AND_THRIVE_HEAD, "§9Survive and Thrive II Winner", sender.getName());
+				return true;
+			}
+
+			if (arg3[0].equals("donator2")) {
+				String thisName = "§9Multi-Ore";
+				String command = "give " + sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"06398930-27bf-4fe3-ba67-e63cb5e066d9\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODExMmY4N2NlZTU3ODg5NGUyZDA3MjUzYWJiMTQ2NjI0N2NlZTQ4ZjE3MjdiYjlkMWVhYzUzZjhlMDU3MTAxMiJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("donator3")) {
+				String thisName = "§9Snow Globe";
+				String command = "give " + sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"be6b6cbc-223a-4c98-b205-b00b7c545579\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNmRkNjYzMTM2Y2FmYTExODA2ZmRiY2E2YjU5NmFmZDg1MTY2YjRlYzAyMTQyYzhkNWFjODk0MWQ4OWFiNyJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("donator4")) {
+				String thisName = "§9Money Bag";
+				String command = "give " + sender.getName()
+						+ " skull 1 3 {display:{Name:\"%s\"},SkullOwner:{Id:\"da608428-e220-435c-9669-2fe3c0575458\",Properties:{textures:[{Value:\"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZTM2ZTk0ZjZjMzRhMzU0NjVmY2U0YTkwZjJlMjU5NzYzODllYjk3MDlhMTIyNzM1NzRmZjcwZmQ0ZGFhNjg1MiJ9fX0=\"}]}}}";
+				command = String.format(command, thisName);
+				String name = command.substring(command.indexOf('"') + 1, command.indexOf('}') - 1);
+				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+				return true;
+			}
+
+			if (arg3[0].equals("ptime")) {
+				String name = arg3[1];
+				for (SerenityPlayer sp : serenityPlayers.values()) {
+					if (sp.getName().toUpperCase().contains(name.toUpperCase())) {
+						sender.sendMessage(sp.getName() + ": " + sp.getMinutes());
+
+					}
+				}
+				return true;
+			}
+
+			if (arg3[0].equals("c")) {
+				String name = arg3[1];
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					if (p.getName().toUpperCase().contains(name.toUpperCase())) {
+
+						Inventory inv = Bukkit.createInventory(null, 9 * 12800);
+						p.openInventory(inv);
+
+					}
+				}
+
+			}
+
+			if (arg3[0].equals("mailbox")) {
+				String name = arg3[1];
+				for (SerenityPlayer sp : serenityPlayers.values()) {
+					if (sp.getName().toUpperCase().contains(name.toUpperCase())) {
+						sender.sendMessage("Yeah... " + sp.getName());
+						for (Mailbox mb : mailBoxes) {
+							if (mb.name == sp.getName()) {
+								if (sender instanceof Player) {
+									((Player) sender).getPlayer().teleport(mb.location);
+									return true;
+								}
+							}
+						}
+					}
+				}
+				return true;
+			}
+
+			if (arg3[0].equals("ban")) {
+				if (arg3.length < 2) {
+					return true;
+				}
+				String name = arg3[1];
+				String banMessage = "";
+				for (int i = 2; i < arg3.length; i++) {
+					banMessage += arg3[i] + " ";
+				}
+				OfflinePlayer p = Bukkit.getOfflinePlayer(name);
+				p.setBanned(true);
+				p.setWhitelisted(false);
+				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+				if (sp != null) {
+					sp.setBanned(true);
+					sp.setWhitelisted(false);
+					sp.setOp(false);
+				}
+
+				if (p.isOnline()) {
+					Player pl = p.getPlayer();
+					pl.kickPlayer("You have been banned for: " + banMessage);
+					pl.setBanned(true);
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+							"ban-ip " + pl.getAddress().getAddress().toString() + " " + banMessage);
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ban " + p.getName() + " " + banMessage);
+				}
+			}
+		} else {
+			noPerms(sender);
+			return true;
+		}
+		return false;
+	}
+	
 	// Move
 	private boolean move(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player && arg3.length > 0) {
@@ -4534,6 +7324,112 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		return false;
 	}
 
+	// SetChatColor
+	private boolean setChatColor(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player) {
+			if (serenityPlayers.get(((Player) sender).getUniqueId()).getMinutes() >= 720) {
+				String color = "";
+				Player p = Bukkit.getPlayerExact(sender.getName());
+				SerenityPlayer sp = serenityPlayers.get(p.getUniqueId());
+				if (arg3.length == 0) {
+					sender.sendMessage("§aHere are your options:  \n" + "§0black, §1dark blue, §2dark green, \n"
+							+ "§3dark aqua, §4dark red, §5dark purple, \n" + "§6gold, §7gray, §8dark gray, \n"
+							+ "§9blue, §agreen, §baqua, \n" + "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
+					return true;
+				}
+
+				for (int i = 0; i < arg3.length; i++) {
+					color += arg3[i] + " ";
+				}
+
+				if (color.equalsIgnoreCase("black ")) {
+
+					sp.setChatColor("§0");
+
+				} else if (color.equalsIgnoreCase("dark blue ")) {
+					sp.setChatColor("§1");
+
+				} else if (color.equalsIgnoreCase("dark green ")) {
+					sp.setChatColor("§2");
+
+				} else if (color.equalsIgnoreCase("dark aqua ")) {
+					sp.setChatColor("§3");
+
+				} else if (color.equalsIgnoreCase("dark red ")) {
+					sp.setChatColor("§4");
+
+				} else if (color.equalsIgnoreCase("dark purple ")) {
+					sp.setChatColor("§5");
+
+				} else if (color.equalsIgnoreCase("gold ")) {
+					sp.setChatColor("§6");
+
+				} else if (color.equalsIgnoreCase("gray ")) {
+					sp.setChatColor("§7");
+
+				} else if (color.equalsIgnoreCase("dark gray ")) {
+					sp.setChatColor("§8");
+
+				} else if (color.equalsIgnoreCase("blue ")) {
+					sp.setChatColor("§9");
+
+				} else if (color.equalsIgnoreCase("green ")) {
+					sp.setChatColor("§a");
+
+				} else if (color.equalsIgnoreCase("aqua ")) {
+					sp.setChatColor("§b");
+
+				} else if (color.equalsIgnoreCase("red ")) {
+					sp.setChatColor("§c");
+
+				} else if (color.equalsIgnoreCase("light purple ")) {
+					sp.setChatColor("§d");
+
+				} else if (color.equalsIgnoreCase("yellow ")) {
+					sp.setChatColor("§e");
+
+				} else if (color.equalsIgnoreCase("white ")) {
+					sp.setChatColor("§f");
+
+				} else if (color.equalsIgnoreCase("scary ")) {
+					sp.setChatColor("§k");
+
+				} else {
+					sender.sendMessage("§cInvalid color!  Pick one of these:\n"
+							+ "§0black, §1dark blue, §2dark green, \n" + "§3dark aqua, §4dark red, §5dark purple, \n"
+							+ "§6gold, §7gray, §8dark gray, \n" + "§9blue, §agreen, §baqua, \n"
+							+ "§cred, §dlight purple, §eyellow, \n" + "§fwhite");
+					return true;
+					/*
+					 * sender.sendMessage(
+					 * "§4Invalid color!  Here are your options:\n§a" +
+					 * 
+					 * "black, dark blue, dark green,\n" +
+					 * "dark aqua, dark red, dark purple,\n" +
+					 * "gold, gray, dark gray, blue,\n" + "green, aqua, red,\n"
+					 * + "light purple, yellow, white.");
+					 */
+				}
+				if (sender instanceof Player) {
+					Player play = (Player) sender;
+					play.sendMessage(sp.getChatColor() + "Chat color set!");
+					// setListNames();
+				}
+
+				return true;
+			} else {
+
+				String msg = getTranslationLanguage(sender, stringKeys.CHATCOLOREARLY.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§2You can't set your chatcolor yet...
+				// Stick around and eventually you will!");
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	// Mytime
 	private boolean mytime(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player) {
@@ -4544,6 +7440,15 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		return true;
 	}
 
+	// Coords
+	private boolean coords(CommandSender sender) {
+		Location l = Bukkit.getServer().getPlayer(sender.getName()).getLocation();
+		this.getServer().broadcastMessage("§3" + Bukkit.getServer().getPlayer(sender.getName()).getDisplayName()
+				+ "§r§9 is in the §3" + sender.getServer().getPlayer(sender.getName()).getWorld().getName() + "§9 at:"
+				+ "§9 X: §3" + (int) l.getX() + "§9 Y: §3" + (int) l.getY() + "§9 Z: §3" + (int) l.getZ());
+		return true;
+	}
+	
 	// Links
 	private boolean links(CommandSender sender, String[] arg3) {
 		String s = "";
@@ -4791,7 +7696,18 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 
 		return true;
 	}
-
+	private void refreshOfflineMessages() {
+		Bukkit.getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
+			@Override
+			public void run() {
+				for (SerenityPlayer sp : serenityPlayers.values()) {
+					sp.setOfflineMessages(new ArrayList<OfflineMessage>());
+				}
+				loadMessagesFromDatabase();
+			}
+		}, 0L);
+	}
+	
 	// Bone
 	@EventHandler
 	public void onPlayerRedeemBone(PlayerInteractEvent event) {
@@ -5045,6 +7961,168 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		return true;
 	}
 
+	// SetCompass
+	private boolean lag(CommandSender sender) {
+
+		if (lags.size() < 10) {
+
+			String msg = getTranslationLanguage(sender, stringKeys.LAGWAIT.toString());
+			sender.sendMessage(msg);
+
+			// sender.sendMessage("§cWait!");
+			return true;
+		}
+
+		double tickrate = getTickrate();
+
+		getLogger().info("tickrate:" + tickrate);
+		if (tickrate > 20) {
+			tickrate = 20.0;
+		}
+
+		String message = "§aAverage TPS: §e" + new DecimalFormat("##.##").format(tickrate) + " §f| ";
+
+		if (tickrate < 16) {
+
+			message += "§4";
+		} else if (tickrate < 19) {
+			message += "§e";
+		} else {
+			message += "§2";
+		}
+
+		message += new DecimalFormat("##.##").format((tickrate / 20) * 100) + "%§3 speed §f| ";
+
+		if (sender instanceof Player) {
+			Player p = (Player) sender;
+			CraftPlayer cp = (CraftPlayer) p;
+			message += "§2Your ping: §e" + cp.getHandle().ping + "§2ms";
+		}
+
+		sender.sendMessage(message);
+
+		return true;
+
+	}
+
+	
+	// SetCompass
+	private boolean setCompass(CommandSender sender, String[] arg3) {
+		if (arg3.length < 1) {
+
+			String msg = getTranslationLanguage(sender, stringKeys.COMPASSHELP.toString());
+			sender.sendMessage(msg);
+
+			/*
+			 * sender.sendMessage(
+			 * "§cNo destination specified.. try: §2\n  \"home\" §3for your bed\n"
+			 * + "§2  \"spawn\" §3for the world's spawn\n" +
+			 * "§2  \"mailbox\" §3for your mailbox\n" +
+			 * "§2  \"here\" §3for your current location\n" +
+			 * "  or manually type any <X> <Y> <Z> coordinates" +
+			 * "\n§cExamples: §2" + "\n/setcompass home" +
+			 * "\n/setcompass 200 64 -200");
+			 */
+			return true;
+		}
+		if (arg3.length < 2) {
+			if (arg3[0].toLowerCase().equals("spawn")) {
+
+				String msg = getTranslationLanguage(sender, stringKeys.COMPASSSPAWN.toString());
+				sender.sendMessage(msg);
+
+				// sender.sendMessage("§2Set compass to point to spawn");
+				this.getServer().getPlayer(sender.getName())
+						.setCompassTarget(this.getServer().getPlayer(sender.getName()).getWorld().getSpawnLocation());
+				return true;
+			}
+			if (arg3[0].toLowerCase().equals("home") || arg3[0].toLowerCase().equals("bed")) {
+
+				if (this.getServer().getPlayer(sender.getName()).getBedSpawnLocation() != null) {
+					this.getServer().getPlayer(sender.getName())
+							.setCompassTarget(this.getServer().getPlayer(sender.getName()).getBedSpawnLocation());
+					// sender.sendMessage("§2Set compass to point to your bed");
+
+					String msg = getTranslationLanguage(sender, stringKeys.COMPASSBED.toString());
+					sender.sendMessage(msg);
+
+					return true;
+				}
+				/*
+				 * this.getServer() .getPlayer(sender.getName()) .sendMessage(
+				 * "§cYou currently do not have a bed! (Was it destroyed or did someone else sleep in it?) \n"
+				 * + "§2If you have a mailbox, you can try /setcompass mailbox"
+				 * );
+				 */
+
+				String msg = getTranslationLanguage(sender, stringKeys.COMPASSBEDDESTROYED.toString());
+				sender.sendMessage(msg);
+
+				return true;
+			}
+
+			if (arg3[0].toLowerCase().equals("mailbox")) {
+				if (sender instanceof Player) {
+					Player p = (Player) sender;
+					for (Mailbox mb : mailBoxes) {
+						if (p.getUniqueId().equals(mb.uuid)) {
+							Bukkit.getServer().getPlayer(sender.getName()).setCompassTarget(mb.location);
+							/*
+							 * Bukkit.getServer() .getPlayer(sender.getName())
+							 * .sendMessage(
+							 * "§2Set compass to point to your mailbox!");
+							 */
+
+							String msg = getTranslationLanguage(sender, stringKeys.COMPASSMAILBOX.toString());
+							sender.sendMessage(msg);
+
+							return true;
+						}
+
+					}
+				}
+
+				String msg = getTranslationLanguage(sender, stringKeys.COMPASSNOMAILBOX.toString());
+				sender.sendMessage(msg);
+
+				/*
+				 * Bukkit.getServer() .getPlayer(sender.getName()) .sendMessage(
+				 * "§cYou don't have a mailbox!  \n§2Make one at your home!  (Chest on top of a fence post)"
+				 * );
+				 */
+				return true;
+			}
+
+			if (arg3[0].toLowerCase().equals("here")) {
+				Bukkit.getServer().getPlayer(sender.getName())
+						.setCompassTarget(Bukkit.getServer().getPlayer(sender.getName()).getLocation());
+
+				String msg = getTranslationLanguage(sender, stringKeys.COMPASSHERE.toString());
+				sender.sendMessage(msg);
+				/*
+				 * Bukkit.getServer() .getPlayer(sender.getName()) .sendMessage(
+				 * "§2Set compass to point to your current location!");
+				 */
+				return true;
+			}
+
+		}
+		if (arg3.length == 3) {
+			Location l = new Location(this.getServer().getPlayer(sender.getName()).getWorld(),
+					Integer.parseInt(arg3[0]), Integer.parseInt(arg3[1]), Integer.parseInt(arg3[2]));
+
+			String msg = getTranslationLanguage(sender, stringKeys.COMPASSCUST.toString());
+			sender.sendMessage(String.format(msg, (int) l.getX(), (int) l.getY(), (int) l.getZ()));
+			/*
+			 * sender.sendMessage("§2Set compass to point to X: §3" + l.getX() +
+			 * "§2 Y: §3" + l.getY() + "§2 Z: §3" + l.getZ());
+			 */
+			Bukkit.getPlayer(sender.getName()).setCompassTarget(l);
+			return true;
+		}
+		return true;
+	}
+	
 	// Seen
 	private boolean lastLogin(CommandSender sender, String[] arg3) {
 		if (arg3.length == 0) {
@@ -5251,6 +8329,531 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		return (sb.toString());
 	}
 
+	// AS
+	private boolean armorStand(CommandSender sender, String[] arg3) {
+		if (sender instanceof Player) {
+
+			Player p = ((Player) sender).getPlayer();
+
+			if (arg3.length == 0) {
+				String command = "/as";
+
+				String arms = FancyText.GenerateFancyText("§d§lToggle: §7Arms§r | ", FancyText.RUN_COMMAND,
+						command + " a", FancyText.SHOW_TEXT, "Toggle arms");
+				String base = FancyText.GenerateFancyText("§7Base§r | ", FancyText.RUN_COMMAND, command + " b",
+						FancyText.SHOW_TEXT, "Toggle baseplate");
+				String grav = FancyText.GenerateFancyText("§7Gravity§r | ", FancyText.RUN_COMMAND, command + " g",
+						FancyText.SHOW_TEXT, "Toggle gravity");
+				String size = FancyText.GenerateFancyText("§7Size§r | ", FancyText.RUN_COMMAND, command + " s",
+						FancyText.SHOW_TEXT, "Toggle size");
+				String visi = FancyText.GenerateFancyText("§7Visible§r", FancyText.RUN_COMMAND, command + " v",
+						FancyText.SHOW_TEXT, "Toggles visibility");
+
+				String item = FancyText.GenerateFancyText("§7Item in Right Hand §r| ", FancyText.RUN_COMMAND,
+						command + " i", FancyText.SHOW_TEXT, "Sets or drops item in right hand (if available)");
+
+				String item2 = FancyText.GenerateFancyText("§7Item in Left Hand", FancyText.RUN_COMMAND,
+						command + " il", FancyText.SHOW_TEXT, "Sets or drops item in left hand (if available)");
+
+				String name = FancyText.GenerateFancyText("§d§lSet: §7Name§r | ", FancyText.SUGGEST_COMMAND,
+						command + " n ", FancyText.SHOW_TEXT,
+						"Set the name of this armor stand (type the name following the command shown.. leave blank for no name)");
+				String helmet = FancyText.GenerateFancyText("§7Helmet§r | ", FancyText.RUN_COMMAND, command + " helmet",
+						FancyText.SHOW_TEXT,
+						"Set the head item of this armor stand to the item in your hand.  If the item is already set, it will drop from the armor stand");
+
+				sendRawPacket(p, "[" + arms + "," + base + "," + grav + "," + size + "," + visi + "]");
+				sendRawPacket(p, "[" + name + "," + helmet + "," + item + "," + item2 + "]");
+				p.sendMessage("§d§lMove/Rotate:");
+				SendRotateLine("h", "Rotate Head", "Rotate the head by clicking the preceding items.", p, command);
+				SendRotateLine("b", "Rotate Body", "Rotate the body by clicking the preceding items.", p, command);
+				SendRotateLine("la", "Rotate Left Arm", "Rotate the Left Arm by clicking the preceding items.", p,
+						command);
+				SendRotateLine("ra", "Rotate Right Arm", "Rotate the Right Arm by clicking the preceding items.", p,
+						command);
+				SendRotateLine("ll", "Rotate Left Leg", "Rotate the Left Leg by clicking the preceding items.", p,
+						command);
+				SendRotateLine("rl", "Rotate Right Leg", "Rotate the Right Leg by clicking the preceding items.", p,
+						command);
+				SendTranslateLine("m", "Move the armor stand", p, command);
+
+			} else {
+				if (arg3[0].equals("m")) {
+					sendSecretArmorStand(p);
+					return true;
+				}
+				List<ArmorStand> nearbyArmorStands = new ArrayList<ArmorStand>();
+				for (Entity e : p.getNearbyEntities(5, 5, 5)) {
+					if (e instanceof ArmorStand) {
+						nearbyArmorStands.add((ArmorStand) e);
+					}
+				}
+
+				double distance = 500.0;
+				ArmorStand arm = null;
+				for (ArmorStand am : nearbyArmorStands) {
+					if (am.getLocation().distance(p.getLocation()) < distance) {
+						distance = am.getLocation().distance(p.getLocation());
+						arm = am;
+					}
+				}
+
+				if (arm == null) {
+					sender.sendMessage("§cNo nearby armor stands!");
+					return true;
+				}
+
+				if (arm != null) {
+					if (arg3[0].equals("a")) {
+						arm.setArms(!arm.hasArms());
+					}
+					if (arg3[0].equals("b")) {
+						arm.setBasePlate(!arm.hasBasePlate());
+					}
+					if (arg3[0].equals("g")) {
+						arm.setGravity(!arm.hasGravity());
+						p.sendTitle("", "§dGravity = §7" + arm.hasGravity());
+					}
+					if (arg3[0].equals("s")) {
+						arm.setSmall(!arm.isSmall());
+					}
+					if (arg3[0].equals("v")) {
+						arm.setVisible(!arm.isVisible());
+					}
+
+					if (arg3[0].equals("hx+")) {
+						arm.setHeadPose(arm.getHeadPose().setX(arm.getHeadPose().getX() + .1));
+					}
+					if (arg3[0].equals("hx-")) {
+						arm.setHeadPose(arm.getHeadPose().setX(arm.getHeadPose().getX() - .1));
+					}
+					if (arg3[0].equals("hz+")) {
+						arm.setHeadPose(arm.getHeadPose().setZ(arm.getHeadPose().getZ() + .1));
+					}
+					if (arg3[0].equals("hz-")) {
+						arm.setHeadPose(arm.getHeadPose().setZ(arm.getHeadPose().getZ() - .1));
+					}
+					if (arg3[0].equals("hy+")) {
+						arm.setHeadPose(arm.getHeadPose().setY(arm.getHeadPose().getY() + .1));
+					}
+					if (arg3[0].equals("hy-")) {
+						arm.setHeadPose(arm.getHeadPose().setY(arm.getHeadPose().getY() - .1));
+					}
+					if (arg3[0].equals("bx+")) {
+						arm.setBodyPose(arm.getBodyPose().setX(arm.getBodyPose().getX() + .1));
+					}
+					if (arg3[0].equals("bx-")) {
+						arm.setBodyPose(arm.getBodyPose().setX(arm.getBodyPose().getX() - .1));
+					}
+					if (arg3[0].equals("bz+")) {
+						arm.setBodyPose(arm.getBodyPose().setZ(arm.getBodyPose().getZ() + .1));
+					}
+					if (arg3[0].equals("bz-")) {
+						arm.setBodyPose(arm.getBodyPose().setZ(arm.getBodyPose().getZ() - .1));
+					}
+					if (arg3[0].equals("by+")) {
+						arm.setBodyPose(arm.getBodyPose().setY(arm.getBodyPose().getY() + .1));
+					}
+					if (arg3[0].equals("by-")) {
+						arm.setBodyPose(arm.getBodyPose().setY(arm.getBodyPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("lax+")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setX(arm.getLeftArmPose().getX() + .1));
+					}
+					if (arg3[0].equals("lax-")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setX(arm.getLeftArmPose().getX() - .1));
+					}
+					if (arg3[0].equals("laz+")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setZ(arm.getLeftArmPose().getZ() + .1));
+					}
+					if (arg3[0].equals("laz-")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setZ(arm.getLeftArmPose().getZ() - .1));
+					}
+					if (arg3[0].equals("lay+")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setY(arm.getLeftArmPose().getY() + .1));
+					}
+					if (arg3[0].equals("lay-")) {
+						arm.setLeftArmPose(arm.getLeftArmPose().setY(arm.getLeftArmPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("rax+")) {
+						arm.setRightArmPose(arm.getRightArmPose().setX(arm.getRightArmPose().getX() + .1));
+					}
+					if (arg3[0].equals("rax-")) {
+						arm.setRightArmPose(arm.getRightArmPose().setX(arm.getRightArmPose().getX() - .1));
+					}
+					if (arg3[0].equals("raz+")) {
+						arm.setRightArmPose(arm.getRightArmPose().setZ(arm.getRightArmPose().getZ() + .1));
+					}
+					if (arg3[0].equals("raz-")) {
+						arm.setRightArmPose(arm.getRightArmPose().setZ(arm.getRightArmPose().getZ() - .1));
+					}
+					if (arg3[0].equals("ray+")) {
+						arm.setRightArmPose(arm.getRightArmPose().setY(arm.getRightArmPose().getY() + .1));
+					}
+					if (arg3[0].equals("ray-")) {
+						arm.setRightArmPose(arm.getRightArmPose().setY(arm.getRightArmPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("rlx+")) {
+						arm.setRightLegPose(arm.getRightLegPose().setX(arm.getRightLegPose().getX() + .1));
+					}
+					if (arg3[0].equals("rlx-")) {
+						arm.setRightLegPose(arm.getRightLegPose().setX(arm.getRightLegPose().getX() - .1));
+					}
+					if (arg3[0].equals("rlz+")) {
+						arm.setRightLegPose(arm.getRightLegPose().setZ(arm.getRightLegPose().getZ() + .1));
+					}
+					if (arg3[0].equals("rlz-")) {
+						arm.setRightLegPose(arm.getRightLegPose().setZ(arm.getRightLegPose().getZ() - .1));
+					}
+					if (arg3[0].equals("rly+")) {
+						arm.setRightLegPose(arm.getRightLegPose().setY(arm.getRightLegPose().getY() + .1));
+					}
+					if (arg3[0].equals("rly-")) {
+						arm.setRightLegPose(arm.getRightLegPose().setY(arm.getRightLegPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("llx+")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setX(arm.getLeftLegPose().getX() + .1));
+					}
+					if (arg3[0].equals("llx-")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setX(arm.getLeftLegPose().getX() - .1));
+					}
+					if (arg3[0].equals("llz+")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setZ(arm.getLeftLegPose().getZ() + .1));
+					}
+					if (arg3[0].equals("llz-")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setZ(arm.getLeftLegPose().getZ() - .1));
+					}
+					if (arg3[0].equals("lly+")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setY(arm.getLeftLegPose().getY() + .1));
+					}
+					if (arg3[0].equals("lly-")) {
+						arm.setLeftLegPose(arm.getLeftLegPose().setY(arm.getLeftLegPose().getY() - .1));
+					}
+
+					if (arg3[0].equals("mx+")) {
+						Location l = arm.getLocation();
+						l.setX(l.getX() + .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("mx-")) {
+						Location l = arm.getLocation();
+						l.setX(l.getX() - .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("mz+")) {
+						Location l = arm.getLocation();
+						l.setZ(l.getZ() + .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("mz-")) {
+						Location l = arm.getLocation();
+						l.setZ(l.getZ() - .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("my+")) {
+						Location l = arm.getLocation();
+						l.setY(l.getY() + .1);
+						arm.teleport(l);
+					}
+					if (arg3[0].equals("my-")) {
+						Location l = arm.getLocation();
+						l.setY(l.getY() - .1);
+						arm.teleport(l);
+					}
+
+					if (arg3[0].equals("hr")) {
+						arm.setHeadPose(new EulerAngle(0, 0, 0));
+					}
+					if (arg3[0].equals("br")) {
+						arm.setBodyPose(new EulerAngle(0, 0, 0));
+					}
+					if (arg3[0].equals("lar")) {
+						arm.setLeftArmPose(new EulerAngle(0, 0, 0));
+					}
+					if (arg3[0].equals("rar")) {
+						arm.setRightArmPose(new EulerAngle(0, 0, 0));
+					}
+					if (arg3[0].equals("llr")) {
+						arm.setLeftLegPose(new EulerAngle(0, 0, 0));
+					}
+					if (arg3[0].equals("rlr")) {
+						arm.setRightLegPose(new EulerAngle(0, 0, 0));
+					}
+
+					if (arg3.length > 0) {
+						if (arg3[0].equals("n")) {
+							String name = "";
+							for (int i = 1; i < arg3.length; i++) {
+								name += arg3[i] + " ";
+							}
+							if (name.equals("")) {
+								arm.setCustomNameVisible(false);
+								return true;
+							}
+							name = name.substring(0, name.length() - 1);
+							arm.setCustomName(name);
+							arm.setCustomNameVisible(true);
+							getLogger().info(sender.getName() + " set name as " + name);
+						}
+					}
+
+					if (arg3[0].equals("i")) {
+						if (arm.getItemInHand().getType() == Material.AIR) {
+							ItemStack is = ((Player) sender).getPlayer().getItemInHand();
+							if (is.getAmount() - 1 == 0) {
+								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
+							} else {
+								is.setAmount(is.getAmount() - 1);
+							}
+
+							ItemStack is2 = is.clone();
+							is2.setAmount(1);
+							arm.setItemInHand(is2);
+						} else {
+							arm.getWorld().dropItem(arm.getLocation(), arm.getItemInHand());
+							arm.getEquipment().setItemInHand(null);
+						}
+					}
+
+					if (arg3[0].equals("il")) {
+						if (arm.getEquipment().getItemInOffHand().getType() == Material.AIR) {
+							ItemStack is = ((Player) sender).getPlayer().getItemInHand();
+							if (is.getAmount() - 1 == 0) {
+								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
+							} else {
+								is.setAmount(is.getAmount() - 1);
+							}
+
+							ItemStack is2 = is.clone();
+							is2.setAmount(1);
+							arm.getEquipment().setItemInOffHand(is2);
+						} else {
+							arm.getWorld().dropItem(arm.getLocation(), arm.getEquipment().getItemInOffHand());
+							arm.getEquipment().setItemInOffHand(null);
+						}
+					}
+
+					if (arg3[0].equals("helmet")) {
+						if (arm.getEquipment().getHelmet().getType() == Material.AIR) {
+							ItemStack is = ((Player) sender).getPlayer().getItemInHand();
+							if (is.getAmount() - 1 == 0) {
+								((Player) sender).getPlayer().setItemInHand(new ItemStack(Material.AIR));
+							} else {
+								is.setAmount(is.getAmount() - 1);
+							}
+
+							ItemStack is2 = is.clone();
+							is2.setAmount(1);
+							arm.getEquipment().setHelmet(is2);
+						} else {
+							arm.getWorld().dropItem(arm.getLocation(), arm.getEquipment().getHelmet());
+							arm.getEquipment().setHelmet(null);
+						}
+					}
+
+					if (arg3[0].equals("p+")) {
+						int particle = -1;
+						for (MetadataValue mv : arm.getMetadata("particle")) {
+							particle = (int) mv.value() + 1;
+						}
+						if (particle == -1) {
+							particle = 0;
+						}
+						if (particle > Particle.values().length - 1) {
+							particle = 0;
+						}
+
+						arm.setMetadata("particle", new FixedMetadataValue(this, particle));
+						((Player) sender).sendTitle("", Particle.values()[particle].name());
+					}
+					if (arg3[0].equals("p-")) {
+						int particle = -1;
+						for (MetadataValue mv : arm.getMetadata("particle")) {
+							particle = (int) mv.value();
+							particle--;
+						}
+						if (particle < 0) {
+							particle = Particle.values().length - 1;
+						}
+						arm.setMetadata("particle", new FixedMetadataValue(this, particle));
+						((Player) sender).sendTitle("", Particle.values()[particle].name());
+					}
+					if (arg3[0].equals("e+")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() + .1;
+						}
+						if (extra == -1) {
+							extra = 0;
+						}
+						if (extra > 5) {
+							extra = 5;
+						}
+
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
+						((Player) sender).sendTitle("", "Extra: " + extra);
+					}
+					if (arg3[0].equals("e-")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() - .1;
+						}
+						if (extra < 0) {
+							extra = 0;
+						}
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
+
+						((Player) sender).sendTitle("", "Extra: " + new DecimalFormat("#.##").format(extra));
+					}
+					if (arg3[0].equals("e++")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() + 1;
+						}
+						if (extra == -1) {
+							extra = 0;
+						}
+						if (extra > 5) {
+							extra = 5;
+						}
+
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
+						((Player) sender).sendTitle("", "Extra: " + extra);
+					}
+					if (arg3[0].equals("e--")) {
+						double extra = -1;
+						for (MetadataValue mv : arm.getMetadata("extra")) {
+							extra = (double) mv.value() - 1;
+						}
+						if (extra < 0) {
+							extra = 0;
+						}
+						arm.setMetadata("extra", new FixedMetadataValue(this, extra));
+						((Player) sender).sendTitle("", "Extra: " + new DecimalFormat("#.##").format(extra));
+					}
+
+					if (arg3[0].equals("r+")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() + .1;
+						}
+						if (range == -1) {
+							range = 0;
+						}
+						if (range > 5) {
+							range = 5;
+						}
+
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
+						((Player) sender).sendTitle("", "range: " + range);
+					}
+					if (arg3[0].equals("r-")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() - .1;
+						}
+						if (range < 0) {
+							range = 0;
+						}
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
+						((Player) sender).sendTitle("", "Range: " + new DecimalFormat("#.##").format(range));
+					}
+
+					if (arg3[0].equals("r++")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() + 1;
+						}
+						if (range == -1) {
+							range = 0;
+						}
+						if (range > 5) {
+							range = 5;
+						}
+
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
+						((Player) sender).sendTitle("", "range: " + range);
+					}
+					if (arg3[0].equals("r--")) {
+						double range = -1;
+						for (MetadataValue mv : arm.getMetadata("range")) {
+							range = (double) mv.value() - 1;
+						}
+						if (range < 0) {
+							range = 0;
+						}
+						arm.setMetadata("range", new FixedMetadataValue(this, range));
+						((Player) sender).sendTitle("", "Range: " + new DecimalFormat("#.##").format(range));
+					}
+
+					if (arg3[0].equals("i+")) {
+						int intensity = -1;
+						for (MetadataValue mv : arm.getMetadata("intensity")) {
+							intensity = (int) mv.value() + 1;
+						}
+						if (intensity > 50) {
+							intensity = 50;
+						}
+						arm.setMetadata("intensity", new FixedMetadataValue(this, intensity));
+						((Player) sender).sendTitle("", "Intensity: " + intensity);
+					}
+					if (arg3[0].equals("i-")) {
+						int intensity = -1;
+						for (MetadataValue mv : arm.getMetadata("intensity")) {
+							intensity = (int) mv.value() - 1;
+						}
+						if (intensity < 0) {
+							intensity = 0;
+						}
+						arm.setMetadata("intensity", new FixedMetadataValue(this, intensity));
+						((Player) sender).sendTitle("", "Intensity: " + intensity);
+					}
+				}
+			}
+		}
+		return true;
+	}
+	private void SendRotateLine(String c, String string, String string2, Player p, String command) {
+		String hxp = FancyText.GenerateFancyText("  §a( + )", FancyText.RUN_COMMAND, command + " " + c + "x+",
+				FancyText.SHOW_TEXT, "Rotate X+");
+		String hxm = FancyText.GenerateFancyText("§c( - )", FancyText.RUN_COMMAND, command + " " + c + "x-",
+				FancyText.SHOW_TEXT, "Rotate X-");
+		String hyp = FancyText.GenerateFancyText("§a   ( + )", FancyText.RUN_COMMAND, command + " " + c + "y+",
+				FancyText.SHOW_TEXT, "Rotate Y+");
+		String hym = FancyText.GenerateFancyText("§c( - )", FancyText.RUN_COMMAND, command + " " + c + "y-",
+				FancyText.SHOW_TEXT, "Rotate Y-");
+		String hzp = FancyText.GenerateFancyText("§a   ( + )", FancyText.RUN_COMMAND, command + " " + c + "z+",
+				FancyText.SHOW_TEXT, "Rotate Z+");
+		String hzm = FancyText.GenerateFancyText("§c( - )", FancyText.RUN_COMMAND, command + " " + c + "z-",
+				FancyText.SHOW_TEXT, "Rotate Z-");
+		String head = FancyText.GenerateFancyText("    §7" + string, FancyText.RUN_COMMAND, command + " " + c + "r",
+				FancyText.SHOW_TEXT, string2 + ".  Click to reset rotation!");
+		sendRawPacket(p, "[" + hxp + "," + hxm + "," + hyp + "," + hym + "," + hzp + "," + hzm + "," + head + "]");
+
+	}
+	private void SendTranslateLine(String c, String string2, Player p, String command) {
+		String hxp = FancyText.GenerateFancyText("  §a( + )", FancyText.RUN_COMMAND, command + " " + c + "x+",
+				FancyText.SHOW_TEXT, "Move X+");
+		String hxm = FancyText.GenerateFancyText("§c( - )", FancyText.RUN_COMMAND, command + " " + c + "x-",
+				FancyText.SHOW_TEXT, "Move X-");
+		String hyp = FancyText.GenerateFancyText("§a   ( + )", FancyText.RUN_COMMAND, command + " " + c + "y+",
+				FancyText.SHOW_TEXT, "Move Y+");
+		String hym = FancyText.GenerateFancyText("§c( - )", FancyText.RUN_COMMAND, command + " " + c + "y-",
+				FancyText.SHOW_TEXT, "Move Y-");
+		String hzp = FancyText.GenerateFancyText("§a   ( + )", FancyText.RUN_COMMAND, command + " " + c + "z+",
+				FancyText.SHOW_TEXT, "Move Z+");
+		String hzm = FancyText.GenerateFancyText("§c( - )", FancyText.RUN_COMMAND, command + " " + c + "z-",
+				FancyText.SHOW_TEXT, "Move Z-");
+		String head = FancyText.GenerateFancyText("    §7" + string2, FancyText.SHOW_TEXT, "", FancyText.SHOW_TEXT,
+				string2);
+		sendRawPacket(p, "[" + hxp + "," + hxm + "," + hyp + "," + hym + "," + hzp + "," + hzm + "," + head + "]");
+
+	}
+	
 	// AFK
 	private boolean afk(CommandSender sender, String[] arg3) {
 		if (sender instanceof Player) {
