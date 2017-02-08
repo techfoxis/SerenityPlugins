@@ -1,4 +1,4 @@
-package org.serenity.maven.plugins.SerenityPlugins;
+package org.serenity.maven.plugins.SerenityPlugins.Utility;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

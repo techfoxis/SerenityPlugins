@@ -174,6 +174,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
 import org.serenity.maven.plugins.SerenityPlugins.Command.SerenityCommand;
+import org.serenity.maven.plugins.SerenityPlugins.Utility.ConfigAccessor;
 
 import com.avaje.ebeaninternal.server.deploy.generatedproperty.GeneratedCounterLong;
 import com.google.common.collect.Iterables;
@@ -190,6 +191,9 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	 // Task List //
 	///////////////
 	
+	// TODO Extract DB into its own class
+	// TODO Extract Configuration into its own class
+	// TODO Create DebugHelper class
 	// TODO Finish Refactoring o_0/
 	// TODO Reference previous commits to identify useful disabled features
 	// TODO Party Intensity
