@@ -183,28 +183,10 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 
 public final class SerenityPlugins extends JavaPlugin implements Listener, PluginMessageListener {
+	
+	
+	
 
-	
-	
-	
-	  ///////////////
-	 // Task List //
-	///////////////
-	
-	// TODO Extract DB into its own class
-	// TODO Extract Configuration into its own class
-	// TODO Create DebugHelper class
-	// TODO Finish Refactoring o_0/
-	// TODO Reference previous commits to identify useful disabled features
-	// TODO Party Intensity
-	// TODO MultiMessage
-	// TODO Trapped Chests are Public? 
-	// TODO Party Horse
-	// TODO /Coords has link to map
-	
-	
-	
-	
 	  ////////////////////////
 	 // Field Declarations //
 	////////////////////////
