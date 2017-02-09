@@ -19,22 +19,14 @@ public class DatabaseAccessor {
 	private String databaseUser = null;
 	private String databasePassword = null;
 	
-	private static DatabaseAccessor instance = null;
-	private DatabaseAccessor() {
+	public DatabaseAccessor(String url, String user, String password) {
 		JavaPlugin plugin = JavaPlugin.getPlugin(SerenityPlugins.class);
-		
+		this.databaseUrl = url;
+		this.databaseUser = user;
+		this.databasePassword = password;
 		this.logger = plugin.getLogger();
 	}
 	
-	public static DatabaseAccessor get() {
-		if (instance == null) {
-			instance = new DatabaseAccessor();
-		}
-		
-		return instance;
-	}
-	
-	// TODO Test
 	private Connection establishConnection(String url, String user, String password) {
 		Connection connection;
 		
@@ -43,14 +35,13 @@ public class DatabaseAccessor {
 			
 		} catch (SQLException error) {
 			
-			logger.log(Level.WARNING, "Database Connection failed... \n" + error.getMessage(), error);
+			logger.log(Level.WARNING, "Database Connection failed... \n" + error.toString(), error);
 			connection = null;
 		}
 		
 		return connection;
 	}
 	
-	// TODO Test
 	private Statement createStatement(Connection connection) {
 		Statement statement;
 		
@@ -59,20 +50,13 @@ public class DatabaseAccessor {
 			
 		} catch (SQLException error) {
 			
-			logger.log(Level.WARNING, "Database Statement Creation Failed...\n" + error.getMessage(), error);
+			logger.log(Level.WARNING, "Database Statement Creation Failed...\n" + error.toString(), error);
 			statement = null;
 		}
 		
 		return statement;
 	}
 	
-	public void setAuthinticationDetails(String url, String user, String password) {
-		this.databaseUrl = url;
-		this.databaseUser = user;
-		this.databasePassword = password;
-	}
-	
-	// TODO Test
 	public ResultSet query(String query) {
 		Connection connection;
 		Statement statement;
@@ -85,10 +69,29 @@ public class DatabaseAccessor {
 		
 		} catch (SQLException error) {
 			
-			logger.log(Level.WARNING, "Database Query Failed...\n" + error.getMessage(), error);
+			logger.log(Level.WARNING, "Database Query Failed...\n" + error.toString(), error);
 			results = null;
 		}
 		
 		return results;
+	}
+	
+	public int update(String update) {
+		Connection connection;
+		Statement statement;
+		int result;
+		
+		try {
+			connection = establishConnection(this.databaseUrl, this.databaseUser, this.databasePassword);
+			statement = createStatement(connection);
+			result = statement.executeUpdate(update);
+		
+		} catch (SQLException error) {
+			
+			logger.log(Level.WARNING, "Database Query Failed...\n" + error.toString(), error);
+			result = (Integer) null;
+		}
+		
+		return result;
 	}
 }
