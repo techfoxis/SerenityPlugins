@@ -11,53 +11,76 @@
   <url>http://maven.apache.org</url>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   
-       <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>    
-        </plugins>
-		<resources>
-<resource>
-<directory>src/main/resources</directory>
-<includes>
-<include>plugin.yml</include>
-</includes>
-</resource>
-</resources>
-    </build>
+  <build>
+	<plugins>
+	
+		<plugin>
+			<artifactId>maven-compiler-plugin</artifactId>
+			<configuration>
+				<source>1.8</source>
+				<target>1.8</target>
+			</configuration>
+		</plugin>    
+		
+	</plugins>
+	<resources>
+	
+		<resource>
+			<directory>src/main/resources</directory>
+			<includes>
+				<include>plugin.yml</include>
+			</includes>
+		</resource>
+		
+	</resources>
+</build>
   
 <repositories>
-    <repository>
-        <id>spigot-repo</id>
-        <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-    </repository>
+
+	<repository>
+		<id>spigot-repo</id>
+		<url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+	</repository>
+	
 </repositories>
 
 <dependencies>
     <!--Spigot API-->
     <dependency>
-           <groupId>org.spigotmc</groupId>
-           <artifactId>spigot-api</artifactId>
-           <version>1.11.2-R0.1-SNAPSHOT</version>
-           <scope>provided</scope>
+		<groupId>org.spigotmc</groupId>
+		<artifactId>spigot-api</artifactId>
+		<version>1.11.2-R0.1-SNAPSHOT</version>
+		<scope>provided</scope>
     </dependency>
     
-       <dependency>
-            <groupId>org.bukkit</groupId>
-            <artifactId>craftbukkit</artifactId>
-            <version>1.11.2-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
+    <dependency>
+		<groupId>org.bukkit</groupId>
+		<artifactId>craftbukkit</artifactId>
+		<version>1.11.2-R0.1-SNAPSHOT</version>
+		<scope>provided</scope>
     </dependency>
     
 </dependencies>
+
+<profiles>
+	
+	<profile>
+		<id>env-dev</id>
+		<activation>
+			<property>
+				<name>env</name>
+				<value>dev</value>
+			</property>
+		</activation>
+		<build>
+			<directory>bin/server/plugins</directory>
+		</build>
+	</profile>
+	
+</profiles>
 
 </project>
 

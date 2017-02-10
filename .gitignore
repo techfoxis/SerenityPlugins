@@ -8,3 +8,4 @@ Secrets.java
 .project
 target
 .settings
+*.sh

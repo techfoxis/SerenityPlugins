@@ -1,6 +1,5 @@
 ### Tasks:
 ---
-- Turn ConfigAccessor into a Singleton with a cache, similar to DatabaseAccessor
 - Extract Skulls into their own class
 - Refactor Command invoking
 - Finish Refactoring
