@@ -3,37 +3,53 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Level;
- 
+import java.util.logging.Logger;
+
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
  
+@Deprecated
+
 public class ConfigAccessor {
  
-    private final String fileName;
+    private final String configFileName;
     private final JavaPlugin plugin;
+    private final Logger logger;
     
     private File configFile;
     private FileConfiguration fileConfiguration;
  
-    public ConfigAccessor(JavaPlugin plugin, String fileName) {
-        if (plugin == null)
-            throw new IllegalArgumentException("plugin cannot be null");
-        if (!plugin.isEnabled())
-            throw new IllegalArgumentException("plugin must be initialized");
+    public ConfigAccessor(JavaPlugin plugin, String configFileName) {
+        if (plugin == null) {
+        	throw new IllegalArgumentException("Plugin cannot be null");        	
+        
+        } else if (!plugin.isEnabled()) {
+        	
+        	throw new IllegalArgumentException("Plugin must be initialized");
+        }
+        
         this.plugin = plugin;
-        this.fileName = fileName;
-        File dataFolder = plugin.getDataFolder();
-        if (dataFolder == null)
-            throw new IllegalStateException();
-        this.configFile = new File(plugin.getDataFolder(), fileName);
+        this.configFileName = configFileName;
+        this.logger = plugin.getLogger();
+        
+        File pluginDataFolder = plugin.getDataFolder();
+        
+        if (pluginDataFolder == null) {
+        	IllegalStateException error = new IllegalStateException();
+        	
+        	logger.log(Level.SEVERE, "No Serenity Data Folder Found", error);
+        	throw error;
+        }
+        
+        this.configFile = new File(plugin.getDataFolder(), configFileName);
     }
  
     public void reloadConfig() {        
         fileConfiguration = YamlConfiguration.loadConfiguration(configFile);
  
         // Look for defaults in the jar
-        InputStream defConfigStream = plugin.getResource(fileName);
+        InputStream defConfigStream = plugin.getResource(configFileName);
         if (defConfigStream != null) {
             YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(defConfigStream);
             fileConfiguration.setDefaults(defConfig);
@@ -61,7 +77,7 @@ public class ConfigAccessor {
     
     public void saveDefaultConfig() {
         if (!configFile.exists()) {            
-            this.plugin.saveResource(fileName, false);
+            this.plugin.saveResource(configFileName, false);
         }
     }
  

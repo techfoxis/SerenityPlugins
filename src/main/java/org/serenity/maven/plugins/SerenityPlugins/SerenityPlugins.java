@@ -215,7 +215,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	public List<ProtectedArea> protectedAreas;
 	public List<Player> playersPreppedToUnProtectChunk;
 	public List<PlayerProtect> playersPreppedToProtectArea;
-	public List<Long> playerLags;
+	public List<Long> lags;
 	public Set<PlayerStatus> playerStatuses;
 	public HashMap<UUID, SerenityPlayer> serenityPlayers;
 	public List<String> creativePlayers;
@@ -224,7 +224,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	public Long lastEventList;
 	public List<ProtectedArea> areas;
 	public List<Mailbox> mailBoxes;
-	public List<Long> lags;
+//	public List<Long> lags;
 	public List<PlayerProtect> preppedToProtectArea;
 	public List<Player> preppedToUnProtectChunk;
 	
@@ -496,7 +496,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 		voteCfg = new ConfigAccessor(this, "vote.yml");
 		playersPreppedToProtectArea = new ArrayList<PlayerProtect>();
 		playersPreppedToUnProtectChunk = new ArrayList<Player>();
-		playerLags = new ArrayList<Long>();
+		lags = new ArrayList<Long>();
 		protectedAreas = new ArrayList<ProtectedArea>();
 		votingForDay = false;
 		protectedAreasCfg.saveDefaultConfig();
@@ -600,7 +600,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 	  /////////////
 	 // Methods //
 	/////////////
-
+	
 	private void SendPlayerList() {
 		String footer = "";
 
@@ -964,7 +964,7 @@ public final class SerenityPlugins extends JavaPlugin implements Listener, Plugi
 					+ "FOREIGN KEY (UUID) REFERENCES Player(UUID), " + "Time Long," + "Status VARCHAR(300));";
 			st.executeUpdate(sql);
 
-			sql = "CREATE TABLE IF NOT EXISTS Heads (Head VARCHAR(500) NOT NULL );";
+			sql = "CREATE TABLE IF NOT EXISTS heads (Head VARCHAR(500) NOT NULL );"; // TODO "Heads" or "heads"?
 			st.executeUpdate(sql);
 
 			sql = "CREATE TABLE IF NOT EXISTS Ignores (" + "Annoyed VARCHAR(40) NOT NULL, "

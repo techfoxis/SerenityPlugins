@@ -1,5 +1,7 @@
 package org.serenity.maven.plugins.SerenityPlugins;
 
+@Deprecated
+
 public class Head {
 	public String Command;
 	public int ID;
