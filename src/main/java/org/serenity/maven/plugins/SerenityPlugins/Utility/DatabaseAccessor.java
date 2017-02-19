@@ -35,7 +35,7 @@ public class DatabaseAccessor {
 			
 		} catch (SQLException error) {
 			
-			logger.log(Level.WARNING, "Database Connection failed... \n" + error.toString(), error);
+			logger.log(Level.WARNING, "Database Connection Creation Failed... \n" + error.toString(), error);
 			connection = null;
 		}
 		
@@ -57,40 +57,26 @@ public class DatabaseAccessor {
 		return statement;
 	}
 	
-	public ResultSet query(String query) {
+	public ResultSet query(String query) throws SQLException {
 		Connection connection;
 		Statement statement;
 		ResultSet results;
-		
-		try {
-			connection = establishConnection(this.databaseUrl, this.databaseUser, this.databasePassword);
-			statement = createStatement(connection);
-			results = statement.executeQuery(query);
-		
-		} catch (SQLException error) {
-			
-			logger.log(Level.WARNING, "Database Query Failed...\n" + error.toString(), error);
-			results = null;
-		}
+
+		connection = establishConnection(this.databaseUrl, this.databaseUser, this.databasePassword);
+		statement = createStatement(connection);
+		results = statement.executeQuery(query);
 		
 		return results;
 	}
 	
-	public int update(String update) {
+	public int update(String update) throws SQLException {
 		Connection connection;
 		Statement statement;
 		int result;
 		
-		try {
-			connection = establishConnection(this.databaseUrl, this.databaseUser, this.databasePassword);
-			statement = createStatement(connection);
-			result = statement.executeUpdate(update);
-		
-		} catch (SQLException error) {
-			
-			logger.log(Level.WARNING, "Database Query Failed...\n" + error.toString(), error);
-			result = (Integer) null;
-		}
+		connection = establishConnection(this.databaseUrl, this.databaseUser, this.databasePassword);
+		statement = createStatement(connection);
+		result = statement.executeUpdate(update);
 		
 		return result;
 	}
