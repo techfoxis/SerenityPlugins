@@ -1,4 +1,4 @@
-package org.serenity.maven.plugins.SerenityPlugins.Command;
+package org.serenity.maven.plugins.SerenityPlugins.command;
 
 public class SerenityCommand {
 

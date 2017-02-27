@@ -1,4 +1,4 @@
-package org.serenity.maven.plugins.SerenityPlugins.Utility;
+package org.serenity.maven.plugins.SerenityPlugins.utility;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

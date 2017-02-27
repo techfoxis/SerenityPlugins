@@ -173,8 +173,8 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
-import org.serenity.maven.plugins.SerenityPlugins.Command.SerenityCommand;
-import org.serenity.maven.plugins.SerenityPlugins.Utility.ConfigAccessor;
+import org.serenity.maven.plugins.SerenityPlugins.command.SerenityCommand;
+import org.serenity.maven.plugins.SerenityPlugins.utility.ConfigAccessor;
 
 import com.avaje.ebeaninternal.server.deploy.generatedproperty.GeneratedCounterLong;
 import com.google.common.collect.Iterables;

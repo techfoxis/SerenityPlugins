@@ -1,4 +1,4 @@
-package org.serenity.maven.plugins.SerenityPlugins.Utility;
+package org.serenity.maven.plugins.SerenityPlugins.utility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
-import org.serenity.maven.plugins.SerenityPlugins.Command.SerenityCommand;
+import org.serenity.maven.plugins.SerenityPlugins.command.SerenityCommand;
 
 public class ConstantStore {
 
